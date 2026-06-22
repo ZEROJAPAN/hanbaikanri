@@ -31,7 +31,7 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;back
 
 /* テーブル本体 */
 /* 商品名130 + 21列×(件数40+金額120) = 130 + 21×160 = 3490px */
-table{border-collapse:collapse;table-layout:fixed;width:3500px;}
+table{border-collapse:collapse;table-layout:fixed;width:2900px;}
 
 /* 商品名列（固定） */
 .cat-td{
@@ -45,31 +45,31 @@ th.name-th{
 }
 
 /* 件数セル：黄色・40px */
-.td-qty{width:40px;border:2px solid #cc8800;padding:1px;background:#ffff00;}
+.td-qty{width:50px;border:2px solid #cc8800;padding:1px;background:#ffff00;}
 .td-qty input{
-  width:40px;border:none;background:#ffff88;
+  width:50px;border:none;background:#ffff88;
   font-size:10px;text-align:right;padding:1px 2px;outline:none;font-weight:bold;
 }
 
 /* 金額セル：白・120px */
-.td-amt{width:120px;border:2px solid #8888bb;padding:1px;background:#ffffff;}
+.td-amt{width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;}
 .td-amt input{
-  width:120px;border:none;background:#ffffff;
+  width:80px;border:none;background:#ffffff;
   font-size:10px;text-align:right;padding:1px 3px;outline:none;
 }
 
 /* ヘッダー */
 th{border:1.5px solid #c08080;padding:2px 3px;text-align:center;background:#f4a0a0;font-size:10px;white-space:nowrap;}
 th.buy-hdr{background:#ffcccc;}
-th.qty-hdr{width:40px;background:#ffff00;font-size:9px;font-weight:bold;border:1.5px solid #cc8800;}
-th.amt-hdr{width:120px;background:#ffffff;font-size:9px;border:1.5px solid #8888bb;}
+th.qty-hdr{width:50px;background:#ffff00;font-size:9px;font-weight:bold;border:1.5px solid #cc8800;}
+th.amt-hdr{width:80px;background:#ffffff;font-size:9px;border:1.5px solid #8888bb;}
 
 /* 集計行 */
 .sum-label{border:1.5px solid #c08080;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#ffff88;position:sticky;left:0;z-index:2;width:130px;}
-.sum-qty{width:40px;border:2px solid #cc8800;padding:2px 2px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;}
-.sum-amt{width:120px;border:2px solid #8888bb;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#ffffff;}
-.gray-qty{width:40px;border:1px solid #aaa;background:#c0c0c0;}
-.gray-amt{width:120px;border:1px solid #aaa;background:#c0c0c0;}
+.sum-qty{width:50px;border:2px solid #cc8800;padding:2px 2px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;}
+.sum-amt{width:80px;border:2px solid #8888bb;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#ffffff;}
+.gray-qty{width:50px;border:1px solid #aaa;background:#c0c0c0;}
+.gray-amt{width:80px;border:1px solid #aaa;background:#c0c0c0;}
 
 .right-btns{display:flex;flex-direction:column;gap:5px;min-width:95px;}
 .bottom-area{display:flex;align-items:center;gap:12px;margin-top:8px;}
@@ -139,6 +139,30 @@ th.amt-hdr{width:120px;background:#ffffff;font-size:9px;border:1.5px solid #8888
 <div class="main-area">
   <div class="tbl-outer">
     <table>
+            <colgroup>
+        <col style="width:130px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+        <col style="width:50px;"><col style="width:80px;">
+      </colgroup>
       <thead>
         <tr>
           <th rowspan="2" class="name-th">商品名</th>
@@ -353,7 +377,7 @@ function buildTable(){
   // 客数行
   h+=`<tr><td class="sum-label">客数</td>`;
   COLS.forEach(()=>{
-    h+=`<td class="gray-qty"></td><td class="td-amt"><input type="text" inputmode="numeric" value="0" style="width:120px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+    h+=`<td class="gray-qty"></td><td class="td-amt"><input type="text" inputmode="numeric" value="0" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
   });
   h+=`</tr>`;
 
@@ -407,3 +431,4 @@ recalc();
 </script>
 </body>
 </html>
+
