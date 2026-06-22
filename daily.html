@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日報入力</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;background:#90ee90;}
+.wrap{background:#90ee90;padding:4px;}
+.nav-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;align-items:center;}
+.nbtn{padding:2px 8px;font-size:11px;font-weight:bold;border:1px solid #555;border-radius:2px;cursor:pointer;background:#ffff99;color:#000;white-space:nowrap;}
+.nbtn.active{background:#ffff00;}
+.nbtn.master{background:#ff8888;}
+.nbtn.side{background:#ddd;width:100%;padding:4px 6px;}
+.nbtn.logout{background:#fff;}
+.store-sel{font-size:11px;padding:1px 3px;border:1px solid #888;}
+.date-input{font-size:11px;padding:1px 3px;border:1px solid #888;border-radius:2px;}
+.main-area{display:flex;gap:6px;align-items:flex-start;}
+.tbl-wrap{flex:1;overflow-x:auto;}
+table{border-collapse:collapse;width:100%;table-layout:fixed;}
+th{border:1px solid #aaa;padding:2px 3px;text-align:center;background:#f4a0a0;font-size:10px;white-space:nowrap;}
+th.buy-hdr{background:#ffcccc;}
+.cat-td{border:1px solid #aaa;padding:2px 5px;background:#d0f0f8;font-size:10px;white-space:nowrap;}
+.gray-td{border:1px solid #aaa;background:#b0b0b0;}
+.inp-td{border:1px solid #aaa;padding:0;}
+.inp-td input{width:100%;border:none;font-size:10px;text-align:right;padding:1px 2px;outline:none;}
+.inp-yellow input{background:#ffff88;}
+.inp-white input{background:#fff;}
+.sum-td{border:1px solid #aaa;padding:2px 4px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;}
+.sum-label{border:1px solid #aaa;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#ffff88;}
+.gray-sum{border:1px solid #aaa;background:#b0b0b0;}
+.right-btns{display:flex;flex-direction:column;gap:5px;min-width:95px;}
+.bottom-area{display:flex;align-items:center;gap:12px;margin-top:8px;}
+.visitor-box{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.visitor-lbl{background:#ff4444;color:#fff;font-weight:bold;padding:2px 8px;font-size:11px;border-radius:2px;}
+.visitor-inp{width:72px;text-align:right;font-size:12px;border:1px solid #888;padding:2px 3px;}
+.reg-btn{padding:6px 24px;font-size:13px;font-weight:bold;background:#4488ff;color:#fff;border:none;border-radius:3px;cursor:pointer;}
+.reg-btn.done{background:#44aa44;}
+.clear-btn{padding:6px 14px;font-size:11px;background:#ffaaaa;border:1px solid #cc4444;border-radius:3px;cursor:pointer;}
+.status-bar{margin-top:6px;padding:3px 8px;background:rgba(0,0,0,0.18);border-radius:3px;font-size:10px;color:#fff;display:flex;gap:16px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="nav-row">
+  <button class="nbtn active">日報入力</button>
+  <button class="nbtn">地金換金</button>
+  <button class="nbtn">テレカ・金券換金</button>
+  <button class="nbtn">店舗間移動</button>
+  <button class="nbtn">仕入れ入力</button>
+  <button class="nbtn">評価入力</button>
+  <button class="nbtn">CSV取込・取出</button>
+  <button class="nbtn">現金出納帳</button>
+  <button class="nbtn">費用登録</button>
+  <button class="nbtn">費用グループ</button>
+  <button class="nbtn logout" style="margin-left:8px;" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
+<div class="nav-row">
+  <select class="store-sel" id="store">
+    <option>宅配ゴールドプライス</option>
+    <option>新宿店</option>
+    <option>渋谷店</option>
+    <option>池袋店</option>
+    <option>銀座店</option>
+  </select>
+  <button class="nbtn">日報帳票</button>
+  <button class="nbtn">売上月次報告書</button>
+  <button class="nbtn">売上集計報告書</button>
+  <button class="nbtn">順位表</button>
+  <button class="nbtn">地金換金表</button>
+  <button class="nbtn">テレカ・金券換金表</button>
+  <button class="nbtn">店舗間移動集計</button>
+  <button class="nbtn">テレカ・金券回収チェック</button>
+</div>
+
+<div class="nav-row">
+  <button class="nbtn">業務中間レポート</button>
+  <button class="nbtn">買取順位表</button>
+  <button class="nbtn">成果給出力</button>
+  <button class="nbtn">定量ランキング</button>
+  <button class="nbtn">現金推移表</button>
+</div>
+
+<div class="nav-row">
+  <button class="nbtn master">店舗マスタ</button>
+  <button class="nbtn master">商品マスタ</button>
+  <button class="nbtn master">汎用コードマスタ</button>
+  <button class="nbtn master">取扱商品マスタ</button>
+  <button class="nbtn master">ユーザーマスタ</button>
+  <button class="nbtn master">勘定科目マスタ</button>
+  <button class="nbtn master">回収カレンダー</button>
+  <button class="nbtn master">整合性チェック</button>
+  <button class="nbtn master">バックアップ</button>
+</div>
+
+<div style="margin:5px 0;">
+  <input type="date" class="date-input" id="rdate">
+</div>
+
+<div class="main-area">
+  <div class="tbl-wrap">
+    <table>
+      <colgroup>
+        <col style="width:128px">
+        <col style="width:44px"><col style="width:62px">
+        <col style="width:44px"><col style="width:62px">
+        <col style="width:44px"><col style="width:62px">
+        <col style="width:44px"><col style="width:62px">
+        <col style="width:44px"><col style="width:62px">
+        <col style="width:44px"><col style="width:62px">
+        <col style="width:44px"><col style="width:62px">
+      </colgroup>
+      <thead>
+        <tr>
+          <th rowspan="2">商品名</th>
+          <th colspan="2" class="buy-hdr">買取</th>
+          <th colspan="2">キャンセル</th>
+          <th colspan="2">店売り</th>
+          <th colspan="2">店売り（免税）</th>
+          <th colspan="2">本店</th>
+          <th colspan="2">楽天国内</th>
+          <th colspan="2">楽天海外（免税）</th>
+        </tr>
+        <tr>
+          <th>点数</th><th>金額</th>
+          <th>点数</th><th>金額</th>
+          <th>点数</th><th>金額</th>
+          <th>点数</th><th>金額</th>
+          <th>点数</th><th>金額</th>
+          <th>点数</th><th>金額</th>
+          <th>点数</th><th>金額</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <div class="right-btns">
+    <button class="nbtn side">クレジット明細</button>
+    <button class="nbtn side">買取明細</button>
+    <button class="nbtn side">地金回収</button>
+    <button class="nbtn side">テレカ・金券回収</button>
+    <button class="nbtn side">切手・印紙回収</button>
+    <button class="nbtn side">金庫〜レジ</button>
+    <div style="margin-top:8px;">
+      <button class="nbtn side">CSV取込</button>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-area">
+  <div class="visitor-box">
+    <div class="visitor-lbl">来店客数</div>
+    <input type="text" inputmode="numeric" class="visitor-inp" id="visitors" value="0">
+  </div>
+  <button class="reg-btn" id="reg-btn" onclick="handleSave()">登録</button>
+  <button class="clear-btn" onclick="handleClear()">クリア</button>
+</div>
+
+<div class="status-bar">
+  <span id="st-store">店舗：</span>
+  <span id="st-user">ユーザー：</span>
+  <span id="st-date">日付：</span>
+  <span id="st-sales">純売上合計：¥0</span>
+  <span id="st-tax">消費税：¥0</span>
+</div>
+</div>
+
+<script>
+const CATS=[
+  {id:1, name:'1.金'},
+  {id:2, name:'2.プラチナ'},
+  {id:3, name:'3.コンビ'},
+  {id:4, name:'4.ジュエリー'},
+  {id:5, name:'5.時計'},
+  {id:6, name:'6.ブランド品'},
+  {id:7, name:'7.テレカ・金券類（非課税）'},
+  {id:8, name:'8.お酒'},
+  {id:9, name:'9.その他'},
+  {id:10,name:'10.切手・印紙'},
+  {id:11,name:'サービス券値引き'},
+  {id:12,name:'返品・ジュエリー'},
+];
+const COLS=[
+  {key:'cancel',yellow:false},
+  {key:'shop',  yellow:true },
+  {key:'free',  yellow:true },
+  {key:'honten',yellow:false},
+  {key:'raku',  yellow:true },
+  {key:'rakuEx',yellow:true },
+];
+const data={};
+CATS.forEach(c=>{data[c.id]={};COLS.forEach(col=>{data[c.id][col.key]={q:'',a:''};});});
+
+function fmt(n){return(n||0).toLocaleString('ja-JP');}
+function num(v){const n=parseInt((v||'').replace(/[^0-9\-]/g,''),10);return isNaN(n)?0:n;}
+function colSum(k,f){return CATS.reduce((s,c)=>s+num(data[c.id][k][f]),0);}
+
+function updateCell(catId,colKey,field,val){
+  data[catId][colKey][field]=val.replace(/[^0-9\-]/g,'');
+  recalc();
+}
+function recalc(){
+  COLS.forEach(col=>{
+    const sq=document.getElementById('sum_'+col.key+'_q');
+    const sa=document.getElementById('sum_'+col.key+'_a');
+    if(sq)sq.textContent=fmt(colSum(col.key,'q'));
+    if(sa)sa.textContent=fmt(colSum(col.key,'a'));
+  });
+  document.getElementById('sum_buy_q').textContent='0';
+  document.getElementById('sum_buy_a').textContent='0';
+  const pureSales=['shop','free','honten','raku','rakuEx'].reduce((s,k)=>s+colSum(k,'a'),0);
+  ['shop','free','honten','raku','rakuEx'].forEach(k=>{
+    const el=document.getElementById('pure_'+k);if(el)el.textContent=fmt(colSum(k,'a'));
+  });
+  const tax=Math.floor(colSum('shop','a')*10/110);
+  const taxH=Math.floor(colSum('honten','a')*10/110);
+  const et=document.getElementById('tax_shop');if(et)et.textContent=fmt(tax);
+  const eth=document.getElementById('tax_hon');if(eth)eth.textContent=fmt(taxH);
+  const eg=document.getElementById('genk');if(eg)eg.textContent=fmt(colSum('shop','a'));
+  document.getElementById('st-sales').textContent='純売上合計：¥'+fmt(pureSales);
+  document.getElementById('st-tax').textContent='消費税：¥'+fmt(tax);
+}
+function buildTable(){
+  const tbody=document.getElementById('tbl-body');
+  let h='';
+  CATS.forEach(c=>{
+    h+=`<tr><td class="cat-td">${c.name}</td>`;
+    h+=`<td class="gray-td"></td><td class="gray-td"></td>`;
+    COLS.forEach(col=>{
+      const yc=col.yellow?'inp-yellow':'inp-white';
+      h+=`<td class="inp-td ${yc}"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_q" oninput="updateCell(${c.id},'${col.key}','q',this.value)"></td>`;
+      h+=`<td class="inp-td ${yc}"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_a" oninput="updateCell(${c.id},'${col.key}','a',this.value)"></td>`;
+    });
+    h+=`</tr>`;
+  });
+  h+=`<tr><td class="sum-label">計</td><td class="sum-td" id="sum_buy_q">0</td><td class="sum-td" id="sum_buy_a">0</td>`;
+  COLS.forEach(col=>{h+=`<td class="sum-td" id="sum_${col.key}_q">0</td><td class="sum-td" id="sum_${col.key}_a">0</td>`;});
+  h+=`</tr>`;
+  h+=`<tr><td class="sum-label">純売上</td><td colspan="4" class="gray-sum"></td>
+    <td class="sum-td" id="pure_shop">0</td><td class="sum-td"></td>
+    <td class="sum-td" id="pure_free">0</td><td class="sum-td"></td>
+    <td class="sum-td" id="pure_honten">0</td><td class="sum-td"></td>
+    <td class="sum-td" id="pure_raku">0</td><td class="sum-td"></td>
+    <td class="sum-td" id="pure_rakuEx">0</td><td class="sum-td"></td></tr>`;
+  h+=`<tr><td class="sum-label">消費税</td><td colspan="4" class="gray-sum"></td>
+    <td class="sum-td" id="tax_shop" colspan="2">0</td>
+    <td colspan="2" class="gray-sum"></td>
+    <td class="sum-td" id="tax_hon" colspan="2">0</td>
+    <td colspan="2" class="gray-sum"></td><td colspan="2" class="gray-sum"></td></tr>`;
+  h+=`<tr><td class="sum-label">現計</td><td colspan="4" class="gray-sum"></td>
+    <td class="sum-td" id="genk" colspan="2">0</td>
+    <td colspan="2" class="gray-sum"></td><td colspan="2" class="gray-sum"></td>
+    <td colspan="2" class="gray-sum"></td><td colspan="2" class="gray-sum"></td></tr>`;
+  h+=`<tr><td class="sum-label">掛計</td><td colspan="4" class="gray-sum"></td>
+    <td class="sum-td" colspan="2">0</td>
+    <td colspan="2" class="gray-sum"></td><td colspan="2" class="gray-sum"></td>
+    <td colspan="2" class="gray-sum"></td><td colspan="2" class="gray-sum"></td></tr>`;
+  const cust=`<td class="gray-sum"></td><td class="inp-td inp-white"><input type="text" inputmode="numeric" value="0" style="width:100%;border:none;font-size:10px;text-align:right;padding:1px 2px;outline:none;background:#fff;"></td>`;
+  h+=`<tr><td class="sum-label">客数</td><td colspan="2" class="gray-sum"></td>${cust}${cust}${cust}${cust}${cust}${cust}</tr>`;
+  tbody.innerHTML=h;
+}
+function handleSave(){
+  const btn=document.getElementById('reg-btn');
+  btn.textContent='登録済み ✓';btn.classList.add('done');
+  setTimeout(()=>{btn.textContent='登録';btn.classList.remove('done');},2500);
+}
+function handleClear(){
+  if(!confirm('入力内容をクリアしますか？'))return;
+  CATS.forEach(c=>{COLS.forEach(col=>{
+    data[c.id][col.key]={q:'',a:''};
+    const eq=document.getElementById('c'+c.id+'_'+col.key+'_q');
+    const ea=document.getElementById('c'+c.id+'_'+col.key+'_a');
+    if(eq)eq.value='';if(ea)ea.value='';
+  });});
+  recalc();
+}
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){
+    localStorage.clear();
+    window.location.href='index.html';
+  }
+}
+
+// 初期化：ログイン情報を反映
+const savedStore=localStorage.getItem('store')||'';
+const savedUser =localStorage.getItem('userid')||'';
+if(savedStore){
+  const sel=document.getElementById('store');
+  for(let i=0;i<sel.options.length;i++){
+    if(sel.options[i].value===savedStore||sel.options[i].text===savedStore){
+      sel.selectedIndex=i;break;
+    }
+  }
+  document.getElementById('st-store').textContent='店舗：'+savedStore;
+}
+document.getElementById('st-user').textContent='ユーザー：'+savedUser;
+
+const t=new Date();
+const ds=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+document.getElementById('rdate').value=ds;
+document.getElementById('st-date').textContent='日付：'+ds;
+document.getElementById('rdate').addEventListener('change',function(){
+  document.getElementById('st-date').textContent='日付：'+this.value;
+});
+document.getElementById('store').addEventListener('change',function(){
+  document.getElementById('st-store').textContent='店舗：'+this.value;
+  localStorage.setItem('store',this.value);
+});
+
+buildTable();recalc();
+</script>
+</body>
+</html>
