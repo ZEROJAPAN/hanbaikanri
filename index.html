@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゼロジャパン 売上自動集計システム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Meiryo','Yu Gothic',sans-serif;
+  background:linear-gradient(135deg,#1E2761 0%,#028090 100%);
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+}
+.login-wrap{
+  background:#fff;border-radius:12px;
+  padding:40px 48px;width:380px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.25);
+}
+.logo-area{text-align:center;margin-bottom:28px;}
+.logo-icon{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,#1E2761,#028090);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 12px;font-size:28px;
+}
+.sys-name{font-size:16px;font-weight:bold;color:#1E2761;line-height:1.4;}
+.sys-sub{font-size:11px;color:#64748B;margin-top:4px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:11px;font-weight:bold;color:#475569;margin-bottom:5px;}
+.form-group input{
+  width:100%;padding:10px 12px;
+  border:1px solid #CBD5E1;border-radius:6px;
+  font-size:13px;outline:none;
+  font-family:'Meiryo','Yu Gothic',sans-serif;
+}
+.form-group input:focus{border-color:#028090;box-shadow:0 0 0 2px rgba(2,128,144,0.15);}
+.store-group{margin-bottom:20px;}
+.store-group label{display:block;font-size:11px;font-weight:bold;color:#475569;margin-bottom:5px;}
+.store-group select{
+  width:100%;padding:10px 12px;
+  border:1px solid #CBD5E1;border-radius:6px;
+  font-size:13px;outline:none;background:#fff;cursor:pointer;
+  font-family:'Meiryo','Yu Gothic',sans-serif;
+}
+.store-group select:focus{border-color:#028090;}
+.login-btn{
+  width:100%;padding:12px;background:#1E2761;color:#fff;
+  border:none;border-radius:6px;font-size:14px;font-weight:bold;
+  cursor:pointer;font-family:'Meiryo','Yu Gothic',sans-serif;
+  transition:background 0.2s;
+}
+.login-btn:hover{background:#028090;}
+.login-btn:active{transform:scale(0.98);}
+.error-msg{
+  background:#FEE2E2;border:1px solid #FCA5A5;color:#DC2626;
+  font-size:11px;padding:8px 12px;border-radius:5px;
+  margin-bottom:14px;display:none;
+}
+.footer-note{text-align:center;font-size:10px;color:#94A3B8;margin-top:20px;}
+.divider{border:none;border-top:1px solid #E2E8F0;margin:20px 0;}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo-area">
+    <div class="logo-icon">💎</div>
+    <div class="sys-name">ゼロジャパン 売上自動集計システム</div>
+    <div class="sys-sub">ブランド品・貴金属・金券 統合管理</div>
+  </div>
+
+  <div class="error-msg" id="error-msg">
+    ユーザーIDまたはパスワードが正しくありません。
+  </div>
+
+  <div class="form-group">
+    <label>ユーザーID</label>
+    <input type="text" id="userid" placeholder="ユーザーIDを入力" autocomplete="username">
+  </div>
+
+  <div class="form-group">
+    <label>パスワード</label>
+    <input type="password" id="password" placeholder="パスワードを入力" autocomplete="current-password">
+  </div>
+
+  <div class="store-group">
+    <label>所属店舗</label>
+    <select id="store">
+      <option value="">-- 店舗を選択 --</option>
+      <option>宅配ゴールドプライス</option>
+      <option>新宿店</option>
+      <option>渋谷店</option>
+      <option>池袋店</option>
+      <option>銀座店</option>
+    </select>
+  </div>
+
+  <button class="login-btn" onclick="handleLogin()">ログイン</button>
+
+  <hr class="divider">
+  <div class="footer-note">
+    パスワードを忘れた場合は管理者にお問い合わせください
+  </div>
+</div>
+
+<script>
+document.addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+
+function handleLogin(){
+  const userid  = document.getElementById('userid').value.trim();
+  const password= document.getElementById('password').value;
+  const store   = document.getElementById('store').value;
+  const errMsg  = document.getElementById('error-msg');
+
+  if(!userid||!password||!store){
+    errMsg.textContent='ユーザーID・パスワード・店舗をすべて入力してください。';
+    errMsg.style.display='block';
+    return;
+  }
+  // テスト用：ID「admin」パスワード「1234」
+  // 本番はSupabaseの認証に切り替えます
+  if(userid==='admin'&&password==='1234'){
+    errMsg.style.display='none';
+    localStorage.setItem('store',store);
+    localStorage.setItem('userid',userid);
+    window.location.href='daily.html';
+  } else {
+    errMsg.textContent='ユーザーIDまたはパスワードが正しくありません。';
+    errMsg.style.display='block';
+    document.getElementById('password').value='';
+    document.getElementById('password').focus();
+  }
+}
+</script>
+</body>
+</html>
