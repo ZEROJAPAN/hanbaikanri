@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ゼロジャパン 売上自動集計システム</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','Yu Gothic',sans-serif;background:linear-gradient(135deg,#1E2761 0%,#028090 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -21,6 +22,7 @@ body{font-family:'Meiryo','Yu Gothic',sans-serif;background:linear-gradient(135d
 .store-group select{width:100%;padding:10px 12px;border:1px solid #CBD5E1;border-radius:6px;font-size:13px;outline:none;background:#fff;cursor:pointer;font-family:'Meiryo','Yu Gothic',sans-serif;}
 .login-btn{width:100%;padding:12px;background:#1E2761;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;font-family:'Meiryo','Yu Gothic',sans-serif;transition:background 0.2s;}
 .login-btn:hover{background:#028090;}
+.login-btn:disabled{background:#94A3B8;cursor:not-allowed;}
 .error-msg{background:#FEE2E2;border:1px solid #FCA5A5;color:#DC2626;font-size:11px;padding:8px 12px;border-radius:5px;margin-bottom:14px;display:none;}
 .footer-note{text-align:center;font-size:10px;color:#94A3B8;margin-top:20px;}
 .divider{border:none;border-top:1px solid #E2E8F0;margin:20px 0;}
@@ -46,41 +48,85 @@ body{font-family:'Meiryo','Yu Gothic',sans-serif;background:linear-gradient(135d
     <label>所属店舗</label>
     <select id="store">
       <option value="">-- 店舗を選択 --</option>
-      <option>宅配ゴールドプライス</option>
-      <option>新宿店</option>
-      <option>渋谷店</option>
-      <option>池袋店</option>
-      <option>銀座店</option>
     </select>
   </div>
-  <button class="login-btn" onclick="handleLogin()">ログイン</button>
+  <button class="login-btn" id="login-btn" onclick="handleLogin()">ログイン</button>
   <hr class="divider">
   <div class="footer-note">パスワードを忘れた場合は管理者にお問い合わせください</div>
 </div>
+
 <script>
-document.addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
-function handleLogin(){
-  const userid=document.getElementById('userid').value.trim();
-  const password=document.getElementById('password').value;
-  const store=document.getElementById('store').value;
-  const errMsg=document.getElementById('error-msg');
-  if(!userid||!password||!store){
-    errMsg.textContent='ユーザーID・パスワード・店舗をすべて入力してください。';
-    errMsg.style.display='block';return;
-  }
-  if(userid==='admin'&&password==='1234'){
-    errMsg.style.display='none';
-    localStorage.setItem('store',store);
-    localStorage.setItem('userid',userid);
-    window.location.href='index.html';
-  } else {
-    errMsg.textContent='ユーザーIDまたはパスワードが正しくありません。';
-    errMsg.style.display='block';
-    document.getElementById('password').value='';
-    document.getElementById('password').focus();
-  }
+// Supabase接続設定
+const SUPABASE_URL = 'https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 店舗一覧をDBから取得
+async function loadStores(){
+  const {data, error} = await sb.from('stores').select('*').eq('is_active', true).order('sort_order');
+  if(error){ console.error(error); return; }
+  const sel = document.getElementById('store');
+  data.forEach(s=>{
+    const o = document.createElement('option');
+    o.value = s.id;
+    o.textContent = s.name;
+    sel.appendChild(o);
+  });
 }
+
+document.addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+
+async function handleLogin(){
+  const userid   = document.getElementById('userid').value.trim();
+  const password = document.getElementById('password').value;
+  const storeEl  = document.getElementById('store');
+  const storeId  = storeEl.value;
+  const storeName= storeEl.options[storeEl.selectedIndex]?.text || '';
+  const errMsg   = document.getElementById('error-msg');
+  const btn      = document.getElementById('login-btn');
+
+  if(!userid || !password || !storeId){
+    errMsg.textContent='ユーザーID・パスワード・店舗をすべて入力してください。';
+    errMsg.style.display='block'; return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'ログイン中...';
+
+  // DBからユーザー確認
+  const {data, error} = await sb
+    .from('users')
+    .select('*')
+    .eq('user_code', userid)
+    .eq('is_active', true)
+    .single();
+
+  if(error || !data){
+    errMsg.textContent='ユーザーIDが見つかりません。';
+    errMsg.style.display='block';
+    btn.disabled=false; btn.textContent='ログイン';
+    return;
+  }
+
+  // ※現在はパスワード簡易チェック（本番はSupabase Authに切り替え予定）
+  if(password !== '1234'){
+    errMsg.textContent='パスワードが正しくありません。';
+    errMsg.style.display='block';
+    btn.disabled=false; btn.textContent='ログイン';
+    document.getElementById('password').value='';
+    return;
+  }
+
+  errMsg.style.display='none';
+  localStorage.setItem('store_id', storeId);
+  localStorage.setItem('store', storeName);
+  localStorage.setItem('userid', userid);
+  localStorage.setItem('user_name', data.name);
+  localStorage.setItem('role', data.role);
+  window.location.href='index.html';
+}
+
+loadStores();
 </script>
 </body>
 </html>
-
