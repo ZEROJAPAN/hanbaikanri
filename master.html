@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マスタ管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;background:#90ee90;}
+.wrap{padding:4px;}
+.nav-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;align-items:center;}
+.nbtn{padding:2px 8px;font-size:11px;font-weight:bold;border:1px solid #555;border-radius:2px;cursor:pointer;background:#ffff99;color:#000;white-space:nowrap;}
+.nbtn.logout{background:#fff;}
+.nbtn.back{background:#fff;border-color:#1E2761;color:#1E2761;}
+
+.main{padding:16px;background:#fff;border-radius:8px;margin-top:8px;}
+.page-title{
+  font-size:18px;font-weight:bold;color:#1E2761;
+  margin-bottom:6px;padding-bottom:10px;border-bottom:2px solid #1E2761;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.back-btn{
+  padding:6px 16px;background:#fff;color:#1E2761;
+  border:2px solid #1E2761;border-radius:5px;
+  font-size:12px;font-weight:bold;cursor:pointer;
+}
+.back-btn:hover{background:#EEF2FF;}
+
+.section{margin-bottom:24px;}
+.section-title{
+  font-size:13px;font-weight:bold;color:#475569;
+  margin-bottom:10px;padding-left:10px;
+  border-left:4px solid #1E2761;
+}
+.master-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.master-card{
+  padding:16px 20px;min-width:160px;
+  background:#fff;border:2px solid #ff8888;border-radius:8px;
+  cursor:pointer;text-align:center;transition:all 0.15s;
+  box-shadow:0 2px 4px rgba(0,0,0,0.08);
+}
+.master-card:hover{background:#ff8888;color:#fff;}
+.master-card .icon{font-size:22px;margin-bottom:6px;}
+.master-card .label{font-size:12px;font-weight:bold;color:#333;}
+.master-card:hover .label{color:#fff;}
+.master-card .desc{font-size:10px;color:#94A3B8;margin-top:3px;}
+.master-card:hover .desc{color:#ffe;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="nav-row">
+  <button class="nbtn back" onclick="location.href='index.html'">◀ トップに戻る</button>
+  <button class="nbtn" onclick="location.href='daily.html'">日報入力</button>
+  <button class="nbtn logout" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
+<div class="main">
+  <div class="page-title">
+    <span>⚙️ マスタ管理</span>
+    <button class="back-btn" onclick="location.href='index.html'">◀ トップに戻る</button>
+  </div>
+
+  <!-- 組織マスタ -->
+  <div class="section">
+    <div class="section-title">🏛 組織マスタ</div>
+    <div class="master-grid">
+      <div class="master-card" onclick="location.href='dept_master.html'">
+        <div class="icon">🏛</div>
+        <div class="label">部門マスタ</div>
+        <div class="desc">部門の登録・管理</div>
+      </div>
+      <div class="master-card" onclick="location.href='area_master.html'">
+        <div class="icon">🗾</div>
+        <div class="label">エリア／課マスタ</div>
+        <div class="desc">エリア・課の登録・管理</div>
+      </div>
+      <div class="master-card" onclick="location.href='group_master.html'">
+        <div class="icon">👥</div>
+        <div class="label">グループマスタ</div>
+        <div class="desc">グループの登録・管理</div>
+      </div>
+      <div class="master-card" onclick="location.href='team_master.html'">
+        <div class="icon">🤝</div>
+        <div class="label">チームマスタ</div>
+        <div class="desc">チームの登録・管理</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 店舗・スタッフマスタ -->
+  <div class="section">
+    <div class="section-title">🏪 店舗・スタッフマスタ</div>
+    <div class="master-grid">
+      <div class="master-card" onclick="location.href='store_master.html'">
+        <div class="icon">🏪</div>
+        <div class="label">店舗マスタ</div>
+        <div class="desc">店舗の登録・管理</div>
+      </div>
+      <div class="master-card" onclick="location.href='user_master.html'">
+        <div class="icon">👤</div>
+        <div class="label">ユーザーマスタ</div>
+        <div class="desc">スタッフの登録・管理</div>
+      </div>
+      <div class="master-card" onclick="location.href='rank_master.html'">
+        <div class="icon">🎖</div>
+        <div class="label">職制・クラスタマスタ</div>
+        <div class="desc">職制・評価クラスの管理</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 商品・チャネルマスタ -->
+  <div class="section">
+    <div class="section-title">📦 商品・販売チャネルマスタ</div>
+    <div class="master-grid">
+      <div class="master-card" onclick="alert('準備中')">
+        <div class="icon">📦</div>
+        <div class="label">商品マスタ</div>
+        <div class="desc">商品カテゴリの管理</div>
+      </div>
+      <div class="master-card" onclick="alert('準備中')">
+        <div class="icon">🛒</div>
+        <div class="label">汎用コードマスタ</div>
+        <div class="desc">汎用コードの管理</div>
+      </div>
+      <div class="master-card" onclick="alert('準備中')">
+        <div class="icon">📋</div>
+        <div class="label">取扱商品マスタ</div>
+        <div class="desc">取扱商品の管理</div>
+      </div>
+      <div class="master-card" onclick="alert('準備中')">
+        <div class="icon">📒</div>
+        <div class="label">勘定科目マスタ</div>
+        <div class="desc">勘定科目の管理</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- システム管理 -->
+  <div class="section">
+    <div class="section-title">🔧 システム管理</div>
+    <div class="master-grid">
+      <div class="master-card" onclick="alert('準備中')">
+        <div class="icon">📅</div>
+        <div class="label">回収カレンダー</div>
+        <div class="desc">回収日程の管理</div>
+      </div>
+      <div class="master-card" onclick="alert('準備中')">
+        <div class="icon">✅</div>
+        <div class="label">整合性チェック</div>
+        <div class="desc">データ整合性の確認</div>
+      </div>
+      <div class="master-card" onclick="alert('準備中')">
+        <div class="icon">💾</div>
+        <div class="label">バックアップ</div>
+        <div class="desc">データのバックアップ</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){
+    localStorage.clear();window.location.href='login.html';
+  }
+}
+</script>
+</body>
+</html>
