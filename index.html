@@ -6,98 +6,232 @@
 <title>ゼロジャパン 売上自動集計システム</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;background:#90ee90;}
-.wrap{padding:4px;}
-.nav-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;align-items:center;}
-.nbtn{padding:2px 8px;font-size:11px;font-weight:bold;border:1px solid #555;border-radius:2px;cursor:pointer;background:#ffff99;color:#000;white-space:nowrap;}
-.nbtn.active{background:#ffff00;}
-.nbtn.master{background:#ff8888;}
-.nbtn.logout{background:#fff;}
-.store-sel{font-size:11px;padding:1px 3px;border:1px solid #888;}
-.user-bar{margin-top:6px;padding:3px 8px;background:rgba(0,0,0,0.15);border-radius:3px;font-size:10px;color:#1E2761;font-weight:bold;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;background:#90ee90;min-height:100vh;}
+.wrap{padding:10px;}
+
+/* トップバー */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:#1E2761;border-radius:8px;
+  padding:10px 16px;margin-bottom:10px;
+}
+.topbar-title{font-size:15px;font-weight:bold;color:#fff;}
+.topbar-info{font-size:11px;color:#CADCFC;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.store-sel{font-size:11px;padding:4px 8px;border:1px solid #9FE1CB;border-radius:4px;background:#fff;}
+.logout-btn{
+  padding:5px 12px;background:#fff;color:#1E2761;
+  border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;
+}
+.logout-btn:hover{background:#EEF2FF;}
+
+/* メインエリア */
+.main{background:#fff;border-radius:8px;padding:16px;}
+
+/* セクション */
+.section{margin-bottom:20px;}
+.section-title{
+  font-size:12px;font-weight:bold;color:#475569;
+  margin-bottom:10px;padding:5px 10px;
+  background:#F1F5F9;border-radius:4px;
+  border-left:4px solid #1E2761;
+}
+
+/* ボタングリッド */
+.btn-grid{display:flex;flex-wrap:wrap;gap:10px;}
+
+/* 立体ボタン */
+.mbtn{
+  padding:12px 18px;min-width:130px;
+  border-radius:8px;cursor:pointer;
+  text-align:center;font-family:'Meiryo','MS Gothic',sans-serif;
+  font-size:12px;font-weight:bold;
+  border:none;
+  transition:all 0.1s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.mbtn:active{transform:translateY(2px);}
+
+/* 青：主要機能 */
+.mbtn-blue{
+  background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
+  color:#fff;
+  box-shadow:0 4px 0 #0F1640, 0 5px 8px rgba(0,0,0,0.2);
+}
+.mbtn-blue:hover{background:linear-gradient(180deg,#3D6FCA 0%,#2D3E8F 100%);}
+.mbtn-blue:active{box-shadow:0 1px 0 #0F1640;}
+
+/* 緑：集計・レポート */
+.mbtn-green{
+  background:linear-gradient(180deg,#0FAA7A 0%,#028090 100%);
+  color:#fff;
+  box-shadow:0 4px 0 #015060, 0 5px 8px rgba(0,0,0,0.2);
+}
+.mbtn-green:hover{background:linear-gradient(180deg,#1FBA8A 0%,#029090 100%);}
+.mbtn-green:active{box-shadow:0 1px 0 #015060;}
+
+/* 赤：マスタ管理 */
+.mbtn-red{
+  background:linear-gradient(180deg,#FF6666 0%,#CC2222 100%);
+  color:#fff;
+  box-shadow:0 4px 0 #881111, 0 5px 8px rgba(0,0,0,0.2);
+}
+.mbtn-red:hover{background:linear-gradient(180deg,#FF8888 0%,#DD3333 100%);}
+.mbtn-red:active{box-shadow:0 1px 0 #881111;}
+
+/* グレー：準備中 */
+.mbtn-gray{
+  background:linear-gradient(180deg,#94A3B8 0%,#64748B 100%);
+  color:#fff;
+  box-shadow:0 4px 0 #475569, 0 5px 8px rgba(0,0,0,0.15);
+  cursor:not-allowed;opacity:0.75;
+}
+
+.mbtn .icon{font-size:20px;}
+.mbtn .label{font-size:11px;line-height:1.3;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<!-- ナビ行1 -->
-<div class="nav-row">
-  <button class="nbtn active" onclick="location.href='daily.html'">日報入力</button>
-  <button class="nbtn">地金換金</button>
-  <button class="nbtn">テレカ・金券換金</button>
-  <button class="nbtn">店舗間移動</button>
-  <button class="nbtn">仕入れ入力</button>
-  <button class="nbtn">評価入力</button>
-  <button class="nbtn">CSV取込・取出</button>
-  <button class="nbtn">現金出納帳</button>
-  <button class="nbtn">費用登録</button>
-  <button class="nbtn">費用グループ</button>
-  <button class="nbtn logout" style="margin-left:8px;" onclick="handleLogout()">🏠 ログアウト</button>
+<!-- トップバー -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">💎 ゼロジャパン 売上自動集計システム</div>
+    <div class="topbar-info" id="user-info"></div>
+  </div>
+  <div class="topbar-right">
+    <select class="store-sel" id="store">
+      <option>宅配ゴールドプライス</option>
+      <option>新宿店</option>
+      <option>渋谷店</option>
+      <option>池袋店</option>
+      <option>銀座店</option>
+    </select>
+    <button class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
 </div>
 
-<!-- ナビ行2 -->
-<div class="nav-row">
-  <select class="store-sel" id="store">
-    <option>宅配ゴールドプライス</option>
-    <option>新宿店</option>
-    <option>渋谷店</option>
-    <option>池袋店</option>
-    <option>銀座店</option>
-  </select>
-  <button class="nbtn">日報帳票</button>
-  <button class="nbtn">売上月次報告書</button>
-  <button class="nbtn">売上集計報告書</button>
-  <button class="nbtn">順位表</button>
-  <button class="nbtn">地金換金表</button>
-  <button class="nbtn">テレカ・金券換金表</button>
-  <button class="nbtn">店舗間移動集計</button>
-  <button class="nbtn">テレカ・金券回収チェック</button>
+<!-- メインエリア -->
+<div class="main">
+
+  <!-- 日次業務 -->
+  <div class="section">
+    <div class="section-title">📋 日次業務</div>
+    <div class="btn-grid">
+      <button class="mbtn mbtn-blue" onclick="location.href='daily.html'">
+        <span class="icon">📋</span><span class="label">日報入力</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">💰</span><span class="label">地金換金</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">🎫</span><span class="label">テレカ・金券換金</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">🏪</span><span class="label">店舗間移動</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">📦</span><span class="label">仕入れ入力</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">👥</span><span class="label">評価入力</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">💵</span><span class="label">現金出納帳</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">💴</span><span class="label">費用登録</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">📂</span><span class="label">費用グループ</span>
+      </button>
+      <button class="mbtn mbtn-blue" onclick="alert('準備中')">
+        <span class="icon">📤</span><span class="label">CSV取込・取出</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 集計・レポート -->
+  <div class="section">
+    <div class="section-title">📊 集計・レポート</div>
+    <div class="btn-grid">
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">📄</span><span class="label">日報帳票</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">📈</span><span class="label">売上月次報告書</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">📉</span><span class="label">売上集計報告書</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">🏆</span><span class="label">順位表</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">💹</span><span class="label">地金換金表</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">🎫</span><span class="label">テレカ・金券換金表</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">🔄</span><span class="label">店舗間移動集計</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">📊</span><span class="label">業務中間レポート</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">🎯</span><span class="label">定量ランキング</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">💰</span><span class="label">現金推移表</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">🛒</span><span class="label">買取順位表</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">💎</span><span class="label">成果給出力</span>
+      </button>
+      <button class="mbtn mbtn-green" onclick="alert('準備中')">
+        <span class="icon">✅</span><span class="label">テレカ・金券回収チェック</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- マスタ管理 -->
+  <div class="section">
+    <div class="section-title">⚙️ マスタ管理</div>
+    <div class="btn-grid">
+      <button class="mbtn mbtn-red" onclick="location.href='master.html'">
+        <span class="icon">⚙️</span><span class="label">マスタ管理画面へ</span>
+      </button>
+    </div>
+  </div>
+
+</div>
 </div>
 
-<!-- ナビ行3 -->
-<div class="nav-row">
-  <button class="nbtn">業務中間レポート</button>
-  <button class="nbtn">買取順位表</button>
-  <button class="nbtn">成果給出力</button>
-  <button class="nbtn">定量ランキング</button>
-  <button class="nbtn">現金推移表</button>
-</div>
-
-<!-- マスタ行 -->
-<div class="nav-row">
-  <button class="nbtn master">店舗マスタ</button>
-  <button class="nbtn master">商品マスタ</button>
-  <button class="nbtn master">汎用コードマスタ</button>
-  <button class="nbtn master">取扱商品マスタ</button>
-  <button class="nbtn master">ユーザーマスタ</button>
-  <button class="nbtn master">勘定科目マスタ</button>
-  <button class="nbtn master">回収カレンダー</button>
-  <button class="nbtn master">整合性チェック</button>
-  <button class="nbtn master">バックアップ</button>
-</div>
-
-<!-- ユーザー情報バー -->
-<div class="user-bar" id="user-bar">ログイン中：</div>
-
-</div>
 <script>
 const savedStore=localStorage.getItem('store')||'';
 const savedUser=localStorage.getItem('userid')||'';
+const savedName=localStorage.getItem('user_name')||'';
 
-// 店舗選択を反映
 const sel=document.getElementById('store');
 if(savedStore){
   for(let i=0;i<sel.options.length;i++){
     if(sel.options[i].text===savedStore){sel.selectedIndex=i;break;}
   }
 }
-document.getElementById('user-bar').textContent=
-  'ログイン中：'+savedUser+'　　店舗：'+savedStore;
+document.getElementById('user-info').textContent=
+  'ログイン中：'+(savedName||savedUser)+'　店舗：'+savedStore;
+
+sel.addEventListener('change',function(){
+  localStorage.setItem('store',this.value);
+});
 
 function handleLogout(){
   if(confirm('ログアウトしますか？')){
-    localStorage.clear();
-    window.location.href='login.html';
+    localStorage.clear();window.location.href='login.html';
   }
 }
 </script>
