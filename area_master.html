@@ -50,23 +50,23 @@ tr:nth-child(even) td{background:#F8FAFC;}
 <body>
 <div class="wrap">
 <div class="nav-row">
-  <button class="nbtn" onclick="location.href='index.html'">メニュー</button>
-  <button class="nbtn" onclick="location.href='daily.html'">日報入力</button>
-  <button class="nbtn logout" onclick="handleLogout()">🏠 ログアウト</button>
+  <button type="button" class="nbtn" onclick="location.href='index.html'">メニュー</button>
+  <button type="button" class="nbtn" onclick="location.href='daily.html'">日報入力</button>
+  <button type="button" class="nbtn logout" onclick="handleLogout()">🏠 ログアウト</button>
 </div>
 <div class="nav-row">
-  <button class="nbtn master" onclick="location.href='dept_master.html'">部門マスタ</button>
-  <button class="nbtn master active">エリア／課マスタ</button>
-  <button class="nbtn master" onclick="location.href='group_master.html'">グループマスタ</button>
-  <button class="nbtn master" onclick="location.href='team_master.html'">チームマスタ</button>
-  <button class="nbtn master" onclick="location.href='store_master.html'">店舗マスタ</button>
-  <button class="nbtn master" onclick="location.href='user_master.html'">ユーザーマスタ</button>
-  <button class="nbtn master" onclick="location.href='rank_master.html'">職制・クラスタマスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='dept_master.html'">部門マスタ</button>
+  <button type="button" class="nbtn master active">エリア／課マスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='group_master.html'">グループマスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='team_master.html'">チームマスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='store_master.html'">店舗マスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='user_master.html'">ユーザーマスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='rank_master.html'">職制・クラスタマスタ</button>
 </div>
 <div class="main">
   <div class="page-title">🗾 エリア／課マスタ</div>
   <div class="msg" id="msg"></div>
-  <button class="add-btn" onclick="openModal()">＋ 新規エリア／課追加</button>
+  <button type="button" class="add-btn" onclick="openModal()">＋ 新規エリア／課追加</button>
   <table>
     <thead>
       <tr>
@@ -100,8 +100,8 @@ tr:nth-child(even) td{background:#F8FAFC;}
       <input type="number" id="f-sort" placeholder="例：1" min="0">
     </div>
     <div class="modal-btns">
-      <button class="cancel-btn" onclick="closeModal()">キャンセル</button>
-      <button class="save-btn" onclick="saveData()">保存</button>
+      <button type="button" class="cancel-btn" onclick="closeModal()">キャンセル</button>
+      <button type="button" class="save-btn" onclick="saveData()">保存</button>
     </div>
   </div>
 </div>
@@ -143,8 +143,8 @@ async function loadData(){
       <td style="text-align:center;">${d.sort_order}</td>
       <td style="text-align:center;"><span class="${d.is_active?'badge-active':'badge-inactive'}">${d.is_active?'有効':'無効'}</span></td>
       <td>
-        <button class="edit-btn" onclick="openEdit(${d.id})">編集</button>
-        <button class="toggle-btn ${d.is_active?'deactivate':'activate'}" onclick="toggleActive(${d.id},${d.is_active})">${d.is_active?'無効化':'有効化'}</button>
+        <button type="button" class="edit-btn" onclick="openEdit(${d.id})">編集</button>
+        <button type="button" class="toggle-btn ${d.is_active?'deactivate':'activate'}" onclick="toggleActive(${d.id},${d.is_active})">${d.is_active?'無効化':'有効化'}</button>
       </td>
     </tr>
   `).join('');
