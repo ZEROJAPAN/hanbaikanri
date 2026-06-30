@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>店舗マスタ</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:4px;}
+.nav-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;align-items:center;}
+.nbtn{padding:2px 8px;font-size:11px;font-weight:bold;border:1px solid #555;border-radius:2px;cursor:pointer;background:#ffff99;color:#000;white-space:nowrap;}
+.nbtn.master{background:#ff8888;}
+.nbtn.active{background:#ffff00;}
+.nbtn.logout{background:#fff;}
+.main{padding:12px;background:#fff;border-radius:6px;margin-top:6px;}
+.page-title{font-size:16px;font-weight:bold;color:#1E2761;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1E2761;}
+.add-btn{padding:6px 16px;background:#1E2761;color:#fff;border:none;border-radius:4px;font-size:12px;font-weight:bold;cursor:pointer;margin-bottom:12px;}
+.add-btn:hover{background:#028090;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:#1E2761;color:#fff;padding:8px 10px;text-align:left;white-space:nowrap;font-size:11px;}
+td{padding:7px 10px;border-bottom:1px solid #E2E8F0;vertical-align:middle;white-space:nowrap;}
+tr:hover td{background:#F8FAFC;}
+tr:nth-child(even) td{background:#F8FAFC;}
+.badge-active{background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold;}
+.badge-inactive{background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold;}
+.edit-btn{padding:3px 10px;background:#028090;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer;margin-right:4px;}
+.toggle-btn{padding:3px 10px;border:none;border-radius:3px;font-size:11px;cursor:pointer;}
+.toggle-btn.deactivate{background:#FEE2E2;color:#991B1B;}
+.toggle-btn.activate{background:#D1FAE5;color:#065F46;}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:10px;padding:28px;width:480px;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:15px;font-weight:bold;color:#1E2761;margin-bottom:18px;padding-bottom:8px;border-bottom:2px solid #1E2761;}
+.form-row{margin-bottom:14px;}
+.form-row label{display:block;font-size:11px;font-weight:bold;color:#475569;margin-bottom:4px;}
+.form-row input,.form-row select{width:100%;padding:8px 10px;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;font-family:'Meiryo','Yu Gothic',sans-serif;}
+.form-row input:focus,.form-row select:focus{border-color:#028090;box-shadow:0 0 0 2px rgba(2,128,144,0.15);}
+.required{color:#DC2626;margin-left:2px;}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+.save-btn{padding:8px 22px;background:#1E2761;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:bold;cursor:pointer;}
+.save-btn:hover{background:#028090;}
+.cancel-btn{padding:8px 18px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;cursor:pointer;}
+.msg{padding:8px 14px;border-radius:5px;margin-bottom:10px;font-size:12px;display:none;}
+.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="nav-row">
+  <button type="button" class="nbtn" onclick="location.href='index.html'">メニュー</button>
+  <button type="button" class="nbtn" onclick="location.href='daily.html'">日報入力</button>
+  <button type="button" class="nbtn logout" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+<div class="nav-row">
+  <button type="button" class="nbtn master" onclick="location.href='dept_master.html'">部門マスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='area_master.html'">エリア／課マスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='group_master.html'">グループマスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='team_master.html'">チームマスタ</button>
+  <button type="button" class="nbtn master active">店舗マスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='user_master.html'">ユーザーマスタ</button>
+  <button type="button" class="nbtn master" onclick="location.href='rank_master.html'">職制・クラスタマスタ</button>
+</div>
+
+<div class="main">
+  <div class="page-title">🏪 店舗マスタ</div>
+  <div class="msg" id="msg"></div>
+  <button type="button" class="add-btn" onclick="openModal()">＋ 新規店舗追加</button>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>店舗コード</th>
+          <th>店舗名</th>
+          <th>所属チーム</th>
+          <th>所属グループ</th>
+          <th>所属エリア／課</th>
+          <th>電話番号</th>
+          <th>住所</th>
+          <th>表示順</th>
+          <th>状態</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="list">
+        <tr><td colspan="10" style="text-align:center;padding:20px;color:#94A3B8;">読み込み中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">店舗追加</div>
+    <input type="hidden" id="edit-id">
+    <div class="form-row">
+      <label>店舗コード<span class="required">*</span></label>
+      <input type="text" id="f-code" placeholder="例：S006" maxlength="20">
+    </div>
+    <div class="form-row">
+      <label>店舗名<span class="required">*</span></label>
+      <input type="text" id="f-name" placeholder="例：横浜店" maxlength="100">
+    </div>
+    <div class="form-row">
+      <label>所属チーム</label>
+      <select id="f-team">
+        <option value="">-- チームを選択（任意） --</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>電話番号</label>
+      <input type="text" id="f-tel" placeholder="例：03-1234-5678" maxlength="20">
+    </div>
+    <div class="form-row">
+      <label>住所</label>
+      <input type="text" id="f-address" placeholder="例：東京都新宿区..." maxlength="200">
+    </div>
+    <div class="form-row">
+      <label>表示順</label>
+      <input type="number" id="f-sort" placeholder="例：6" min="0">
+    </div>
+    <div class="modal-btns">
+      <button type="button" class="cancel-btn" onclick="closeModal()">キャンセル</button>
+      <button type="button" class="save-btn" onclick="saveStore()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+function showMsg(text,type='success'){
+  const el=document.getElementById('msg');
+  el.textContent=text;el.className='msg '+type;el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+}
+
+async function loadTeams(){
+  const {data}=await sb.from('teams').select('*,groups(name,areas(name))').eq('is_active',true).order('sort_order');
+  const sel=document.getElementById('f-team');
+  sel.innerHTML='<option value="">-- チームを選択（任意） --</option>';
+  (data||[]).forEach(t=>{
+    const o=document.createElement('option');
+    o.value=t.id;
+    o.textContent=`${t.code}：${t.name}（${t.groups?.name||''}）`;
+    sel.appendChild(o);
+  });
+}
+
+async function loadStores(){
+  const {data,error}=await sb.from('stores').select('*,teams(code,name,groups(name,areas(name)))').order('sort_order');
+  if(error){showMsg('読み込みエラー：'+error.message,'error');return;}
+  const tbody=document.getElementById('list');
+  if(!data||data.length===0){
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:#94A3B8;">店舗データがありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML=data.map(s=>`
+    <tr>
+      <td><strong>${s.code}</strong></td>
+      <td>${s.name}</td>
+      <td>${s.teams?s.teams.name:'－'}</td>
+      <td>${s.teams?.groups?.name||'－'}</td>
+      <td>${s.teams?.groups?.areas?.name||'－'}</td>
+      <td>${s.tel||'－'}</td>
+      <td>${s.address||'－'}</td>
+      <td style="text-align:center;">${s.sort_order}</td>
+      <td style="text-align:center;">
+        <span class="${s.is_active?'badge-active':'badge-inactive'}">${s.is_active?'有効':'無効'}</span>
+      </td>
+      <td>
+        <button type="button" class="edit-btn" onclick="openEdit(${s.id})">編集</button>
+        <button type="button" class="toggle-btn ${s.is_active?'deactivate':'activate'}" onclick="toggleActive(${s.id},${s.is_active})">${s.is_active?'無効化':'有効化'}</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openModal(){
+  document.getElementById('modal-title').textContent='店舗追加';
+  document.getElementById('edit-id').value='';
+  document.getElementById('f-code').value='';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-team').value='';
+  document.getElementById('f-tel').value='';
+  document.getElementById('f-address').value='';
+  document.getElementById('f-sort').value='';
+  document.getElementById('f-code').disabled=false;
+  document.getElementById('modal').classList.add('show');
+}
+
+async function openEdit(id){
+  const {data,error}=await sb.from('stores').select('*').eq('id',id).single();
+  if(error){showMsg('データ取得エラー','error');return;}
+  document.getElementById('modal-title').textContent='店舗編集';
+  document.getElementById('edit-id').value=data.id;
+  document.getElementById('f-code').value=data.code;
+  document.getElementById('f-name').value=data.name;
+  document.getElementById('f-team').value=data.team_id||'';
+  document.getElementById('f-tel').value=data.tel||'';
+  document.getElementById('f-address').value=data.address||'';
+  document.getElementById('f-sort').value=data.sort_order;
+  document.getElementById('f-code').disabled=true;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+async function saveStore(){
+  const id=document.getElementById('edit-id').value;
+  const code=document.getElementById('f-code').value.trim();
+  const name=document.getElementById('f-name').value.trim();
+  const team_id=document.getElementById('f-team').value || null;
+  const tel=document.getElementById('f-tel').value.trim();
+  const address=document.getElementById('f-address').value.trim();
+  const sort=parseInt(document.getElementById('f-sort').value)||0;
+
+  if(!code||!name){alert('店舗コードと店舗名は必須です。');return;}
+
+  const payload={code,name,team_id,tel,address,sort_order:sort,updated_at:new Date()};
+
+  let error;
+  if(id){
+    ({error}=await sb.from('stores').update(payload).eq('id',id));
+  } else {
+    ({error}=await sb.from('stores').insert({...payload,is_active:true}));
+  }
+
+  if(error){showMsg('保存エラー：'+error.message,'error');return;}
+  closeModal();
+  showMsg(id?'店舗情報を更新しました':'新しい店舗を追加しました');
+  loadStores();
+}
+
+async function toggleActive(id,current){
+  if(!confirm(current?'この店舗を無効化しますか？':'この店舗を有効化しますか？'))return;
+  const {error}=await sb.from('stores').update({is_active:!current}).eq('id',id);
+  if(error){showMsg('更新エラー：'+error.message,'error');return;}
+  showMsg(current?'店舗を無効化しました':'店舗を有効化しました');
+  loadStores();
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+loadTeams();
+loadStores();
+</script>
+</body>
+</html>
