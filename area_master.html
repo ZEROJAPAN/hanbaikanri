@@ -229,9 +229,6 @@ async function saveData(){
   const department_id=deptSel.value||null;
   const sort=parseInt(document.getElementById('f-sort').value)||0;
 
-  // デバッグ用
-  alert('ID:'+id+'\nコード:'+code+'\n名称:'+name+'\n部門ID:'+department_id+'\n表示順:'+sort);
-
   if(!code){alert('コードを入力してください。');return;}
   if(!name){alert('名称を入力してください。');return;}
   if(!department_id){alert('部門を選択してください。');return;}
@@ -271,7 +268,8 @@ async function saveData(){
 
     closePanel();
     showMsg(id?'エリア／課情報を更新しました':'新しいエリア／課を追加しました');
-    await loadData();
+    // 少し待ってから再読み込み
+    setTimeout(async()=>{ await loadData(); }, 300);
 
   } catch(e){
     showMsg('通信エラー：'+e.message,'error');
