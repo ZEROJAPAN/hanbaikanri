@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>グループマスタ</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
@@ -29,22 +28,20 @@ tr:nth-child(even) td{background:#F8FAFC;}
 .toggle-btn{padding:3px 10px;border:none;border-radius:3px;font-size:11px;cursor:pointer;}
 .toggle-btn.deactivate{background:#FEE2E2;color:#991B1B;}
 .toggle-btn.activate{background:#D1FAE5;color:#065F46;}
-.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;}
-.modal-overlay.show{display:flex;}
-.modal{background:#fff;border-radius:10px;padding:28px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
-.modal-title{font-size:15px;font-weight:bold;color:#1E2761;margin-bottom:18px;padding-bottom:8px;border-bottom:2px solid #1E2761;}
-.form-row{margin-bottom:14px;}
-.form-row label{display:block;font-size:11px;font-weight:bold;color:#475569;margin-bottom:4px;}
-.form-row input,.form-row select{width:100%;padding:8px 10px;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;font-family:'Meiryo','Yu Gothic',sans-serif;}
-.form-row input:focus,.form-row select:focus{border-color:#028090;box-shadow:0 0 0 2px rgba(2,128,144,0.15);}
-.required{color:#DC2626;margin-left:2px;}
-.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+.edit-panel{display:none;background:#EEF2FF;border:2px solid #1E2761;border-radius:8px;padding:16px;margin-bottom:16px;}
+.edit-panel.show{display:block;}
+.edit-panel-title{font-size:13px;font-weight:bold;color:#1E2761;margin-bottom:12px;}
+.form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.form-row label{font-size:11px;font-weight:bold;color:#475569;min-width:100px;}
+.form-row input,.form-row select{padding:7px 10px;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;min-width:200px;font-family:'Meiryo','Yu Gothic',sans-serif;}
+.panel-btns{display:flex;gap:8px;margin-top:12px;}
 .save-btn{padding:8px 22px;background:#1E2761;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:bold;cursor:pointer;}
 .save-btn:hover{background:#028090;}
-.cancel-btn{padding:8px 18px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;cursor:pointer;}
+.cancel-btn{padding:8px 18px;background:#fff;color:#475569;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;cursor:pointer;}
 .msg{padding:8px 14px;border-radius:5px;margin-bottom:10px;font-size:12px;display:none;}
 .msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
 .msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+.required{color:#DC2626;}
 </style>
 </head>
 <body>
@@ -66,70 +63,79 @@ tr:nth-child(even) td{background:#F8FAFC;}
 <div class="main">
   <div class="page-title">👥 グループマスタ</div>
   <div class="msg" id="msg"></div>
-  <button type="button" class="add-btn" onclick="openModal()">＋ 新規グループ追加</button>
+  <div class="edit-panel" id="edit-panel">
+    <div class="edit-panel-title" id="panel-title">新規追加</div>
+    <input type="hidden" id="edit-id">
+    <div class="form-row">
+      <label>グループコード <span class="required">*</span></label>
+      <input type="text" id="f-code" placeholder="例：G001" maxlength="20">
+    </div>
+    <div class="form-row">
+      <label>グループ名 <span class="required">*</span></label>
+      <input type="text" id="f-name" placeholder="例：新宿グループ" maxlength="100">
+    </div>
+    <div class="form-row">
+      <label>所属エリア／課 <span class="required">*</span></label>
+      <select id="f-area"><option value="">-- エリア／課を選択 --</option></select>
+    </div>
+    <div class="form-row">
+      <label>表示順</label>
+      <input type="number" id="f-sort" placeholder="例：1" min="0" style="min-width:80px;">
+    </div>
+    <div class="panel-btns">
+      <button type="button" class="save-btn" onclick="saveData()">💾 保存</button>
+      <button type="button" class="cancel-btn" onclick="closePanel()">キャンセル</button>
+    </div>
+  </div>
+  <button type="button" class="add-btn" onclick="openAdd()">＋ 新規グループ追加</button>
   <table>
     <thead>
       <tr>
         <th>コード</th><th>グループ名</th><th>所属エリア／課</th><th>所属部門</th><th>表示順</th><th>状態</th><th>操作</th>
       </tr>
     </thead>
-    <tbody id="list"></tbody>
+    <tbody id="list"><tr><td colspan="7" style="text-align:center;padding:20px;color:#94A3B8;">読み込み中...</td></tr></tbody>
   </table>
-</div>
-
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">グループ追加</div>
-    <input type="hidden" id="edit-id">
-    <div class="form-row">
-      <label>グループコード<span class="required">*</span></label>
-      <input type="text" id="f-code" placeholder="例：G001" maxlength="20">
-    </div>
-    <div class="form-row">
-      <label>グループ名<span class="required">*</span></label>
-      <input type="text" id="f-name" placeholder="例：新宿グループ" maxlength="100">
-    </div>
-    <div class="form-row">
-      <label>所属エリア／課<span class="required">*</span></label>
-      <select id="f-area">
-        <option value="">-- エリア／課を選択 --</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <label>表示順</label>
-      <input type="number" id="f-sort" placeholder="例：1" min="0">
-    </div>
-    <div class="modal-btns">
-      <button type="button" class="cancel-btn" onclick="closeModal()">キャンセル</button>
-      <button type="button" class="save-btn" onclick="saveData()">保存</button>
-    </div>
-  </div>
 </div>
 
 <script>
 const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 function showMsg(text,type='success'){
   const el=document.getElementById('msg');
   el.textContent=text;el.className='msg '+type;el.style.display='block';
-  setTimeout(()=>el.style.display='none',3000);
+  setTimeout(()=>{el.style.display='none';},3000);
 }
 
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+
+let areaList=[];
+
 async function loadAreas(){
-  const {data}=await sb.from('areas').select('*,departments(name)').eq('is_active',true).order('sort_order');
+  const res=await apiFetch('areas?is_active=eq.true&select=*,departments(name)&order=sort_order');
+  areaList=await res.json()||[];
+}
+
+function setAreaOptions(selectedId){
   const sel=document.getElementById('f-area');
   sel.innerHTML='<option value="">-- エリア／課を選択 --</option>';
-  (data||[]).forEach(a=>{
+  areaList.forEach(a=>{
     const o=document.createElement('option');
-    o.value=a.id;o.textContent=`${a.code}：${a.name}（${a.departments?.name||''}）`;sel.appendChild(o);
+    o.value=String(a.id);
+    o.textContent=a.code+'：'+a.name+'（'+( a.departments?.name||'')+'）';
+    if(String(a.id)===String(selectedId))o.selected=true;
+    sel.appendChild(o);
   });
 }
 
 async function loadData(){
-  const {data,error}=await sb.from('groups').select('*,areas(code,name,departments(name))').order('sort_order');
-  if(error){showMsg('読み込みエラー：'+error.message,'error');return;}
+  const res=await apiFetch('groups?select=*,areas(code,name,departments(name))&order=sort_order');
+  const data=await res.json();
   const tbody=document.getElementById('list');
   if(!data||data.length===0){
     tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:#94A3B8;">データがありません</td></tr>';
@@ -144,37 +150,38 @@ async function loadData(){
       <td style="text-align:center;">${d.sort_order}</td>
       <td style="text-align:center;"><span class="${d.is_active?'badge-active':'badge-inactive'}">${d.is_active?'有効':'無効'}</span></td>
       <td>
-        <button type="button" class="edit-btn" onclick="openEdit(${d.id})">編集</button>
+        <button type="button" class="edit-btn" onclick="openEdit(${d.id},'${d.code}','${d.name}',${d.area_id||0},${d.sort_order})">編集</button>
         <button type="button" class="toggle-btn ${d.is_active?'deactivate':'activate'}" onclick="toggleActive(${d.id},${d.is_active})">${d.is_active?'無効化':'有効化'}</button>
       </td>
     </tr>
   `).join('');
 }
 
-function openModal(){
-  document.getElementById('modal-title').textContent='グループ追加';
+function openAdd(){
+  document.getElementById('panel-title').textContent='新規グループ追加';
   document.getElementById('edit-id').value='';
   document.getElementById('f-code').value='';
-  document.getElementById('f-name').value='';
-  document.getElementById('f-area').value='';
-  document.getElementById('f-sort').value='';
   document.getElementById('f-code').disabled=false;
-  document.getElementById('modal').classList.add('show');
+  document.getElementById('f-name').value='';
+  document.getElementById('f-sort').value='';
+  setAreaOptions('');
+  document.getElementById('edit-panel').classList.add('show');
+  document.getElementById('f-code').focus();
 }
 
-async function openEdit(id){
-  const {data}=await sb.from('groups').select('*').eq('id',id).single();
-  document.getElementById('modal-title').textContent='グループ編集';
-  document.getElementById('edit-id').value=data.id;
-  document.getElementById('f-code').value=data.code;
-  document.getElementById('f-name').value=data.name;
-  document.getElementById('f-area').value=data.area_id||'';
-  document.getElementById('f-sort').value=data.sort_order;
+function openEdit(id,code,name,areaId,sort){
+  document.getElementById('panel-title').textContent='グループ編集';
+  document.getElementById('edit-id').value=id;
+  document.getElementById('f-code').value=code;
   document.getElementById('f-code').disabled=true;
-  document.getElementById('modal').classList.add('show');
+  document.getElementById('f-name').value=name;
+  document.getElementById('f-sort').value=sort;
+  setAreaOptions(areaId);
+  document.getElementById('edit-panel').classList.add('show');
+  document.getElementById('edit-panel').scrollIntoView({behavior:'smooth'});
 }
 
-function closeModal(){document.getElementById('modal').classList.remove('show');}
+function closePanel(){document.getElementById('edit-panel').classList.remove('show');}
 
 async function saveData(){
   const id=document.getElementById('edit-id').value;
@@ -182,26 +189,32 @@ async function saveData(){
   const name=document.getElementById('f-name').value.trim();
   const area_id=document.getElementById('f-area').value;
   const sort=parseInt(document.getElementById('f-sort').value)||0;
-  if(!code||!name||!area_id){alert('コード・名称・エリア／課は必須です。');return;}
-  const payload={code,name,area_id,sort_order:sort,updated_at:new Date()};
-  let error;
-  if(id){({error}=await sb.from('groups').update(payload).eq('id',id));}
-  else{({error}=await sb.from('groups').insert({...payload,is_active:true}));}
-  if(error){showMsg('保存エラー：'+error.message,'error');return;}
-  closeModal();showMsg(id?'情報を更新しました':'新しいグループを追加しました');loadData();
+  if(!code){alert('コードを入力してください。');return;}
+  if(!name){alert('名称を入力してください。');return;}
+  if(!area_id){alert('エリア／課を選択してください。');return;}
+
+  const payload={name,area_id:parseInt(area_id),sort_order:sort,updated_at:new Date().toISOString()};
+  let res;
+  if(id){
+    res=await apiFetch('groups?id=eq.'+id,'PATCH',payload);
+  } else {
+    res=await apiFetch('groups','POST',{code,...payload,is_active:true});
+  }
+  if(!res.ok){const err=await res.text();showMsg('保存エラー：'+err,'error');return;}
+  location.reload();
 }
 
 async function toggleActive(id,current){
   if(!confirm(current?'無効化しますか？':'有効化しますか？'))return;
-  const {error}=await sb.from('groups').update({is_active:!current}).eq('id',id);
-  if(error){showMsg('更新エラー：'+error.message,'error');return;}
-  showMsg(current?'無効化しました':'有効化しました');loadData();
+  const res=await apiFetch('groups?id=eq.'+id,'PATCH',{is_active:!current});
+  if(!res.ok){showMsg('更新エラー','error');return;}
+  location.reload();
 }
 
 function handleLogout(){if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}}
-document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
-loadAreas();loadData();
+
+async function init(){await loadAreas();await loadData();}
+init();
 </script>
 </body>
 </html>
-
