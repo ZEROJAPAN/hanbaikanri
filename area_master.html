@@ -229,6 +229,9 @@ async function saveData(){
   const department_id=deptSel.value||null;
   const sort=parseInt(document.getElementById('f-sort').value)||0;
 
+  // デバッグ用
+  alert('ID:'+id+'\nコード:'+code+'\n名称:'+name+'\n部門ID:'+department_id+'\n表示順:'+sort);
+
   if(!code){alert('コードを入力してください。');return;}
   if(!name){alert('名称を入力してください。');return;}
   if(!department_id){alert('部門を選択してください。');return;}
