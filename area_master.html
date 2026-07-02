@@ -29,22 +29,30 @@ tr:nth-child(even) td{background:#F8FAFC;}
 .toggle-btn{padding:3px 10px;border:none;border-radius:3px;font-size:11px;cursor:pointer;}
 .toggle-btn.deactivate{background:#FEE2E2;color:#991B1B;}
 .toggle-btn.activate{background:#D1FAE5;color:#065F46;}
-.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;}
-.modal-overlay.show{display:flex;}
-.modal{background:#fff;border-radius:10px;padding:28px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
-.modal-title{font-size:15px;font-weight:bold;color:#1E2761;margin-bottom:18px;padding-bottom:8px;border-bottom:2px solid #1E2761;}
-.form-row{margin-bottom:14px;}
-.form-row label{display:block;font-size:11px;font-weight:bold;color:#475569;margin-bottom:4px;}
-.form-row input,.form-row select{width:100%;padding:8px 10px;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;font-family:'Meiryo','Yu Gothic',sans-serif;}
-.form-row input:focus,.form-row select:focus{border-color:#028090;box-shadow:0 0 0 2px rgba(2,128,144,0.15);}
-.required{color:#DC2626;margin-left:2px;}
-.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+
+/* インライン編集エリア */
+.edit-panel{
+  display:none;background:#EEF2FF;border:2px solid #1E2761;
+  border-radius:8px;padding:16px;margin-bottom:16px;
+}
+.edit-panel.show{display:block;}
+.edit-panel-title{font-size:13px;font-weight:bold;color:#1E2761;margin-bottom:12px;}
+.form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.form-row label{font-size:11px;font-weight:bold;color:#475569;min-width:100px;}
+.form-row input,.form-row select{
+  padding:7px 10px;border:1px solid #CBD5E1;border-radius:5px;
+  font-size:12px;outline:none;min-width:200px;
+  font-family:'Meiryo','Yu Gothic',sans-serif;
+}
+.form-row input:focus,.form-row select:focus{border-color:#028090;}
+.panel-btns{display:flex;gap:8px;margin-top:12px;}
 .save-btn{padding:8px 22px;background:#1E2761;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:bold;cursor:pointer;}
 .save-btn:hover{background:#028090;}
-.cancel-btn{padding:8px 18px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;cursor:pointer;}
+.cancel-btn{padding:8px 18px;background:#fff;color:#475569;border:1px solid #CBD5E1;border-radius:5px;font-size:12px;cursor:pointer;}
 .msg{padding:8px 14px;border-radius:5px;margin-bottom:10px;font-size:12px;display:none;}
 .msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
 .msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+.required{color:#DC2626;}
 </style>
 </head>
 <body>
@@ -63,47 +71,57 @@ tr:nth-child(even) td{background:#F8FAFC;}
   <button type="button" class="nbtn master" onclick="location.href='user_master.html'">ユーザーマスタ</button>
   <button type="button" class="nbtn master" onclick="location.href='rank_master.html'">職制・クラスタマスタ</button>
 </div>
+
 <div class="main">
   <div class="page-title">🗾 エリア／課マスタ</div>
   <div class="msg" id="msg"></div>
-  <button type="button" class="add-btn" onclick="openModal()">＋ 新規エリア／課追加</button>
-  <table>
-    <thead>
-      <tr>
-        <th>コード</th><th>エリア／課名</th><th>所属部門</th><th>表示順</th><th>状態</th><th>操作</th>
-      </tr>
-    </thead>
-    <tbody id="list"></tbody>
-  </table>
-</div>
 
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">エリア／課追加</div>
+  <!-- 追加・編集パネル（インライン） -->
+  <div class="edit-panel" id="edit-panel">
+    <div class="edit-panel-title" id="panel-title">新規追加</div>
     <input type="hidden" id="edit-id">
+
     <div class="form-row">
-      <label>コード<span class="required">*</span></label>
+      <label>コード <span class="required">*</span></label>
       <input type="text" id="f-code" placeholder="例：A001" maxlength="20">
     </div>
     <div class="form-row">
-      <label>エリア／課名<span class="required">*</span></label>
+      <label>エリア／課名 <span class="required">*</span></label>
       <input type="text" id="f-name" placeholder="例：関東エリア" maxlength="100">
     </div>
     <div class="form-row">
-      <label>所属部門<span class="required">*</span></label>
+      <label>所属部門 <span class="required">*</span></label>
       <select id="f-dept">
         <option value="">-- 部門を選択 --</option>
       </select>
     </div>
     <div class="form-row">
       <label>表示順</label>
-      <input type="number" id="f-sort" placeholder="例：1" min="0">
+      <input type="number" id="f-sort" placeholder="例：1" min="0" style="min-width:80px;">
     </div>
-    <div class="modal-btns">
-      <button type="button" class="cancel-btn" onclick="closeModal()">キャンセル</button>
-      <button type="button" class="save-btn" onclick="saveData()">保存</button>
+    <div class="panel-btns">
+      <button type="button" class="save-btn" onclick="saveData()">💾 保存</button>
+      <button type="button" class="cancel-btn" onclick="closePanel()">キャンセル</button>
     </div>
   </div>
+
+  <button type="button" class="add-btn" onclick="openAdd()">＋ 新規エリア／課追加</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>コード</th>
+        <th>エリア／課名</th>
+        <th>所属部門</th>
+        <th>表示順</th>
+        <th>状態</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="list">
+      <tr><td colspan="6" style="text-align:center;padding:20px;color:#94A3B8;">読み込み中...</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <script>
@@ -111,22 +129,34 @@ const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+let deptList=[];
+
 function showMsg(text,type='success'){
   const el=document.getElementById('msg');
   el.textContent=text;el.className='msg '+type;el.style.display='block';
-  setTimeout(()=>el.style.display='none',3000);
+  setTimeout(()=>{el.style.display='none';},3000);
 }
 
-async function loadDepts(){
-  const {data}=await sb.from('departments').select('*').eq('is_active',true).order('sort_order');
+// 部門一覧をセレクトに設定
+function setDeptOptions(selectedId){
   const sel=document.getElementById('f-dept');
   sel.innerHTML='<option value="">-- 部門を選択 --</option>';
-  (data||[]).forEach(d=>{
+  deptList.forEach(d=>{
     const o=document.createElement('option');
-    o.value=d.id;o.textContent=`${d.code}：${d.name}`;sel.appendChild(o);
+    o.value=String(d.id);
+    o.textContent=d.code+'：'+d.name;
+    if(String(d.id)===String(selectedId)) o.selected=true;
+    sel.appendChild(o);
   });
 }
 
+// 部門読み込み
+async function loadDepts(){
+  const {data}=await sb.from('departments').select('*').eq('is_active',true).order('sort_order');
+  deptList=data||[];
+}
+
+// 一覧読み込み
 async function loadData(){
   const {data,error}=await sb.from('areas').select('*,departments(code,name)').order('sort_order');
   if(error){showMsg('読み込みエラー：'+error.message,'error');return;}
@@ -141,69 +171,100 @@ async function loadData(){
       <td>${d.name}</td>
       <td>${d.departments?d.departments.code+'：'+d.departments.name:'－'}</td>
       <td style="text-align:center;">${d.sort_order}</td>
-      <td style="text-align:center;"><span class="${d.is_active?'badge-active':'badge-inactive'}">${d.is_active?'有効':'無効'}</span></td>
+      <td style="text-align:center;">
+        <span class="${d.is_active?'badge-active':'badge-inactive'}">${d.is_active?'有効':'無効'}</span>
+      </td>
       <td>
-        <button type="button" class="edit-btn" onclick="openEdit(${d.id})">編集</button>
+        <button type="button" class="edit-btn" onclick="openEdit(${d.id},'${d.code}','${d.name}',${d.department_id||0},${d.sort_order})">編集</button>
         <button type="button" class="toggle-btn ${d.is_active?'deactivate':'activate'}" onclick="toggleActive(${d.id},${d.is_active})">${d.is_active?'無効化':'有効化'}</button>
       </td>
     </tr>
   `).join('');
 }
 
-function openModal(){
-  document.getElementById('modal-title').textContent='エリア／課追加';
+// 新規追加パネルを開く
+function openAdd(){
+  document.getElementById('panel-title').textContent='新規エリア／課追加';
   document.getElementById('edit-id').value='';
   document.getElementById('f-code').value='';
-  document.getElementById('f-name').value='';
-  document.getElementById('f-dept').value='';
-  document.getElementById('f-sort').value='';
   document.getElementById('f-code').disabled=false;
-  document.getElementById('modal').classList.add('show');
+  document.getElementById('f-name').value='';
+  document.getElementById('f-sort').value='';
+  setDeptOptions('');
+  document.getElementById('edit-panel').classList.add('show');
+  document.getElementById('f-code').focus();
 }
 
-async function openEdit(id){
-  const {data}=await sb.from('areas').select('*').eq('id',id).single();
-  document.getElementById('modal-title').textContent='エリア／課編集';
-  document.getElementById('edit-id').value=data.id;
-  document.getElementById('f-code').value=data.code;
-  document.getElementById('f-name').value=data.name;
-  document.getElementById('f-dept').value=data.department_id||'';
-  document.getElementById('f-sort').value=data.sort_order;
+// 編集パネルを開く（データはHTMLから直接受け取る）
+function openEdit(id,code,name,deptId,sort){
+  document.getElementById('panel-title').textContent='エリア／課編集';
+  document.getElementById('edit-id').value=id;
+  document.getElementById('f-code').value=code;
   document.getElementById('f-code').disabled=true;
-  document.getElementById('modal').classList.add('show');
+  document.getElementById('f-name').value=name;
+  document.getElementById('f-sort').value=sort;
+  setDeptOptions(deptId);
+  document.getElementById('edit-panel').classList.add('show');
+  document.getElementById('f-name').focus();
+  // 画面上部にスクロール
+  document.getElementById('edit-panel').scrollIntoView({behavior:'smooth'});
 }
 
-function closeModal(){document.getElementById('modal').classList.remove('show');}
+function closePanel(){
+  document.getElementById('edit-panel').classList.remove('show');
+}
 
+// 保存
 async function saveData(){
   const id=document.getElementById('edit-id').value;
   const code=document.getElementById('f-code').value.trim();
   const name=document.getElementById('f-name').value.trim();
-  const department_id=document.getElementById('f-dept').value;
+  const deptSel=document.getElementById('f-dept');
+  const department_id=deptSel.value||null;
   const sort=parseInt(document.getElementById('f-sort').value)||0;
-  // 新規時のみ部門必須
-  const editId=document.getElementById('edit-id').value;
-  if(!code||!name){alert('コードと名称は必須です。');return;}
-  if(!editId&&!department_id){alert('部門を選択してください。');return;}
-  const payload={code,name,sort_order:sort,updated_at:new Date()};
-  if(department_id) payload.department_id=department_id;
+
+  if(!code){alert('コードを入力してください。');return;}
+  if(!name){alert('名称を入力してください。');return;}
+  if(!department_id){alert('部門を選択してください。');return;}
+
+  const payload={name,department_id:parseInt(department_id),sort_order:sort,updated_at:new Date().toISOString()};
+
   let error;
-  if(id){({error}=await sb.from('areas').update(payload).eq('id',id));}
-  else{({error}=await sb.from('areas').insert({...payload,is_active:true}));}
-  if(error){showMsg('保存エラー：'+error.message,'error');return;}
-  closeModal();showMsg(id?'情報を更新しました':'新しいエリア／課を追加しました');loadData();
+  if(id){
+    ({error}=await sb.from('areas').update(payload).eq('id',parseInt(id)));
+  } else {
+    ({error}=await sb.from('areas').insert({code,...payload,is_active:true}));
+  }
+
+  if(error){
+    showMsg('保存エラー：'+error.message,'error');
+    return;
+  }
+
+  closePanel();
+  showMsg(id?'エリア／課情報を更新しました':'新しいエリア／課を追加しました');
+  await loadData();
 }
 
+// 有効・無効切り替え
 async function toggleActive(id,current){
   if(!confirm(current?'無効化しますか？':'有効化しますか？'))return;
   const {error}=await sb.from('areas').update({is_active:!current}).eq('id',id);
   if(error){showMsg('更新エラー：'+error.message,'error');return;}
-  showMsg(current?'無効化しました':'有効化しました');loadData();
+  showMsg(current?'無効化しました':'有効化しました');
+  loadData();
 }
 
-function handleLogout(){if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}}
-document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
-loadDepts();loadData();
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+// 初期化
+async function init(){
+  await loadDepts();
+  await loadData();
+}
+init();
 </script>
 </body>
 </html>
