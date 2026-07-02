@@ -181,8 +181,12 @@ async function saveData(){
   const name=document.getElementById('f-name').value.trim();
   const department_id=document.getElementById('f-dept').value;
   const sort=parseInt(document.getElementById('f-sort').value)||0;
-  if(!code||!name||!department_id){alert('コード・名称・部門は必須です。');return;}
-  const payload={code,name,department_id,sort_order:sort,updated_at:new Date()};
+  // 新規時のみ部門必須
+  const editId=document.getElementById('edit-id').value;
+  if(!code||!name){alert('コードと名称は必須です。');return;}
+  if(!editId&&!department_id){alert('部門を選択してください。');return;}
+  const payload={code,name,sort_order:sort,updated_at:new Date()};
+  if(department_id) payload.department_id=department_id;
   let error;
   if(id){({error}=await sb.from('areas').update(payload).eq('id',id));}
   else{({error}=await sb.from('areas').insert({...payload,is_active:true}));}
