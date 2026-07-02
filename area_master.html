@@ -260,17 +260,15 @@ async function saveData(){
       body
     });
 
-    const resText=await res.text();
-    alert('HTTPステータス:'+res.status+'\nレスポンス:'+resText);
-
     if(!res.ok){
+      const resText=await res.text();
       showMsg('保存エラー：'+resText,'error');
       return;
     }
 
-    closePanel();
-    showMsg(id?'エリア／課情報を更新しました':'新しいエリア／課を追加しました');
-    setTimeout(async()=>{ await loadData(); }, 300);
+    // 保存成功→ページをリロードして確実に反映
+    alert(id?'更新しました！':'登録しました！');
+    location.reload();
 
   } catch(e){
     showMsg('通信エラー：'+e.message,'error');
