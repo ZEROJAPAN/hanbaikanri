@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一括登録</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:8px;}
+.nav-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;align-items:center;}
+.nbtn{padding:2px 8px;font-size:11px;font-weight:bold;border:1px solid #555;border-radius:2px;cursor:pointer;background:#ffff99;color:#000;white-space:nowrap;}
+.nbtn.logout{background:#fff;}
+.nbtn.back{background:#fff;border-color:#1E2761;color:#1E2761;}
+
+.main{background:#fff;border-radius:8px;padding:16px;margin-top:6px;}
+.page-title{font-size:16px;font-weight:bold;color:#1E2761;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #1E2761;}
+
+/* タブ */
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap;}
+.tab{
+  padding:8px 16px;border:2px solid #CBD5E1;border-radius:6px 6px 0 0;
+  cursor:pointer;font-size:12px;font-weight:bold;color:#64748B;
+  background:#F1F5F9;border-bottom:none;
+}
+.tab.active{background:#1E2761;color:#fff;border-color:#1E2761;}
+
+/* セクション */
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+.section{
+  border:1px solid #E2E8F0;border-radius:8px;
+  padding:16px;margin-bottom:16px;
+}
+.section-title{
+  font-size:13px;font-weight:bold;color:#1E2761;
+  margin-bottom:12px;padding-bottom:6px;
+  border-bottom:1px solid #E2E8F0;
+  display:flex;align-items:center;gap:8px;
+}
+
+/* ダウンロードボタン */
+.dl-btn{
+  padding:8px 16px;background:#028090;color:#fff;
+  border:none;border-radius:5px;font-size:12px;font-weight:bold;
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+}
+.dl-btn:hover{background:#016070;}
+
+/* アップロードエリア */
+.upload-area{
+  border:2px dashed #CBD5E1;border-radius:8px;
+  padding:20px;text-align:center;
+  background:#F8FAFC;cursor:pointer;
+  transition:all 0.2s;margin-top:10px;
+}
+.upload-area:hover,.upload-area.drag{border-color:#028090;background:#E1F5EE;}
+.upload-area .upload-icon{font-size:28px;margin-bottom:8px;}
+.upload-area .upload-text{font-size:12px;color:#64748B;}
+.upload-area .upload-sub{font-size:10px;color:#94A3B8;margin-top:4px;}
+input[type="file"]{display:none;}
+
+/* プレビュー */
+.preview-area{margin-top:12px;display:none;}
+.preview-title{font-size:11px;font-weight:bold;color:#475569;margin-bottom:6px;}
+.preview-table-wrap{overflow-x:auto;max-height:200px;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{background:#1E2761;color:#fff;padding:5px 8px;text-align:left;white-space:nowrap;position:sticky;top:0;}
+td{padding:5px 8px;border-bottom:1px solid #E2E8F0;}
+tr:nth-child(even) td{background:#F8FAFC;}
+.row-ok td{background:#D1FAE5!important;}
+.row-err td{background:#FEE2E2!important;}
+
+/* 実行ボタン */
+.exec-btn{
+  padding:10px 24px;background:#1E2761;color:#fff;
+  border:none;border-radius:5px;font-size:13px;font-weight:bold;
+  cursor:pointer;margin-top:12px;width:100%;
+}
+.exec-btn:hover{background:#028090;}
+.exec-btn:disabled{background:#94A3B8;cursor:not-allowed;}
+
+/* 結果 */
+.result{
+  margin-top:12px;padding:10px 14px;
+  border-radius:6px;font-size:12px;display:none;
+}
+.result.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.result.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+.result.warning{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;}
+
+/* フォーマット説明 */
+.format-info{
+  background:#EEF2FF;border:1px solid #C7D2FE;
+  border-radius:6px;padding:10px 14px;margin-bottom:10px;
+  font-size:11px;color:#3730A3;
+}
+.format-info code{
+  background:#fff;border:1px solid #C7D2FE;
+  border-radius:3px;padding:1px 4px;font-family:monospace;
+}
+
+.step{
+  display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;
+}
+.step-num{
+  width:22px;height:22px;border-radius:50%;
+  background:#1E2761;color:#fff;font-size:11px;font-weight:bold;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.step-text{font-size:11px;color:#475569;padding-top:3px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="nav-row">
+  <button type="button" class="nbtn back" onclick="location.href='master.html'">◀ マスタ管理に戻る</button>
+  <button type="button" class="nbtn" onclick="location.href='index.html'">メニュー</button>
+  <button type="button" class="nbtn logout" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
+<div class="main">
+  <div class="page-title">📥 マスタ一括登録（CSVインポート）</div>
+
+  <!-- タブ -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('dept')">🏛 部門</div>
+    <div class="tab" onclick="switchTab('area')">🗾 エリア／課</div>
+    <div class="tab" onclick="switchTab('group')">👥 グループ</div>
+    <div class="tab" onclick="switchTab('team')">🤝 チーム</div>
+    <div class="tab" onclick="switchTab('store')">🏪 店舗</div>
+  </div>
+
+  <!-- 部門 -->
+  <div class="tab-content active" id="tab-dept">
+    <div class="section">
+      <div class="section-title">① フォーマットをダウンロード</div>
+      <div class="format-info">
+        <strong>列の順番：</strong>
+        <code>部門コード</code>　<code>部門名</code>　<code>表示順</code><br>
+        <strong>例：</strong> D001,営業部,1
+      </div>
+      <button type="button" class="dl-btn" onclick="downloadCSV('dept')">📥 フォーマットダウンロード（部門）</button>
+    </div>
+    <div class="section">
+      <div class="section-title">② CSVをアップロードして登録</div>
+      <div class="step"><div class="step-num">1</div><div class="step-text">フォーマットをダウンロードしてExcelで開く</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">2行目以降にデータを入力（1行目のヘッダーは消さない）</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">「名前を付けて保存」→「CSV（コンマ区切り）」で保存</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">下のエリアにファイルをドロップまたはクリックして選択</div></div>
+      <div class="upload-area" id="upload-dept" onclick="document.getElementById('file-dept').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,'dept')">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">クリックまたはドラッグ＆ドロップでCSVを選択</div>
+        <div class="upload-sub">対応形式：CSV（UTF-8 / Shift-JIS）</div>
+      </div>
+      <input type="file" id="file-dept" accept=".csv" onchange="onFileSelect(event,'dept')">
+      <div class="preview-area" id="preview-dept">
+        <div class="preview-title">📋 プレビュー（登録前確認）</div>
+        <div class="preview-table-wrap" id="preview-table-dept"></div>
+        <button type="button" class="exec-btn" id="exec-dept" onclick="importData('dept')">✅ 登録実行</button>
+      </div>
+      <div class="result" id="result-dept"></div>
+    </div>
+  </div>
+
+  <!-- エリア／課 -->
+  <div class="tab-content" id="tab-area">
+    <div class="section">
+      <div class="section-title">① フォーマットをダウンロード</div>
+      <div class="format-info">
+        <strong>列の順番：</strong>
+        <code>エリア／課コード</code>　<code>エリア／課名</code>　<code>部門コード</code>　<code>表示順</code><br>
+        <strong>例：</strong> A001,関東エリア,D001,1
+      </div>
+      <button type="button" class="dl-btn" onclick="downloadCSV('area')">📥 フォーマットダウンロード（エリア／課）</button>
+    </div>
+    <div class="section">
+      <div class="section-title">② CSVをアップロードして登録</div>
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('file-area').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,'area')">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">クリックまたはドラッグ＆ドロップでCSVを選択</div>
+        <div class="upload-sub">対応形式：CSV（UTF-8 / Shift-JIS）</div>
+      </div>
+      <input type="file" id="file-area" accept=".csv" onchange="onFileSelect(event,'area')">
+      <div class="preview-area" id="preview-area">
+        <div class="preview-title">📋 プレビュー（登録前確認）</div>
+        <div class="preview-table-wrap" id="preview-table-area"></div>
+        <button type="button" class="exec-btn" id="exec-area" onclick="importData('area')">✅ 登録実行</button>
+      </div>
+      <div class="result" id="result-area"></div>
+    </div>
+  </div>
+
+  <!-- グループ -->
+  <div class="tab-content" id="tab-group">
+    <div class="section">
+      <div class="section-title">① フォーマットをダウンロード</div>
+      <div class="format-info">
+        <strong>列の順番：</strong>
+        <code>グループコード</code>　<code>グループ名</code>　<code>エリア／課コード</code>　<code>表示順</code><br>
+        <strong>例：</strong> G001,新宿グループ,A001,1
+      </div>
+      <button type="button" class="dl-btn" onclick="downloadCSV('group')">📥 フォーマットダウンロード（グループ）</button>
+    </div>
+    <div class="section">
+      <div class="section-title">② CSVをアップロードして登録</div>
+      <div class="upload-area" id="upload-group" onclick="document.getElementById('file-group').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,'group')">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">クリックまたはドラッグ＆ドロップでCSVを選択</div>
+        <div class="upload-sub">対応形式：CSV（UTF-8 / Shift-JIS）</div>
+      </div>
+      <input type="file" id="file-group" accept=".csv" onchange="onFileSelect(event,'group')">
+      <div class="preview-area" id="preview-group">
+        <div class="preview-title">📋 プレビュー（登録前確認）</div>
+        <div class="preview-table-wrap" id="preview-table-group"></div>
+        <button type="button" class="exec-btn" id="exec-group" onclick="importData('group')">✅ 登録実行</button>
+      </div>
+      <div class="result" id="result-group"></div>
+    </div>
+  </div>
+
+  <!-- チーム -->
+  <div class="tab-content" id="tab-team">
+    <div class="section">
+      <div class="section-title">① フォーマットをダウンロード</div>
+      <div class="format-info">
+        <strong>列の順番：</strong>
+        <code>チームコード</code>　<code>チーム名</code>　<code>グループコード</code>　<code>表示順</code><br>
+        <strong>例：</strong> T001,新宿チーム,G001,1
+      </div>
+      <button type="button" class="dl-btn" onclick="downloadCSV('team')">📥 フォーマットダウンロード（チーム）</button>
+    </div>
+    <div class="section">
+      <div class="section-title">② CSVをアップロードして登録</div>
+      <div class="upload-area" id="upload-team" onclick="document.getElementById('file-team').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,'team')">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">クリックまたはドラッグ＆ドロップでCSVを選択</div>
+        <div class="upload-sub">対応形式：CSV（UTF-8 / Shift-JIS）</div>
+      </div>
+      <input type="file" id="file-team" accept=".csv" onchange="onFileSelect(event,'team')">
+      <div class="preview-area" id="preview-team">
+        <div class="preview-title">📋 プレビュー（登録前確認）</div>
+        <div class="preview-table-wrap" id="preview-table-team"></div>
+        <button type="button" class="exec-btn" id="exec-team" onclick="importData('team')">✅ 登録実行</button>
+      </div>
+      <div class="result" id="result-team"></div>
+    </div>
+  </div>
+
+  <!-- 店舗 -->
+  <div class="tab-content" id="tab-store">
+    <div class="section">
+      <div class="section-title">① フォーマットをダウンロード</div>
+      <div class="format-info">
+        <strong>列の順番：</strong>
+        <code>店舗コード</code>　<code>店舗名</code>　<code>チームコード</code>　<code>電話番号</code>　<code>住所</code>　<code>表示順</code><br>
+        <strong>例：</strong> S001,新宿店,T001,03-1234-5678,東京都新宿区...,1
+      </div>
+      <button type="button" class="dl-btn" onclick="downloadCSV('store')">📥 フォーマットダウンロード（店舗）</button>
+    </div>
+    <div class="section">
+      <div class="section-title">② CSVをアップロードして登録</div>
+      <div class="upload-area" id="upload-store" onclick="document.getElementById('file-store').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,'store')">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">クリックまたはドラッグ＆ドロップでCSVを選択</div>
+        <div class="upload-sub">対応形式：CSV（UTF-8 / Shift-JIS）</div>
+      </div>
+      <input type="file" id="file-store" accept=".csv" onchange="onFileSelect(event,'store')">
+      <div class="preview-area" id="preview-store">
+        <div class="preview-title">📋 プレビュー（登録前確認）</div>
+        <div class="preview-table-wrap" id="preview-table-store"></div>
+        <button type="button" class="exec-btn" id="exec-store" onclick="importData('store')">✅ 登録実行</button>
+      </div>
+      <div class="result" id="result-store"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+// CSVフォーマット定義
+const FORMATS={
+  dept: {
+    headers:['部門コード','部門名','表示順'],
+    sample:[['D001','営業部','1'],['D002','管理部','2']],
+    filename:'部門マスタ_フォーマット.csv'
+  },
+  area: {
+    headers:['エリア／課コード','エリア／課名','部門コード','表示順'],
+    sample:[['A001','関東エリア','D001','1'],['A002','関西エリア','D001','2']],
+    filename:'エリア課マスタ_フォーマット.csv'
+  },
+  group: {
+    headers:['グループコード','グループ名','エリア／課コード','表示順'],
+    sample:[['G001','新宿グループ','A001','1'],['G002','渋谷グループ','A001','2']],
+    filename:'グループマスタ_フォーマット.csv'
+  },
+  team: {
+    headers:['チームコード','チーム名','グループコード','表示順'],
+    sample:[['T001','新宿チームA','G001','1'],['T002','新宿チームB','G001','2']],
+    filename:'チームマスタ_フォーマット.csv'
+  },
+  store: {
+    headers:['店舗コード','店舗名','チームコード','電話番号','住所','表示順'],
+    sample:[['S001','新宿店','T001','03-1234-5678','東京都新宿区...','1']],
+    filename:'店舗マスタ_フォーマット.csv'
+  },
+};
+
+let parsedData={};
+
+// タブ切り替え
+function switchTab(type){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const types=['dept','area','group','team','store'];
+    t.classList.toggle('active', types[i]===type);
+  });
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+type).classList.add('active');
+}
+
+// CSVダウンロード
+function downloadCSV(type){
+  const fmt=FORMATS[type];
+  const bom='\uFEFF';
+  const rows=[fmt.headers,...fmt.sample];
+  const csv=bom+rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=fmt.filename;a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ドラッグ
+function onDragOver(e){e.preventDefault();}
+function onDrop(e,type){
+  e.preventDefault();
+  const file=e.dataTransfer.files[0];
+  if(file)parseCSV(file,type);
+}
+function onFileSelect(e,type){
+  const file=e.target.files[0];
+  if(file)parseCSV(file,type);
+}
+
+// CSV解析
+function parseCSV(file,type){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    let text=e.target.result;
+    // Shift-JIS対応（文字化け検出）
+    if(text.includes('ï¿½')){
+      const reader2=new FileReader();
+      reader2.onload=function(e2){
+        processCSV(e2.target.result,type);
+      };
+      reader2.readAsText(file,'Shift-JIS');
+    } else {
+      processCSV(text,type);
+    }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function processCSV(text,type){
+  const lines=text.trim().split('\n').map(l=>l.replace(/\r/,''));
+  if(lines.length<2){
+    showResult(type,'CSVにデータがありません。','error');return;
+  }
+  // 1行目はヘッダー（スキップ）
+  const rows=lines.slice(1).filter(l=>l.trim()).map(l=>{
+    // カンマ区切り（ダブルクォート対応）
+    return l.split(',').map(v=>v.replace(/^"|"$/g,'').trim());
+  });
+  parsedData[type]=rows;
+  showPreview(type,rows);
+}
+
+function showPreview(type,rows){
+  const fmt=FORMATS[type];
+  const area=document.getElementById('preview-'+type);
+  const tableWrap=document.getElementById('preview-table-'+type);
+  area.style.display='block';
+
+  let html=`<table><thead><tr><th>行</th>`;
+  fmt.headers.forEach(h=>html+=`<th>${h}</th>`);
+  html+=`<th>状態</th></tr></thead><tbody>`;
+
+  rows.forEach((row,i)=>{
+    const ok=row.length>=fmt.headers.length&&row[0]&&row[1];
+    html+=`<tr class="${ok?'row-ok':'row-err'}"><td>${i+2}</td>`;
+    row.forEach(v=>html+=`<td>${v||'－'}</td>`);
+    // 列が足りない場合補完
+    for(let j=row.length;j<fmt.headers.length;j++) html+=`<td>－</td>`;
+    html+=`<td>${ok?'✅ OK':'❌ エラー'}</td></tr>`;
+  });
+  html+=`</tbody></table>`;
+  tableWrap.innerHTML=html;
+
+  const errCount=rows.filter(r=>!r[0]||!r[1]).length;
+  if(errCount>0){
+    showResult(type,`⚠️ ${errCount}行にエラーがあります。コードと名称は必須です。確認してください。`,'warning');
+  } else {
+    showResult(type,`✅ ${rows.length}件のデータを確認しました。「登録実行」で一括登録します。`,'success');
+  }
+}
+
+// 一括登録実行
+async function importData(type){
+  const rows=parsedData[type];
+  if(!rows||rows.length===0){alert('CSVを先に選択してください。');return;}
+
+  const btn=document.getElementById('exec-'+type);
+  btn.disabled=true;btn.textContent='登録中...';
+
+  try{
+    let successCount=0,errorCount=0,errors=[];
+
+    if(type==='dept'){
+      for(const row of rows){
+        const [code,name,sort]=row;
+        if(!code||!name){errorCount++;continue;}
+        const {error}=await sb.from('departments').upsert({
+          code,name,sort_order:parseInt(sort)||0,is_active:true
+        },{onConflict:'code'});
+        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
+        else successCount++;
+      }
+    }
+    else if(type==='area'){
+      // 部門コード→IDの変換
+      const {data:depts}=await sb.from('departments').select('id,code');
+      const deptMap=Object.fromEntries((depts||[]).map(d=>[d.code,d.id]));
+      for(const row of rows){
+        const [code,name,deptCode,sort]=row;
+        if(!code||!name){errorCount++;continue;}
+        const department_id=deptMap[deptCode]||null;
+        if(deptCode&&!department_id){errors.push(`${code}：部門コード「${deptCode}」が見つかりません`);errorCount++;continue;}
+        const {error}=await sb.from('areas').upsert({
+          code,name,department_id,sort_order:parseInt(sort)||0,is_active:true
+        },{onConflict:'code'});
+        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
+        else successCount++;
+      }
+    }
+    else if(type==='group'){
+      const {data:areas}=await sb.from('areas').select('id,code');
+      const areaMap=Object.fromEntries((areas||[]).map(a=>[a.code,a.id]));
+      for(const row of rows){
+        const [code,name,areaCode,sort]=row;
+        if(!code||!name){errorCount++;continue;}
+        const area_id=areaMap[areaCode]||null;
+        if(areaCode&&!area_id){errors.push(`${code}：エリアコード「${areaCode}」が見つかりません`);errorCount++;continue;}
+        const {error}=await sb.from('groups').upsert({
+          code,name,area_id,sort_order:parseInt(sort)||0,is_active:true
+        },{onConflict:'code'});
+        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
+        else successCount++;
+      }
+    }
+    else if(type==='team'){
+      const {data:groups}=await sb.from('groups').select('id,code');
+      const groupMap=Object.fromEntries((groups||[]).map(g=>[g.code,g.id]));
+      for(const row of rows){
+        const [code,name,groupCode,sort]=row;
+        if(!code||!name){errorCount++;continue;}
+        const group_id=groupMap[groupCode]||null;
+        if(groupCode&&!group_id){errors.push(`${code}：グループコード「${groupCode}」が見つかりません`);errorCount++;continue;}
+        const {error}=await sb.from('teams').upsert({
+          code,name,group_id,sort_order:parseInt(sort)||0,is_active:true
+        },{onConflict:'code'});
+        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
+        else successCount++;
+      }
+    }
+    else if(type==='store'){
+      const {data:teams}=await sb.from('teams').select('id,code');
+      const teamMap=Object.fromEntries((teams||[]).map(t=>[t.code,t.id]));
+      for(const row of rows){
+        const [code,name,teamCode,tel,address,sort]=row;
+        if(!code||!name){errorCount++;continue;}
+        const team_id=teamMap[teamCode]||null;
+        const {error}=await sb.from('stores').upsert({
+          code,name,team_id,tel:tel||null,address:address||null,
+          sort_order:parseInt(sort)||0,is_active:true
+        },{onConflict:'code'});
+        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
+        else successCount++;
+      }
+    }
+
+    let msg=`✅ ${successCount}件を登録しました。`;
+    if(errorCount>0){
+      msg+=`\n❌ ${errorCount}件でエラーが発生しました。\n`+errors.join('\n');
+      showResult(type,msg,'warning');
+    } else {
+      showResult(type,msg,'success');
+    }
+
+  } catch(e){
+    showResult(type,'登録中にエラーが発生しました：'+e.message,'error');
+  }
+
+  btn.disabled=false;btn.textContent='✅ 登録実行';
+}
+
+function showResult(type,msg,cls){
+  const el=document.getElementById('result-'+type);
+  el.textContent=msg;
+  el.className='result '+cls;
+  el.style.display='block';
+  el.style.whiteSpace='pre-line';
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+</script>
+</body>
+</html>
