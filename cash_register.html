@@ -317,6 +317,18 @@ async function loadTodayData(){
 }
 
 async function handleSave(){
+  // 過不足チェック
+  const regCashCheck=parseInt(document.getElementById('register-cash').textContent.replace(/,/g,'')||0);
+  const hqDepCheck=numV('hq-deposit');
+  const withdrawalCheck=numV('withdrawal');
+  const todaysAmtCheck=carryOver+hqDepCheck+shopSales-purchaseAmt-withdrawalCheck;
+  const shortageCheck=todaysAmtCheck-regCashCheck;
+
+  if(shortageCheck!==0){
+    const ok=confirm(`過不足金が発生しています。\n過不足：${fmt(shortageCheck)}円\n\nこのまま登録しますか？`);
+    if(!ok)return;
+  }
+
   const btn=document.getElementById('reg-btn');
   btn.disabled=true;btn.textContent='登録中...';
 
