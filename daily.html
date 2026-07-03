@@ -36,9 +36,10 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;back
 .tbl-outer{
   flex:1;
   background:#fff;border-radius:8px;padding:10px;
-  overflow:auto;
+  overflow:scroll;
   max-height:calc(100vh - 200px);
   scrollbar-width:auto;scrollbar-color:#888 #ddd;
+  -webkit-overflow-scrolling:touch;
 }
 .tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
 .tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
@@ -198,51 +199,51 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
       </colgroup>
       <thead>
         <tr>
-          <th rowspan="2" class="name-th">商品名</th>
-          <th colspan="2" class="buy-hdr">買取</th>
-          <th colspan="2">キャンセル</th>
-          <th colspan="2">店売り</th>
-          <th colspan="2">店売り（免税）</th>
-          <th colspan="2">本店</th>
-          <th colspan="2">楽天国内</th>
-          <th colspan="2">楽天海外（免税）</th>
-          <th colspan="2">YahooShop</th>
-          <th colspan="2">ヤフオク</th>
-          <th colspan="2">Wowma!</th>
-          <th colspan="2">メルカリ</th>
-          <th colspan="2">ebay（免税）</th>
-          <th colspan="2">LuxUness</th>
-          <th colspan="2">Amazon</th>
-          <th colspan="2">サブスク</th>
-          <th colspan="2">ラクマ</th>
-          <th colspan="2">Qoo10</th>
-          <th colspan="2">GLOBAZONE</th>
-          <th colspan="2">オークション</th>
-          <th colspan="2">WEB販売</th>
-          <th colspan="2">その他販売</th>
+          <th rowspan="2" class="name-th" style="position:sticky;top:0;left:0;z-index:6;">商品名</th>
+          <th colspan="2" class="buy-hdr" style="position:sticky;top:0;z-index:3;">買取</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">キャンセル</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">店売り</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">店売り（免税）</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">本店</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">楽天国内</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">楽天海外（免税）</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">YahooShop</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">ヤフオク</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">Wowma!</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">メルカリ</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">ebay（免税）</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">LuxUness</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">Amazon</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">サブスク</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">ラクマ</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">Qoo10</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">GLOBAZONE</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">オークション</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">WEB販売</th>
+          <th colspan="2" style="position:sticky;top:0;z-index:3;">その他販売</th>
         </tr>
-        <tr>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
-          <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
+        <tr id="hdr-row2">
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:0;z-index:3;">件数</th><th class="amt-hdr" style="position:sticky;top:0;z-index:3;">金額</th>
         </tr>
       </thead>
       <tbody id="tbl-body"></tbody>
@@ -583,7 +584,15 @@ async function init(){
     await loadExistingData();
   });
 
-  // ヘッダー固定完了
+  // 2行目のtopを1行目の高さに合わせる
+  setTimeout(()=>{
+    const row1=document.querySelector('#tbl-main thead tr:first-child');
+    const row2=document.getElementById('hdr-row2');
+    if(row1&&row2){
+      const h=row1.getBoundingClientRect().height;
+      row2.querySelectorAll('th').forEach(th=>{th.style.top=h+'px';});
+    }
+  },300);
 }
 
 init();
