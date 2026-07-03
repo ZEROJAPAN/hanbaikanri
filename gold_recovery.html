@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地金回収 - ゼロジャパン</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.back-btn:hover{background:#EEF2FF;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.store-name{font-size:12px;font-weight:bold;color:#9FE1CB;}
+.date-name{font-size:12px;font-weight:bold;color:#fff;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+
+/* 回収日バッジ */
+.recovery-bar{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 14px;border-radius:6px;margin-bottom:8px;
+  font-size:12px;font-weight:bold;
+}
+.recovery-bar.is-day{background:#D1FAE5;border:2px solid #059669;color:#065F46;}
+.recovery-bar.not-day{background:#FEE2E2;border:2px solid #DC2626;color:#991B1B;}
+
+.main{background:#fff;border-radius:8px;padding:14px;}
+
+/* テーブル */
+.tbl-wrap{overflow-x:auto;}
+table{border-collapse:collapse;font-size:11px;width:100%;}
+th{background:#1E2761;color:#fff;padding:5px 8px;text-align:center;white-space:nowrap;border:1px solid #2D4FBA;}
+th.pink{background:#C06080;}
+td{padding:4px 6px;border:1px solid #ddd;vertical-align:middle;white-space:nowrap;}
+td.metal-name{background:#d0f0f8;font-size:11px;font-weight:bold;width:80px;}
+td.unit{background:#f0f0f0;font-size:10px;color:#666;width:35px;text-align:center;}
+td.carry{background:#ffe0e0;text-align:right;width:90px;font-size:11px;}
+td.result{background:#ffff88;text-align:right;width:90px;font-size:11px;font-weight:bold;}
+td.next{background:#ffff00;text-align:right;width:90px;font-size:11px;font-weight:bold;}
+tr:hover td{filter:brightness(0.97);}
+
+/* 入力 */
+.inp{
+  width:85px;text-align:right;font-size:11px;
+  border:1px solid #aaa;border-radius:2px;
+  padding:2px 4px;outline:none;background:#fff;
+}
+.inp:focus{border-color:#1E2761;}
+
+/* ボタン */
+.btn-area{display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap;}
+.recover-btn{
+  padding:8px 24px;font-size:13px;font-weight:bold;
+  background:linear-gradient(180deg,#DC2626,#991B1B);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 4px 0 #7F1D1D;
+}
+.recover-btn:hover{background:linear-gradient(180deg,#EF4444,#B91C1C);}
+.recover-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #7F1D1D;}
+.recover-btn:disabled{background:#94A3B8;box-shadow:none;cursor:not-allowed;opacity:0.6;}
+
+.save-btn{
+  padding:8px 24px;font-size:13px;font-weight:bold;
+  background:linear-gradient(180deg,#2D4FBA,#1E2761);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 4px 0 #0F1640;
+}
+.save-btn:hover{background:linear-gradient(180deg,#3D6FCA,#2D3E8F);}
+.save-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0F1640;}
+.save-btn:disabled{background:#94A3B8;box-shadow:none;cursor:not-allowed;}
+
+.clear-btn{
+  padding:8px 16px;font-size:12px;font-weight:bold;
+  background:linear-gradient(180deg,#FF6666,#CC2222);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 3px 0 #881111;
+}
+.clear-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #881111;}
+
+.msg{padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:11px;display:none;}
+.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button type="button" class="back-btn" onclick="location.href='daily.html'">◀ 日報に戻る</button>
+    <div class="topbar-title">💰 地金回収</div>
+  </div>
+  <div class="topbar-right">
+    <span class="store-name" id="store-name"></span>
+    <span class="date-name" id="date-name"></span>
+    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
+</div>
+
+<!-- 回収日バッジ -->
+<div class="recovery-bar" id="recovery-bar">確認中...</div>
+
+<div class="msg" id="msg"></div>
+
+<div class="main">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:80px;">金種</th>
+          <th style="width:35px;"></th>
+          <th class="pink">前日繰越</th>
+          <th>本日</th>
+          <th>商品化重量</th>
+          <th>つぶし重量</th>
+          <th>製品から戻し</th>
+          <th class="pink">回収分</th>
+          <th style="background:#cccc00;color:#000;">翌日繰越</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <div class="btn-area">
+    <button type="button" class="recover-btn" id="recover-btn" onclick="handleRecover()" disabled>🔄 回収する</button>
+    <button type="button" class="save-btn" id="save-btn" onclick="handleSave()" disabled>💾 回収しないで登録</button>
+    <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+
+function showMsg(text,type='success'){
+  const el=document.getElementById('msg');
+  el.textContent=text;el.className='msg '+type;el.style.display='block';
+  setTimeout(()=>el.style.display='none',4000);
+}
+
+function fmtNum(v){
+  const n=parseFloat(v||0);
+  return isNaN(n)?'0.00':n.toFixed(2);
+}
+function numVal(id){
+  return parseFloat(document.getElementById(id)?.value||0)||0;
+}
+
+const params=new URLSearchParams(location.search);
+const reportDate=params.get('date')||new Date().toISOString().slice(0,10);
+const storeId=params.get('store')||'';
+const storeName=localStorage.getItem('store')||'';
+
+let metalTypes=[];
+let isRecoveryDay=false;
+let carryOverData={};
+
+function showMsg2(text,type='success'){
+  const el=document.getElementById('msg');
+  el.textContent=text;el.className='msg '+type;el.style.display='block';
+  setTimeout(()=>el.style.display='none',4000);
+}
+
+// 回収日かどうか確認
+async function checkRecoveryDay(){
+  const res=await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&or=(store_id.is.null,store_id.eq.${storeId})`);
+  const data=await res.json()||[];
+  isRecoveryDay=data.length>0;
+  const bar=document.getElementById('recovery-bar');
+  if(isRecoveryDay){
+    bar.className='recovery-bar is-day';
+    bar.textContent='✅ 本日（'+reportDate+'）は回収日です。「回収する」ボタンが使えます。';
+    document.getElementById('recover-btn').disabled=false;
+  } else {
+    bar.className='recovery-bar not-day';
+    bar.textContent='❌ 本日（'+reportDate+'）は回収日ではありません。「回収しないで登録」のみ使えます。';
+  }
+  document.getElementById('save-btn').disabled=false;
+}
+
+// 前日繰越を取得（直近の登録データから）
+async function loadCarryOver(){
+  if(!storeId)return;
+  // 本日より前の最新データを取得
+  const res=await apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=lt.${reportDate}&order=record_date.desc&limit=100&select=*`);
+  const data=await res.json()||[];
+  // 金種ごとに最新の翌日繰越を取得
+  data.forEach(row=>{
+    if(!carryOverData[row.metal_type_id]){
+      carryOverData[row.metal_type_id]=row.next_carry_over||0;
+    }
+  });
+}
+
+// 本日のデータを読み込む
+async function loadTodayData(){
+  if(!storeId)return;
+  const res=await apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=eq.${reportDate}&select=*`);
+  const data=await res.json()||[];
+  data.forEach(row=>{
+    const id=row.metal_type_id;
+    const todayEl=document.getElementById('today_'+id);
+    const prodEl=document.getElementById('prod_'+id);
+    const crushEl=document.getElementById('crush_'+id);
+    const retEl=document.getElementById('ret_'+id);
+    if(todayEl)todayEl.value=row.today_weight||0;
+    if(prodEl)prodEl.value=row.product_weight||0;
+    if(crushEl)crushEl.value=row.crush_weight||0;
+    if(retEl)retEl.value=row.return_weight||0;
+    recalcRow(id);
+  });
+}
+
+// 行を再計算
+function recalcRow(id){
+  const carry=carryOverData[id]||0;
+  const today=numVal('today_'+id);
+  const prod=numVal('prod_'+id);
+  const crush=numVal('crush_'+id);
+  const ret=numVal('ret_'+id);
+  const recovery=carry+today-prod+ret;
+  const next=carry+today-prod+ret;
+  const carryEl=document.getElementById('carry_'+id);
+  const recEl=document.getElementById('rec_'+id);
+  const nextEl=document.getElementById('next_'+id);
+  if(carryEl)carryEl.textContent=fmtNum(carry);
+  if(recEl)recEl.textContent=fmtNum(recovery);
+  if(nextEl)nextEl.textContent=fmtNum(next);
+}
+
+// テーブル構築
+function buildTable(){
+  const tbody=document.getElementById('tbl-body');
+  let h='';
+  metalTypes.forEach(m=>{
+    const carry=carryOverData[m.id]||0;
+    h+=`<tr>
+      <td class="metal-name">${m.name}</td>
+      <td class="unit">重量</td>
+      <td class="carry" id="carry_${m.id}">${fmtNum(carry)}</td>
+      <td><input type="number" step="0.01" class="inp" id="today_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
+      <td><input type="number" step="0.01" class="inp" id="prod_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
+      <td><input type="number" step="0.01" class="inp" id="crush_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
+      <td><input type="number" step="0.01" class="inp" id="ret_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
+      <td class="result" id="rec_${m.id}">${fmtNum(carry)}</td>
+      <td class="next" id="next_${m.id}">${fmtNum(carry)}</td>
+    </tr>`;
+  });
+  tbody.innerHTML=h;
+}
+
+// 回収しないで登録
+async function handleSave(){
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true;btn.textContent='登録中...';
+  await saveData(false);
+  btn.disabled=false;btn.textContent='💾 回収しないで登録';
+}
+
+// 回収する
+async function handleRecover(){
+  if(!confirm('回収を確定します。回収分をリセットしてよいですか？'))return;
+  const btn=document.getElementById('recover-btn');
+  btn.disabled=true;btn.textContent='処理中...';
+  await saveData(true);
+  btn.disabled=false;btn.textContent='🔄 回収する';
+}
+
+async function saveData(isRecover){
+  try{
+    // 既存データ削除
+    await apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=eq.${reportDate}`,'DELETE');
+
+    const records=[];
+    metalTypes.forEach(m=>{
+      const carry=carryOverData[m.id]||0;
+      const today=numVal('today_'+m.id);
+      const prod=numVal('prod_'+m.id);
+      const crush=numVal('crush_'+m.id);
+      const ret=numVal('ret_'+m.id);
+      const recovery=carry+today-prod+ret;
+      // 回収する場合は翌日繰越=0、しない場合は合計値
+      const nextCarry=isRecover?0:recovery;
+
+      records.push({
+        store_id:parseInt(storeId),
+        metal_type_id:m.id,
+        record_date:reportDate,
+        carry_over:carry,
+        today_weight:today,
+        product_weight:prod,
+        crush_weight:crush,
+        return_weight:ret,
+        recovery_weight:recovery,
+        next_carry_over:nextCarry,
+        is_recovered:isRecover,
+      });
+    });
+
+    const res=await apiFetch('gold_recovery','POST',records);
+    if(!res.ok){const err=await res.text();showMsg('登録エラー：'+err,'error');return;}
+
+    if(isRecover){
+      // 翌日繰越を0にリセット
+      metalTypes.forEach(m=>{
+        carryOverData[m.id]=0;
+        const carryEl=document.getElementById('carry_'+m.id);
+        if(carryEl)carryEl.textContent='0.00';
+      });
+      showMsg('✅ 回収を確定しました。翌日繰越をリセットしました。','success');
+    } else {
+      // 翌日繰越を更新
+      metalTypes.forEach(m=>{
+        const carry=carryOverData[m.id]||0;
+        const today=numVal('today_'+m.id);
+        const prod=numVal('prod_'+m.id);
+        const ret=numVal('ret_'+m.id);
+        carryOverData[m.id]=carry+today-prod+ret;
+      });
+      showMsg('✅ 登録しました。（回収なし）','success');
+    }
+  }catch(e){
+    showMsg('通信エラー：'+e.message,'error');
+  }
+}
+
+function handleClear(){
+  if(!confirm('入力内容をクリアしますか？'))return;
+  metalTypes.forEach(m=>{
+    ['today_','prod_','crush_','ret_'].forEach(p=>{
+      const el=document.getElementById(p+m.id);
+      if(el)el.value=0;
+    });
+    recalcRow(m.id);
+  });
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+async function init(){
+  document.getElementById('store-name').textContent=storeName;
+  document.getElementById('date-name').textContent=reportDate;
+
+  // 地金金種取得
+  const res=await apiFetch('precious_metal_types?is_active=eq.true&order=sort_order');
+  metalTypes=await res.json()||[];
+
+  // 回収日チェック・前日繰越取得・テーブル構築
+  await Promise.all([checkRecoveryDay(), loadCarryOver()]);
+  buildTable();
+  await loadTodayData();
+}
+
+init();
+</script>
+</body>
+</html>
