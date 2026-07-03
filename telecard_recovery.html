@@ -82,7 +82,7 @@ tr.subtotal-row td{background:#ffff99!important;font-weight:bold;}
           <th>本日買取</th>
           <th class="pink">回収枚数</th>
           <th>店頭販売</th>
-          <th colspan="2" class="yellow">翌日繰越</th>
+          <th class="yellow">翌日繰越</th>
           <th class="yellow">累計枚数</th>
         </tr>
         <tr>
@@ -92,7 +92,6 @@ tr.subtotal-row td{background:#ffff99!important;font-weight:bold;}
           <th class="pink">枚数</th>
           <th>枚数</th>
           <th class="yellow">枚数</th>
-          <th class="yellow">金額</th>
           <th class="yellow">枚数</th>
         </tr>
       </thead>
@@ -240,10 +239,9 @@ function buildTable(){
     <td class="item-name subtotal">テレカ計</td>
     <td class="carry" id="sub_telecard_carry">0</td>
     <td class="result" id="sub_telecard_today">0</td>
-    <td class="gray" id="sub_telecard_rec">0</td>
+    <td class="gray" id="sub_telecard_rec" style="text-align:right;">0</td>
     <td class="result" id="sub_telecard_shop">0</td>
     <td class="cumul" id="sub_telecard_next">0</td>
-    <td class="gray"></td>
     <td class="cumul">0</td>
   </tr>`;
 
@@ -256,10 +254,9 @@ function buildTable(){
     <td class="item-name subtotal">金券計</td>
     <td class="carry" id="sub_giftcard_carry">0</td>
     <td class="result" id="sub_giftcard_today">0</td>
-    <td class="gray" id="sub_giftcard_rec">0</td>
+    <td class="gray" id="sub_giftcard_rec" style="text-align:right;">0</td>
     <td class="result" id="sub_giftcard_shop">0</td>
     <td class="cumul" id="sub_giftcard_next">0</td>
-    <td class="gray"></td>
     <td class="cumul">0</td>
   </tr>`;
 
@@ -283,7 +280,6 @@ function buildRow(c){
     <td><input type="number" class="inp" id="rec_${c.id}" value="0" oninput="recalcRow(${c.id});recalcSubtotals()"></td>
     <td><input type="number" class="inp" id="shop_${c.id}" value="0" oninput="recalcRow(${c.id});recalcSubtotals()"></td>
     <td class="cumul" id="next_${c.id}">${carry}</td>
-    <td class="gray"></td>
     <td class="cumul">0</td>
   </tr>`;
 }
