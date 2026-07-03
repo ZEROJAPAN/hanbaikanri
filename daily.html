@@ -35,7 +35,7 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;back
 /* テーブルラッパー */
 .tbl-outer{
   flex:1;
-  background:#fff;border-radius:8px;padding:10px;
+  background:#fff;border-radius:8px;padding:0 10px 10px 10px;
   overflow:scroll;
   max-height:calc(100vh - 200px);
   scrollbar-width:auto;scrollbar-color:#888 #ddd;
@@ -66,7 +66,7 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
 .right-btns{
   display:flex;flex-direction:column;gap:6px;
   min-width:110px;
-  background:#fff;border-radius:8px;padding:10px;
+  background:#fff;border-radius:8px;padding:0 10px 10px 10px;
 }
 .right-btns-title{
   font-size:10px;font-weight:bold;color:#64748B;
@@ -223,28 +223,28 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
           <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">その他販売</th>
         </tr>
         <tr>
-          <th class="name-th" style="position:sticky;top:var(--hdr1-h,26px);left:0;z-index:6;background:#1E2761;">件数・金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,26px);z-index:3;background:#4455aa;">金額</th>
+          <th class="name-th" style="position:sticky;top:var(--hdr1-h,22px);left:0;z-index:6;background:#1E2761;"></th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
         </tr>
       </thead>
       <tbody id="tbl-body"></tbody>
@@ -586,13 +586,17 @@ async function init(){
   });
 
   // CSS変数で2行目のtopを設定
-  setTimeout(()=>{
+  // CSS変数で2行目のtopを設定
+  function setHdrTop(){
     const row1=document.querySelector('#tbl-main thead tr:first-child');
-    if(row1){
+    if(row1&&row1.offsetHeight>0){
       const h=row1.offsetHeight;
       document.getElementById('tbl-main').style.setProperty('--hdr1-h', h+'px');
+    } else {
+      setTimeout(setHdrTop,100);
     }
-  },200);
+  }
+  setTimeout(setHdrTop,100);
 }
 
 init();
