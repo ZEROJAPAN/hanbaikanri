@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>回収カレンダー - ゼロジャパン</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+
+/* トップバー */
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.back-btn:hover{background:#EEF2FF;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+
+.main{background:#fff;border-radius:8px;padding:14px;}
+
+/* 店舗選択 */
+.ctrl-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.ctrl-label{font-size:12px;font-weight:bold;color:#475569;}
+.store-sel{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;min-width:180px;}
+.store-sel:focus{border-color:#1E2761;}
+
+/* カレンダーナビ */
+.cal-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px;}
+.nav-btn{
+  padding:6px 14px;background:linear-gradient(180deg,#2D4FBA,#1E2761);
+  color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:bold;
+  cursor:pointer;box-shadow:0 3px 0 #0F1640;
+}
+.nav-btn:hover{background:linear-gradient(180deg,#3D6FCA,#2D3E8F);}
+.nav-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #0F1640;}
+.cal-title{font-size:16px;font-weight:bold;color:#1E2761;min-width:140px;text-align:center;}
+
+/* カレンダー */
+.calendar{width:100%;border-collapse:collapse;max-width:520px;margin:0 auto;}
+.calendar th{
+  background:#1E2761;color:#fff;
+  padding:8px;text-align:center;font-size:12px;
+}
+.calendar th.sun{background:#CC2222;}
+.calendar th.sat{background:#1B6FCC;}
+.calendar td{
+  border:1px solid #E2E8F0;
+  padding:6px;text-align:right;
+  vertical-align:top;height:52px;
+  cursor:pointer;
+  font-size:13px;color:#334155;
+  position:relative;
+  transition:background 0.1s;
+}
+.calendar td:hover{background:#EEF2FF;}
+.calendar td.empty{background:#F8FAFC;cursor:default;}
+.calendar td.empty:hover{background:#F8FAFC;}
+.calendar td.sun{color:#DC2626;}
+.calendar td.sat{color:#2563EB;}
+.calendar td.today{background:#FFFDE7;font-weight:bold;}
+.calendar td.recovery{background:#FFE0F0;}
+.calendar td.recovery-all{background:#FFB3D9;}
+.dot{
+  display:block;text-align:center;
+  font-size:18px;line-height:1;
+  margin-top:4px;color:#CC2222;
+}
+.dot-all{color:#9B0000;}
+
+/* 凡例 */
+.legend{display:flex;gap:14px;margin:12px auto;max-width:520px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#475569;}
+.legend-box{width:18px;height:18px;border-radius:3px;border:1px solid #ddd;}
+.legend-box.all{background:#FFB3D9;}
+.legend-box.store{background:#FFE0F0;}
+
+/* 登録一覧 */
+.list-section{margin-top:16px;max-width:520px;margin-left:auto;margin-right:auto;}
+.list-title{font-size:13px;font-weight:bold;color:#1E2761;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #1E2761;}
+.list-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;
+}
+.list-item:hover{background:#F8FAFC;}
+.list-date{font-weight:bold;color:#1E2761;}
+.list-store{color:#64748B;font-size:11px;}
+.del-btn{
+  padding:3px 10px;background:#FEE2E2;color:#DC2626;
+  border:1px solid #FCA5A5;border-radius:3px;font-size:11px;cursor:pointer;
+}
+.del-btn:hover{background:#DC2626;color:#fff;}
+
+.msg{padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:11px;display:none;max-width:520px;margin-left:auto;margin-right:auto;}
+.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button type="button" class="back-btn" onclick="location.href='master.html'">◀ マスタ管理に戻る</button>
+    <div class="topbar-title">📅 回収カレンダー</div>
+  </div>
+  <div class="topbar-right">
+    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- 店舗選択 -->
+  <div class="ctrl-bar">
+    <span class="ctrl-label">回収日を登録する対象：</span>
+    <select class="store-sel" id="store-sel" onchange="loadCalendar()">
+      <option value="">全店共通</option>
+    </select>
+  </div>
+
+  <div class="msg" id="msg"></div>
+
+  <!-- カレンダーナビ -->
+  <div class="cal-nav">
+    <button type="button" class="nav-btn" onclick="changeMonth(-1)">＜＜ 前月</button>
+    <div class="cal-title" id="cal-title"></div>
+    <button type="button" class="nav-btn" onclick="changeMonth(1)">次月 ＞＞</button>
+  </div>
+
+  <!-- 凡例 -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-box all"></div>全店共通の回収日</div>
+    <div class="legend-item"><div class="legend-box store"></div>店舗個別の回収日</div>
+    <div class="legend-item">※ 日付をクリックして登録・解除</div>
+  </div>
+
+  <!-- カレンダー -->
+  <table class="calendar" id="calendar"></table>
+
+  <!-- 登録一覧 -->
+  <div class="list-section">
+    <div class="list-title">📋 今月の回収日一覧</div>
+    <div id="recovery-list"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+
+function showMsg(text,type='success'){
+  const el=document.getElementById('msg');
+  el.textContent=text;el.className='msg '+type;el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+}
+
+let currentYear=new Date().getFullYear();
+let currentMonth=new Date().getMonth()+1;
+let recoveryDates={}; // {date: {id, store_id}}
+let storeList=[];
+
+const WEEKS=['日','月','火','水','木','金','土'];
+
+async function loadStores(){
+  const res=await apiFetch('stores?is_active=eq.true&order=sort_order');
+  storeList=await res.json()||[];
+  const sel=document.getElementById('store-sel');
+  storeList.forEach(s=>{
+    const o=document.createElement('option');
+    o.value=s.id;o.textContent=s.name;sel.appendChild(o);
+  });
+}
+
+async function loadCalendar(){
+  const storeId=document.getElementById('store-sel').value;
+  const y=currentYear;
+  const m=String(currentMonth).padStart(2,'0');
+  const dateFrom=`${y}-${m}-01`;
+  const dateTo=`${y}-${m}-31`;
+
+  // 全店共通 + 選択店舗の回収日を取得
+  let query=`recovery_calendar?recover_date=gte.${dateFrom}&recover_date=lte.${dateTo}&order=recover_date`;
+  if(storeId){
+    query+=`&or=(store_id.is.null,store_id.eq.${storeId})`;
+  }
+  const res=await apiFetch(query);
+  const data=await res.json()||[];
+
+  recoveryDates={};
+  data.forEach(d=>{
+    recoveryDates[d.recover_date]={id:d.id,store_id:d.store_id};
+  });
+
+  buildCalendar();
+  buildList(data,storeId);
+}
+
+function buildCalendar(){
+  const y=currentYear;
+  const m=currentMonth;
+  document.getElementById('cal-title').textContent=`${y}年 ${m}月`;
+
+  const firstDay=new Date(y,m-1,1).getDay();
+  const lastDate=new Date(y,m,0).getDate();
+  const today=new Date();
+  const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  let html='<thead><tr>';
+  WEEKS.forEach((w,i)=>{
+    const cls=i===0?'sun':i===6?'sat':'';
+    html+=`<th class="${cls}">${w}</th>`;
+  });
+  html+='</tr></thead><tbody><tr>';
+
+  // 空白埋め
+  for(let i=0;i<firstDay;i++) html+='<td class="empty"></td>';
+
+  let col=firstDay;
+  for(let d=1;d<=lastDate;d++){
+    const dateStr=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow=(firstDay+d-1)%7;
+    const isToday=dateStr===todayStr;
+    const rec=recoveryDates[dateStr];
+    const isAll=rec&&rec.store_id===null;
+    const isStore=rec&&rec.store_id!==null;
+
+    let cls='';
+    if(dow===0)cls+=' sun';
+    if(dow===6)cls+=' sat';
+    if(isToday)cls+=' today';
+    if(isAll)cls+=' recovery-all';
+    else if(isStore)cls+=' recovery';
+
+    html+=`<td class="${cls}" onclick="toggleDate('${dateStr}')">${d}`;
+    if(rec) html+=`<span class="dot">${isAll?'⚫':'●'}</span>`;
+    html+=`</td>`;
+
+    col++;
+    if(col%7===0&&d<lastDate) html+='</tr><tr>';
+  }
+  // 残りの空白
+  const remaining=(7-col%7)%7;
+  for(let i=0;i<remaining;i++) html+='<td class="empty"></td>';
+  html+='</tr></tbody>';
+
+  document.getElementById('calendar').innerHTML=html;
+}
+
+function buildList(data, storeId){
+  const list=document.getElementById('recovery-list');
+  if(data.length===0){
+    list.innerHTML='<div style="padding:10px;color:#94A3B8;font-size:12px;">今月の回収日はありません</div>';
+    return;
+  }
+  list.innerHTML=data.map(d=>{
+    const isAll=d.store_id===null;
+    const storeName=isAll?'全店共通':storeList.find(s=>s.id===d.store_id)?.name||'';
+    const canDelete=isAll?!storeId:d.store_id==storeId;
+    return `<div class="list-item">
+      <span class="list-date">${d.recover_date}</span>
+      <span class="list-store">${storeName}</span>
+      ${canDelete?`<button type="button" class="del-btn" onclick="deleteDate(${d.id},'${d.recover_date}')">削除</button>`:'<span style="font-size:10px;color:#94A3B8;">（変更不可）</span>'}
+    </div>`;
+  }).join('');
+}
+
+async function toggleDate(dateStr){
+  const storeId=document.getElementById('store-sel').value||null;
+  const rec=recoveryDates[dateStr];
+
+  if(rec){
+    // 既存の場合：自分が登録したものだけ削除可能
+    const canDelete=rec.store_id===null?!storeId:rec.store_id==storeId;
+    if(!canDelete){
+      showMsg('この回収日は別の設定で登録されています。','error');
+      return;
+    }
+    if(!confirm(`${dateStr} の回収日を解除しますか？`))return;
+    await apiFetch(`recovery_calendar?id=eq.${rec.id}`,'DELETE');
+    showMsg(`${dateStr} の回収日を解除しました。`);
+  } else {
+    // 新規登録
+    if(!confirm(`${dateStr} を回収日に設定しますか？\n対象：${storeId?storeList.find(s=>s.id==storeId)?.name:'全店共通'}`))return;
+    const body={recover_date:dateStr,store_id:storeId?parseInt(storeId):null};
+    const res=await apiFetch('recovery_calendar','POST',body);
+    if(!res.ok){const err=await res.text();showMsg('登録エラー：'+err,'error');return;}
+    showMsg(`${dateStr} を回収日に登録しました。`);
+  }
+  await loadCalendar();
+}
+
+async function deleteDate(id,dateStr){
+  if(!confirm(`${dateStr} の回収日を削除しますか？`))return;
+  await apiFetch(`recovery_calendar?id=eq.${id}`,'DELETE');
+  showMsg(`${dateStr} の回収日を削除しました。`);
+  await loadCalendar();
+}
+
+function changeMonth(delta){
+  currentMonth+=delta;
+  if(currentMonth>12){currentMonth=1;currentYear++;}
+  if(currentMonth<1){currentMonth=12;currentYear--;}
+  loadCalendar();
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+async function init(){
+  await loadStores();
+  await loadCalendar();
+}
+init();
+</script>
+</body>
+</html>
