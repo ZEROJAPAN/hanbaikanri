@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テレカ・金券回収 - ゼロジャパン</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.back-btn:hover{background:#EEF2FF;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.store-name{font-size:12px;font-weight:bold;color:#9FE1CB;}
+.date-name{font-size:12px;font-weight:bold;color:#fff;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+
+.recovery-bar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:6px;margin-bottom:8px;font-size:12px;font-weight:bold;}
+.recovery-bar.is-day{background:#D1FAE5;border:2px solid #059669;color:#065F46;}
+.recovery-bar.not-day{background:#FEE2E2;border:2px solid #DC2626;color:#991B1B;}
+
+.main{background:#fff;border-radius:8px;padding:14px;}
+.tbl-wrap{overflow-x:auto;}
+
+table{border-collapse:collapse;font-size:11px;width:auto;}
+th{background:#1E2761;color:#fff;padding:5px 8px;text-align:center;white-space:nowrap;border:1px solid #2D4FBA;}
+th.pink{background:#C06080;}
+th.yellow{background:#cccc00;color:#000;}
+td{padding:4px 6px;border:1px solid #ddd;vertical-align:middle;white-space:nowrap;}
+td.item-name{background:#d0f0f8;font-size:11px;font-weight:bold;min-width:160px;}
+td.item-name.subtotal{background:#ffff99;text-align:center;font-weight:bold;}
+td.carry{background:#ffe0e0;text-align:right;width:70px;}
+td.result{background:#ffff88;text-align:right;width:70px;font-weight:bold;}
+td.cumul{background:#ffff00;text-align:right;width:70px;font-weight:bold;}
+td.gray{background:#c0c0c0;width:70px;}
+tr:hover td{filter:brightness(0.97);}
+tr.subtotal-row td{background:#ffff99!important;font-weight:bold;}
+
+.inp{width:65px;text-align:right;font-size:11px;border:1px solid #aaa;border-radius:2px;padding:2px 4px;outline:none;background:#fff;}
+.inp:focus{border-color:#1E2761;}
+.inp:disabled{background:#c0c0c0;cursor:not-allowed;}
+
+.btn-area{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;align-items:center;}
+.reg-btn{padding:8px 24px;font-size:13px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:6px;cursor:pointer;box-shadow:0 4px 0 #015060;}
+.reg-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
+.reg-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #015060;}
+.clear-btn{padding:8px 16px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#FF6666,#CC2222);color:#fff;border:none;border-radius:6px;cursor:pointer;box-shadow:0 3px 0 #881111;}
+
+.msg{padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:11px;display:none;}
+.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button type="button" class="back-btn" onclick="location.href='daily.html'">◀ 日報に戻る</button>
+    <div class="topbar-title">🎫 テレカ・金券回収</div>
+  </div>
+  <div class="topbar-right">
+    <span class="store-name" id="store-name"></span>
+    <span class="date-name" id="date-name"></span>
+    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
+</div>
+
+<div class="recovery-bar" id="recovery-bar">確認中...</div>
+<div class="msg" id="msg"></div>
+
+<div class="main">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="min-width:160px;">種別</th>
+          <th class="pink">前日繰越</th>
+          <th>本日買取</th>
+          <th class="pink">回収枚数</th>
+          <th>店頭販売</th>
+          <th colspan="2" class="yellow">翌日繰越</th>
+          <th class="yellow">累計枚数</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="pink">枚数</th>
+          <th>枚数</th>
+          <th class="pink">枚数</th>
+          <th>枚数</th>
+          <th class="yellow">枚数</th>
+          <th class="yellow">金額</th>
+          <th class="yellow">枚数</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <div class="btn-area">
+    <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
+    <button type="button" class="reg-btn" id="reg-btn" onclick="handleSave()">📝 登録</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+
+function showMsg(text,type='success'){
+  const el=document.getElementById('msg');
+  el.textContent=text;el.className='msg '+type;el.style.display='block';
+  setTimeout(()=>el.style.display='none',4000);
+}
+
+function numVal(id){return parseInt(document.getElementById(id)?.value||0)||0;}
+
+const params=new URLSearchParams(location.search);
+const reportDate=params.get('date')||new Date().toISOString().slice(0,10);
+const storeId=params.get('store')||'';
+const storeName=localStorage.getItem('store')||'';
+
+let cardTypes=[];
+let isRecoveryDay=false;
+let carryOverData={};
+
+// テレカ計・金券計のグループ定義
+const TELECARD_CODES=['501','502','503','504'];
+const GIFTCARD_CODES=['505','506','507','508','509','510','511','512','513'];
+
+async function checkRecoveryDay(){
+  const res1=await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&store_id=is.null`);
+  const data1=await res1.json()||[];
+  const res2=storeId?await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&store_id=eq.${storeId}`):null;
+  const data2=res2?await res2.json()||[]:[];
+  isRecoveryDay=[...data1,...data2].length>0;
+
+  const bar=document.getElementById('recovery-bar');
+  if(isRecoveryDay){
+    bar.className='recovery-bar is-day';
+    bar.textContent='✅ 本日（'+reportDate+'）は回収日です。回収枚数が入力できます。';
+  } else {
+    bar.className='recovery-bar not-day';
+    bar.textContent='❌ 本日（'+reportDate+'）は回収日ではありません。回収枚数はグレーアウトです。';
+  }
+}
+
+async function loadCarryOver(){
+  if(!storeId)return;
+  const res=await apiFetch(`telecard_recovery?store_id=eq.${storeId}&record_date=lt.${reportDate}&order=record_date.desc&limit=100&select=*`);
+  const data=await res.json()||[];
+  data.forEach(row=>{
+    if(!carryOverData[row.gift_card_type_id]){
+      carryOverData[row.gift_card_type_id]=row.next_carry_over||0;
+    }
+  });
+}
+
+async function loadTodayData(){
+  if(!storeId)return;
+  const res=await apiFetch(`telecard_recovery?store_id=eq.${storeId}&record_date=eq.${reportDate}&select=*`);
+  const data=await res.json()||[];
+  data.forEach(row=>{
+    const id=row.gift_card_type_id;
+    const todayEl=document.getElementById('today_'+id);
+    const recEl=document.getElementById('rec_'+id);
+    const shopEl=document.getElementById('shop_'+id);
+    if(todayEl)todayEl.value=row.today_purchase||0;
+    if(recEl)recEl.value=row.recovery_count||0;
+    if(shopEl)shopEl.value=row.shop_sales||0;
+    recalcRow(id);
+  });
+  recalcSubtotals();
+}
+
+function recalcRow(id){
+  const carry=carryOverData[id]||0;
+  const today=numVal('today_'+id);
+  const rec=numVal('rec_'+id);
+  const shop=numVal('shop_'+id);
+  const next=carry+today-rec-shop;
+  const el=document.getElementById('next_'+id);
+  if(el)el.textContent=next;
+}
+
+function recalcSubtotals(){
+  // テレカ計
+  let tCarry=0,tToday=0,tRec=0,tShop=0,tNext=0;
+  cardTypes.filter(c=>TELECARD_CODES.includes(c.code)&&c.code!=='504').forEach(c=>{
+    tCarry+=carryOverData[c.id]||0;
+    tToday+=numVal('today_'+c.id);
+    tRec+=numVal('rec_'+c.id);
+    tShop+=numVal('shop_'+c.id);
+    tNext+=(carryOverData[c.id]||0)+numVal('today_'+c.id)-numVal('rec_'+c.id)-numVal('shop_'+c.id);
+  });
+  setSubtotal('sub_telecard',tCarry,tToday,tRec,tShop,tNext);
+
+  // 金券計
+  let gCarry=0,gToday=0,gRec=0,gShop=0,gNext=0;
+  cardTypes.filter(c=>GIFTCARD_CODES.includes(c.code)).forEach(c=>{
+    gCarry+=carryOverData[c.id]||0;
+    gToday+=numVal('today_'+c.id);
+    gRec+=numVal('rec_'+c.id);
+    gShop+=numVal('shop_'+c.id);
+    gNext+=(carryOverData[c.id]||0)+numVal('today_'+c.id)-numVal('rec_'+c.id)-numVal('shop_'+c.id);
+  });
+  setSubtotal('sub_giftcard',gCarry,gToday,gRec,gShop,gNext);
+}
+
+function setSubtotal(prefix,carry,today,rec,shop,next){
+  const els=['carry','today','rec','shop','next'];
+  const vals=[carry,today,rec,shop,next];
+  els.forEach((e,i)=>{
+    const el=document.getElementById(prefix+'_'+e);
+    if(el)el.textContent=vals[i];
+  });
+}
+
+function buildTable(){
+  const tbody=document.getElementById('tbl-body');
+  let h='';
+
+  // テレカグループ
+  cardTypes.filter(c=>TELECARD_CODES.includes(c.code)&&c.code!=='504').forEach(c=>{
+    h+=buildRow(c);
+  });
+  // テレカ計
+  h+=`<tr class="subtotal-row">
+    <td class="item-name subtotal">テレカ計</td>
+    <td class="carry" id="sub_telecard_carry">0</td>
+    <td class="result" id="sub_telecard_today">0</td>
+    <td class="gray" id="sub_telecard_rec">0</td>
+    <td class="result" id="sub_telecard_shop">0</td>
+    <td class="cumul" id="sub_telecard_next">0</td>
+    <td class="gray"></td>
+    <td class="cumul">0</td>
+  </tr>`;
+
+  // 金券グループ
+  cardTypes.filter(c=>GIFTCARD_CODES.includes(c.code)).forEach(c=>{
+    h+=buildRow(c);
+  });
+  // 金券計
+  h+=`<tr class="subtotal-row">
+    <td class="item-name subtotal">金券計</td>
+    <td class="carry" id="sub_giftcard_carry">0</td>
+    <td class="result" id="sub_giftcard_today">0</td>
+    <td class="gray" id="sub_giftcard_rec">0</td>
+    <td class="result" id="sub_giftcard_shop">0</td>
+    <td class="cumul" id="sub_giftcard_next">0</td>
+    <td class="gray"></td>
+    <td class="cumul">0</td>
+  </tr>`;
+
+  tbody.innerHTML=h;
+
+  // 回収日以外は回収枚数をグレーアウト
+  if(!isRecoveryDay){
+    cardTypes.forEach(c=>{
+      const el=document.getElementById('rec_'+c.id);
+      if(el){el.disabled=true;el.style.background='#c0c0c0';}
+    });
+  }
+}
+
+function buildRow(c){
+  const carry=carryOverData[c.id]||0;
+  return `<tr>
+    <td class="item-name">${c.name}</td>
+    <td class="carry">${carry}</td>
+    <td><input type="number" class="inp" id="today_${c.id}" value="0" oninput="recalcRow(${c.id});recalcSubtotals()"></td>
+    <td><input type="number" class="inp" id="rec_${c.id}" value="0" oninput="recalcRow(${c.id});recalcSubtotals()"></td>
+    <td><input type="number" class="inp" id="shop_${c.id}" value="0" oninput="recalcRow(${c.id});recalcSubtotals()"></td>
+    <td class="cumul" id="next_${c.id}">${carry}</td>
+    <td class="gray"></td>
+    <td class="cumul">0</td>
+  </tr>`;
+}
+
+async function handleSave(){
+  const btn=document.getElementById('reg-btn');
+  btn.disabled=true;btn.textContent='登録中...';
+  try{
+    await apiFetch(`telecard_recovery?store_id=eq.${storeId}&record_date=eq.${reportDate}`,'DELETE');
+    const records=[];
+    cardTypes.forEach(c=>{
+      const carry=carryOverData[c.id]||0;
+      const today=numVal('today_'+c.id);
+      const rec=numVal('rec_'+c.id);
+      const shop=numVal('shop_'+c.id);
+      const next=carry+today-rec-shop;
+      records.push({
+        store_id:parseInt(storeId),
+        gift_card_type_id:c.id,
+        record_date:reportDate,
+        carry_over:carry,
+        today_purchase:today,
+        recovery_count:rec,
+        shop_sales:shop,
+        next_carry_over:next,
+        is_recovered:isRecoveryDay&&rec>0,
+      });
+    });
+    const res=await apiFetch('telecard_recovery','POST',records);
+    if(!res.ok){const err=await res.text();showMsg('登録エラー：'+err,'error');btn.disabled=false;btn.textContent='📝 登録';return;}
+    showMsg('✅ 登録しました。','success');
+    btn.textContent='登録済み ✓';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='📝 登録';},3000);
+  }catch(e){
+    showMsg('通信エラー：'+e.message,'error');
+    btn.disabled=false;btn.textContent='📝 登録';
+  }
+}
+
+function handleClear(){
+  if(!confirm('入力内容をクリアしますか？'))return;
+  cardTypes.forEach(c=>{
+    ['today_','rec_','shop_'].forEach(p=>{
+      const el=document.getElementById(p+c.id);
+      if(el&&!el.disabled)el.value=0;
+    });
+    recalcRow(c.id);
+  });
+  recalcSubtotals();
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+async function init(){
+  document.getElementById('store-name').textContent=storeName;
+  document.getElementById('date-name').textContent=reportDate;
+  const res=await apiFetch('gift_card_types?is_active=eq.true&order=sort_order');
+  cardTypes=await res.json()||[];
+  await Promise.all([checkRecoveryDay(),loadCarryOver()]);
+  buildTable();
+  await loadTodayData();
+}
+
+init();
+</script>
+</body>
+</html>
