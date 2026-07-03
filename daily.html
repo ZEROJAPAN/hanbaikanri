@@ -252,8 +252,7 @@ th.amt-hdr{width:80px;background:#4455aa;color:#fff;font-size:9px;border:1.5px s
   <!-- 右サイドボタン -->
   <div class="right-btns">
     <div class="right-btns-title">関連入力</div>
-    <button type="button" class="side-btn side-btn-blue" onclick="location.href='credit_detail.html?date='+getDate()+'&store='+getStoreId()">💳 クレジット明細</button>
-    <button type="button" class="side-btn side-btn-blue" onclick="location.href='purchase_detail.html?date='+getDate()+'&store='+getStoreId()">🛒 買取明細</button>
+<button type="button" class="side-btn side-btn-blue" onclick="location.href='purchase_detail.html?date='+getDate()+'&store='+getStoreId()">🛒 買取明細</button>
     <button type="button" class="side-btn side-btn-green" onclick="location.href='gold_recovery.html?date='+getDate()+'&store='+getStoreId()">💰 地金回収</button>
     <button type="button" class="side-btn side-btn-green" onclick="location.href='telecard_recovery.html?date='+getDate()+'&store='+getStoreId()">🎫 テレカ・金券回収</button>
     <button type="button" class="side-btn side-btn-green" onclick="location.href='stamp_recovery.html?date='+getDate()+'&store='+getStoreId()">📮 切手・印紙回収</button>
@@ -306,17 +305,7 @@ const SALE_KEYS=COLS.filter(c=>c.key!=='buy'&&c.key!=='cancel').map(c=>c.key);
 
 const data={};
 
-async function loadCats(){
-  const res=await apiFetch('product_categories?is_active=eq.true&order=sort_order');
-  CATS=await res.json()||[];
-  // dataを初期化
-  CATS.forEach(c=>{
-    if(!data[c.id]){
-      data[c.id]={};
-      COLS.forEach(col=>{data[c.id][col.key]={q:'',a:''};});
-    }
-  });
-}
+
 
 let storeList=[];
 let currentStoreId=null;
@@ -496,30 +485,53 @@ async function loadStores(){
 }
 
 async function init(){
+  // 日付セット
   const t=new Date();
   const ds=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
   document.getElementById('rdate').value=ds;
   document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+ds;
+
+  // ユーザー情報
   const savedUser=localStorage.getItem('userid')||'';
   const savedName=localStorage.getItem('user_name')||'';
   document.getElementById('user-info').textContent='ログイン中：'+(savedName||savedUser);
   document.getElementById('st-user').innerHTML='<strong>ユーザー：</strong>'+(savedName||savedUser);
-  await loadCats();
-  alert('商品数：'+CATS.length+'件\n例：'+( CATS[0]?.name||'なし'));
-  buildTable();recalc();
+
+  // ① 商品カテゴリをDBから取得
+  const catRes=await fetch(SUPABASE_URL+'/rest/v1/product_categories?is_active=eq.true&order=sort_order',{
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+  });
+  CATS=await catRes.json()||[];
+
+  // dataを初期化
+  CATS.forEach(c=>{
+    data[c.id]={};
+    COLS.forEach(col=>{data[c.id][col.key]={q:'',a:''};});
+  });
+
+  // ② テーブルを構築
+  buildTable();
+  recalc();
+
+  // ③ 店舗一覧を取得
   await loadStores();
+
+  // ④ 既存データを読み込み
   await loadExistingData();
 
+  // イベントリスナー
   document.getElementById('rdate').addEventListener('change',async function(){
     document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+this.value;
-    handleClear();await loadExistingData();
+    handleClear();
+    await loadExistingData();
   });
   document.getElementById('store').addEventListener('change',async function(){
     currentStoreId=parseInt(this.value);
     const txt=this.options[this.selectedIndex].text;
     localStorage.setItem('store',txt);
     document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+txt;
-    handleClear();await loadExistingData();
+    handleClear();
+    await loadExistingData();
   });
 }
 
@@ -527,4 +539,3 @@ init();
 </script>
 </body>
 </html>
-
