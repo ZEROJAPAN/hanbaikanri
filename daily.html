@@ -110,6 +110,14 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
 .visitor-inp{width:72px;text-align:right;font-size:12px;border:2px solid #CBD5E1;padding:4px 6px;border-radius:4px;outline:none;}
 .visitor-inp:focus{border-color:#1E2761;}
 
+.export-link-btn{
+  padding:8px 18px;font-size:12px;font-weight:bold;
+  background:linear-gradient(180deg,#0FAA7A,#028090);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 3px 0 #015060;
+}
+.export-link-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
+.export-link-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #015060;}
 .reg-btn{
   padding:8px 28px;font-size:13px;font-weight:bold;
   background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
@@ -270,6 +278,7 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
   </div>
   <button type="button" class="reg-btn" id="reg-btn" onclick="handleSave()">登録</button>
   <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
+  <button type="button" class="export-link-btn" onclick="goExport()">📄 日報出力</button>
 </div>
 
 <!-- ステータスバー -->
@@ -514,6 +523,10 @@ function handleClear(){
   });});
   document.getElementById('visitors').value='0';
   recalc();
+}
+
+function goExport(){
+  location.href='nippo_export.html';
 }
 
 function handleLogout(){
