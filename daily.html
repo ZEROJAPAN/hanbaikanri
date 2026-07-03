@@ -527,10 +527,25 @@ async function loadStores(){
     const o=document.createElement('option');
     o.value=s.id;o.textContent=s.name;sel.appendChild(o);
   });
-  const savedStore=localStorage.getItem('store')||'';
-  const matched=storeList.find(s=>s.name===savedStore);
-  if(matched){sel.value=matched.id;currentStoreId=matched.id;}
-  else if(storeList.length>0){currentStoreId=parseInt(storeList[0].id);}
+  // store_idで直接照合（なければ店舗名で照合）
+  const savedStoreId=localStorage.getItem('store_id')||'';
+  const savedStoreName=localStorage.getItem('store')||'';
+  let matched=null;
+  if(savedStoreId){
+    matched=storeList.find(s=>String(s.id)===String(savedStoreId));
+  }
+  if(!matched&&savedStoreName){
+    matched=storeList.find(s=>s.name===savedStoreName);
+  }
+  if(matched){
+    sel.value=matched.id;
+    currentStoreId=parseInt(matched.id);
+    localStorage.setItem('store_id',matched.id);
+    localStorage.setItem('store',matched.name);
+  } else if(storeList.length>0){
+    currentStoreId=parseInt(storeList[0].id);
+    sel.value=storeList[0].id;
+  }
   const selText=sel.options[sel.selectedIndex]?.text||'';
   document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+selText;
 }
@@ -580,6 +595,7 @@ async function init(){
     currentStoreId=parseInt(this.value);
     const txt=this.options[this.selectedIndex].text;
     localStorage.setItem('store',txt);
+    localStorage.setItem('store_id',this.value);
     document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+txt;
     handleClear();
     await loadExistingData();
