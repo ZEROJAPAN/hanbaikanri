@@ -582,7 +582,8 @@ async function init(){
   // ユーザー情報
   const savedUser=localStorage.getItem('userid')||'';
   const savedName=localStorage.getItem('user_name')||'';
-  document.getElementById('user-info').textContent='ログイン中：'+(savedName||savedUser);
+  const savedStoreNameInit=localStorage.getItem('store')||'';
+  document.getElementById('user-info').textContent='ログイン中：'+(savedName||savedUser)+'　店舗：'+savedStoreNameInit;
   document.getElementById('st-user').innerHTML='<strong>ユーザー：</strong>'+(savedName||savedUser);
 
   // ① 商品カテゴリをDBから取得
@@ -619,6 +620,8 @@ async function init(){
     localStorage.setItem('store',txt);
     localStorage.setItem('store_id',this.value);
     document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+txt;
+    const savedNameChg=localStorage.getItem('user_name')||localStorage.getItem('userid')||'';
+    document.getElementById('user-info').textContent='ログイン中：'+savedNameChg+'　店舗：'+txt;
     handleClear();
     await loadExistingData();
   });
