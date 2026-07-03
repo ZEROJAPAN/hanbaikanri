@@ -355,14 +355,16 @@ function recalc(){
   const pure=SALE_KEYS.reduce((s,k)=>s+colSum(k,'a'),0);
   SALE_KEYS.forEach(k=>{const el=document.getElementById('pu_'+k);if(el)el.textContent=fmt(colSum(k,'a'));});
   // 消費税（免税列以外すべて計算）
+  let taxShop=0;
   COLS.filter(c=>!c.taxfree&&c.key!=='buy'&&c.key!=='cancel').forEach(col=>{
     const tax=Math.floor(colSum(col.key,'a')*10/110);
     const el=document.getElementById('tax_'+col.key);
     if(el)el.textContent=fmt(tax);
+    if(col.key==='shop')taxShop=tax;
   });
   const eg=document.getElementById('genk');if(eg)eg.textContent=fmt(colSum('shop','a'));
   document.getElementById('st-sales').innerHTML='<strong>純売上合計：</strong>¥'+fmt(pure);
-  document.getElementById('st-tax').innerHTML='<strong>消費税：</strong>¥'+fmt(tax);
+  document.getElementById('st-tax').innerHTML='<strong>消費税：</strong>¥'+fmt(taxShop);
   recalcGenk();
 }
 
@@ -527,25 +529,45 @@ async function loadStores(){
     const o=document.createElement('option');
     o.value=s.id;o.textContent=s.name;sel.appendChild(o);
   });
-  // store_idで直接照合（なければ店舗名で照合）
+  // store_idで直接照合
   const savedStoreId=localStorage.getItem('store_id')||'';
   const savedStoreName=localStorage.getItem('store')||'';
-  let matched=null;
+
   if(savedStoreId){
-    matched=storeList.find(s=>String(s.id)===String(savedStoreId));
+    // セレクトのvalueに直接セット
+    sel.value=savedStoreId;
+    // セットできたか確認
+    if(sel.value===savedStoreId||sel.value===String(savedStoreId)){
+      currentStoreId=parseInt(savedStoreId);
+    } else {
+      // valueが一致しない場合はoptionを探す
+      for(let i=0;i<sel.options.length;i++){
+        if(String(sel.options[i].value)===String(savedStoreId)){
+          sel.selectedIndex=i;
+          currentStoreId=parseInt(savedStoreId);
+          break;
+        }
+      }
+    }
   }
-  if(!matched&&savedStoreName){
-    matched=storeList.find(s=>s.name===savedStoreName);
+
+  // store_idで見つからなければ店舗名で照合
+  if(!currentStoreId&&savedStoreName){
+    for(let i=0;i<sel.options.length;i++){
+      if(sel.options[i].text===savedStoreName){
+        sel.selectedIndex=i;
+        currentStoreId=parseInt(sel.options[i].value);
+        break;
+      }
+    }
   }
-  if(matched){
-    sel.value=matched.id;
-    currentStoreId=parseInt(matched.id);
-    localStorage.setItem('store_id',matched.id);
-    localStorage.setItem('store',matched.name);
-  } else if(storeList.length>0){
+
+  // それでもなければ先頭を選択
+  if(!currentStoreId&&storeList.length>0){
     currentStoreId=parseInt(storeList[0].id);
     sel.value=storeList[0].id;
   }
+
   const selText=sel.options[sel.selectedIndex]?.text||'';
   document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+selText;
 }
