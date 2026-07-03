@@ -52,14 +52,13 @@ th.name-th{width:130px;position:sticky;left:0;top:0;z-index:4;background:#1E2761
 .td-amt{width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;}
 .td-amt input{width:80px;border:none;background:#ffffff;font-size:10px;text-align:right;padding:1px 3px;outline:none;}
 th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E2761;color:#fff;font-size:10px;white-space:nowrap;position:sticky;top:0;z-index:1;}
-th.buy-hdr{background:#2D4FBA;}
-th.qty-hdr{width:50px;background:#cc8800;color:#fff;font-size:9px;font-weight:bold;border:1.5px solid #cc8800;}
-th.amt-hdr{width:80px;background:#4455aa;color:#fff;font-size:9px;border:1.5px solid #4455aa;}
 .sum-label{border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;}
 .sum-qty{width:50px;border:2px solid #cc8800;padding:2px 2px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;}
 .sum-amt{width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;}
 .gray-qty{width:50px;border:1px solid #aaa;background:#c0c0c0;}
 .gray-amt{width:80px;border:1px solid #aaa;background:#c0c0c0;}
+.input-amt{width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;}
+.input-amt input{width:80px;border:none;background:#ffffff;font-size:10px;text-align:right;padding:1px 3px;outline:none;}
 
 /* 右サイドボタン */
 .right-btns{
@@ -294,12 +293,27 @@ async function apiFetch(path,method='GET',body=null){
 // 商品カテゴリはDBから取得（仕入商品カテゴリーマスタと連動）
 let CATS=[];
 const COLS=[
-  {key:'buy',chId:1},{key:'cancel',chId:2},{key:'shop',chId:3},{key:'free',chId:4},
-  {key:'honten',chId:5},{key:'raku',chId:6},{key:'rakuEx',chId:7},{key:'yahoo',chId:8},
-  {key:'yahuoku',chId:9},{key:'wowma',chId:10},{key:'merukari',chId:11},{key:'ebay',chId:12},
-  {key:'lux',chId:13},{key:'amazon',chId:14},{key:'subscr',chId:15},{key:'rakuma',chId:16},
-  {key:'qoo10',chId:17},{key:'globa',chId:18},{key:'auction',chId:19},{key:'web',chId:20},
-  {key:'other',chId:21},
+  {key:'buy',    chId:1,  taxfree:true },  // 買取は消費税なし
+  {key:'cancel', chId:2,  taxfree:true },  // キャンセルは消費税なし
+  {key:'shop',   chId:3,  taxfree:false},  // 店売り：消費税あり
+  {key:'free',   chId:4,  taxfree:true },  // 店売り（免税）
+  {key:'honten', chId:5,  taxfree:false},  // 本店：消費税あり
+  {key:'raku',   chId:6,  taxfree:false},  // 楽天国内：消費税あり
+  {key:'rakuEx', chId:7,  taxfree:true },  // 楽天海外（免税）
+  {key:'yahoo',  chId:8,  taxfree:false},  // YahooShop：消費税あり
+  {key:'yahuoku',chId:9,  taxfree:false},  // ヤフオク：消費税あり
+  {key:'wowma',  chId:10, taxfree:false},  // Wowma!：消費税あり
+  {key:'merukari',chId:11,taxfree:false},  // メルカリ：消費税あり
+  {key:'ebay',   chId:12, taxfree:true },  // ebay（免税）
+  {key:'lux',    chId:13, taxfree:false},  // LuxUness：消費税あり
+  {key:'amazon', chId:14, taxfree:false},  // Amazon：消費税あり
+  {key:'subscr', chId:15, taxfree:false},  // サブスク：消費税あり
+  {key:'rakuma', chId:16, taxfree:false},  // ラクマ：消費税あり
+  {key:'qoo10',  chId:17, taxfree:false},  // Qoo10：消費税あり
+  {key:'globa',  chId:18, taxfree:false},  // GLOBAZONE：消費税あり
+  {key:'auction',chId:19, taxfree:false},  // オークション：消費税あり
+  {key:'web',    chId:20, taxfree:false},  // WEB販売：消費税あり
+  {key:'other',  chId:21, taxfree:false},  // その他販売：消費税あり
 ];
 const SALE_KEYS=COLS.filter(c=>c.key!=='buy'&&c.key!=='cancel').map(c=>c.key);
 
@@ -337,13 +351,29 @@ function recalc(){
   });
   const pure=SALE_KEYS.reduce((s,k)=>s+colSum(k,'a'),0);
   SALE_KEYS.forEach(k=>{const el=document.getElementById('pu_'+k);if(el)el.textContent=fmt(colSum(k,'a'));});
-  const tax=Math.floor(colSum('shop','a')*10/110);
-  const taxH=Math.floor(colSum('honten','a')*10/110);
-  const et=document.getElementById('tax_shop');if(et)et.textContent=fmt(tax);
-  const eth=document.getElementById('tax_hon');if(eth)eth.textContent=fmt(taxH);
+  // 消費税（免税列以外すべて計算）
+  COLS.filter(c=>!c.taxfree&&c.key!=='buy'&&c.key!=='cancel').forEach(col=>{
+    const tax=Math.floor(colSum(col.key,'a')*10/110);
+    const el=document.getElementById('tax_'+col.key);
+    if(el)el.textContent=fmt(tax);
+  });
   const eg=document.getElementById('genk');if(eg)eg.textContent=fmt(colSum('shop','a'));
   document.getElementById('st-sales').innerHTML='<strong>純売上合計：</strong>¥'+fmt(pure);
   document.getElementById('st-tax').innerHTML='<strong>消費税：</strong>¥'+fmt(tax);
+  recalcGenk();
+}
+
+// 現計自動計算（純売上 - クレジット計 - 掛計）
+function recalcGenk(key){
+  const keys=key?[key]:COLS.filter(c=>c.key!=='buy'&&c.key!=='cancel').map(c=>c.key);
+  keys.forEach(k=>{
+    const pure=colSum(k,'a');
+    const credit=num(document.getElementById('credit_'+k)?.value||'0');
+    const kake=num(document.getElementById('kakekei_'+k)?.value||'0');
+    const genk=pure-credit-kake;
+    const el=document.getElementById('genk_'+k);
+    if(el)el.textContent=fmt(genk);
+  });
 }
 
 function buildTable(){
@@ -368,26 +398,44 @@ function buildTable(){
     else{h+=`<td class="gray-qty"></td><td class="sum-amt" id="pu_${col.key}">0</td>`;}
   });
   h+=`</tr>`;
-  // 消費税行
+  // 消費税行（免税列以外はすべて表示）
   h+=`<tr><td class="sum-label">消費税</td>`;
   COLS.forEach(col=>{
-    if(col.key==='shop'){h+=`<td class="gray-qty"></td><td class="sum-amt" id="tax_shop">0</td>`;}
-    else if(col.key==='honten'){h+=`<td class="gray-qty"></td><td class="sum-amt" id="tax_hon">0</td>`;}
-    else{h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
+    if(col.taxfree||col.key==='buy'||col.key==='cancel'){
+      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+    } else {
+      h+=`<td class="gray-qty"></td><td class="sum-amt" id="tax_${col.key}">0</td>`;
+    }
   });
   h+=`</tr>`;
-  // 現計行
-  h+=`<tr><td class="sum-label">現計</td>`;
+  // クレジット計行（買取・キャンセル以外）
+  h+=`<tr><td class="sum-label">クレジット計</td>`;
   COLS.forEach(col=>{
-    if(col.key==='shop'){h+=`<td class="gray-qty"></td><td class="sum-amt" id="genk">0</td>`;}
-    else{h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
+    if(col.key==='buy'||col.key==='cancel'){
+      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+    } else {
+      h+=`<td class="gray-qty"></td><td class="input-amt"><input type="text" inputmode="numeric" id="credit_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+    }
   });
   h+=`</tr>`;
-  // 掛計行
+  // 掛計行（買取・キャンセル以外）
   h+=`<tr><td class="sum-label">掛計</td>`;
   COLS.forEach(col=>{
-    if(col.key==='shop'){h+=`<td class="gray-qty"></td><td class="sum-amt">0</td>`;}
-    else{h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
+    if(col.key==='buy'||col.key==='cancel'){
+      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+    } else {
+      h+=`<td class="gray-qty"></td><td class="input-amt"><input type="text" inputmode="numeric" id="kakekei_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+    }
+  });
+  h+=`</tr>`;
+  // 現計行（自動計算・買取・キャンセル以外）
+  h+=`<tr><td class="sum-label">現計</td>`;
+  COLS.forEach(col=>{
+    if(col.key==='buy'||col.key==='cancel'){
+      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+    } else {
+      h+=`<td class="gray-qty"></td><td class="sum-amt" id="genk_${col.key}">0</td>`;
+    }
   });
   h+=`</tr>`;
   // 客数行
