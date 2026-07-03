@@ -123,7 +123,7 @@ tr:hover td{filter:brightness(0.97);}
           <th class="pink">前日繰越</th>
           <th style="width:80px;">本日</th>
           <th style="width:80px;">商品化重量</th>
-          <th style="width:80px;">つぶし重量</th>
+          <th style="width:80px;" class="pink">つぶし重量</th>
           <th style="width:80px;">製品から戻し</th>
           <th class="pink">回収分</th>
           <th style="background:#cccc00;color:#000;">翌日繰越</th>
@@ -224,11 +224,9 @@ async function loadTodayData(){
     const id=row.metal_type_id;
     const todayEl=document.getElementById('today_'+id);
     const prodEl=document.getElementById('prod_'+id);
-    const crushEl=document.getElementById('crush_'+id);
     const retEl=document.getElementById('ret_'+id);
     if(todayEl)todayEl.value=row.today_weight||0;
     if(prodEl)prodEl.value=row.product_weight||0;
-    if(crushEl)crushEl.value=row.crush_weight||0;
     if(retEl)retEl.value=row.return_weight||0;
     recalcRow(id);
   });
@@ -239,14 +237,17 @@ function recalcRow(id){
   const carry=carryOverData[id]||0;
   const today=numVal('today_'+id);
   const prod=numVal('prod_'+id);
-  const crush=numVal('crush_'+id);
   const ret=numVal('ret_'+id);
+  // つぶし重量 = 前日繰越 - 商品化重量 + 本日（自動計算）
+  const crush=carry-prod+today;
   const recovery=carry+today-prod+ret;
-  const next=carry+today-prod+ret;
+  const next=recovery;
   const carryEl=document.getElementById('carry_'+id);
+  const crushEl=document.getElementById('crush_'+id);
   const recEl=document.getElementById('rec_'+id);
   const nextEl=document.getElementById('next_'+id);
   if(carryEl)carryEl.textContent=fmtNum(carry);
+  if(crushEl)crushEl.textContent=fmtNum(crush);
   if(recEl)recEl.textContent=fmtNum(recovery);
   if(nextEl)nextEl.textContent=fmtNum(next);
 }
@@ -263,7 +264,7 @@ function buildTable(){
       <td class="carry" id="carry_${m.id}">${fmtNum(carry)}</td>
       <td><input type="number" step="0.01" class="inp" id="today_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
       <td><input type="number" step="0.01" class="inp" id="prod_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
-      <td><input type="number" step="0.01" class="inp" id="crush_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
+      <td class="carry" id="crush_${m.id}" style="background:#ffe0f0;">0.00</td>
       <td><input type="number" step="0.01" class="inp" id="ret_${m.id}" value="0" oninput="recalcRow(${m.id})"></td>
       <td class="result" id="rec_${m.id}">${fmtNum(carry)}</td>
       <td class="next" id="next_${m.id}">${fmtNum(carry)}</td>
@@ -307,7 +308,7 @@ async function saveData(isRecover){
       const carry=carryOverData[m.id]||0;
       const today=numVal('today_'+m.id);
       const prod=numVal('prod_'+m.id);
-      const crush=numVal('crush_'+m.id);
+      const crush=carry-prod+today;
       const ret=numVal('ret_'+m.id);
       const recovery=carry+today-prod+ret;
       // 回収する場合は翌日繰越=0、しない場合は合計値
