@@ -593,21 +593,7 @@ function fixStickyHeader(){
   const rows=table.querySelectorAll('thead tr');
   if(rows.length<2)return;
   const h1=rows[0].offsetHeight;
-  // 1行目
-  rows[0].querySelectorAll('th').forEach(th=>{
-    th.style.position='sticky';
-    th.style.top='0';
-    th.style.zIndex='3';
-  });
-  // 2行目
-  rows[1].querySelectorAll('th').forEach(th=>{
-    th.style.position='sticky';
-    th.style.top=h1+'px';
-    th.style.zIndex='3';
-  });
-  // 商品名
-  const nameTh=rows[0].querySelector('th.name-th');
-  if(nameTh){nameTh.style.position='sticky';nameTh.style.left='0';nameTh.style.top='0';nameTh.style.zIndex='6';}
+  alert('1行目の高さ:'+h1+'px');
 }
 
 init();
