@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>切手・印紙回収 - ゼロジャパン</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.back-btn:hover{background:#EEF2FF;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.store-name{font-size:12px;font-weight:bold;color:#9FE1CB;}
+.date-name{font-size:12px;font-weight:bold;color:#fff;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+
+.status-bar{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap;}
+.status-badge{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:bold;border:2px solid;}
+.badge-recovery{background:#D1FAE5;border-color:#059669;color:#065F46;}
+.badge-no-recovery{background:#FEE2E2;border-color:#DC2626;color:#991B1B;}
+.badge-monthend{background:#EEF2FF;border-color:#4F46E5;color:#3730A3;}
+.badge-no-monthend{background:#F1F5F9;border-color:#CBD5E1;color:#94A3B8;}
+
+.main{background:#fff;border-radius:8px;padding:14px;}
+.tbl-wrap{overflow-x:auto;margin-bottom:14px;}
+
+table{border-collapse:collapse;font-size:11px;}
+th{background:#1E2761;color:#fff;padding:6px 10px;text-align:center;white-space:nowrap;border:1px solid #2D4FBA;}
+th.pink{background:#C06080;}
+th.blue{background:#4455aa;}
+td{padding:4px 6px;border:1px solid #ddd;vertical-align:middle;white-space:nowrap;}
+td.amt{text-align:right;background:#EEF2FF;min-width:90px;}
+td.gray{background:#c0c0c0;min-width:70px;}
+
+.sel{padding:4px 6px;border:1px solid #aaa;border-radius:3px;font-size:11px;min-width:140px;outline:none;font-family:'Meiryo','Yu Gothic',sans-serif;}
+.sel:focus{border-color:#1E2761;}
+.inp{width:80px;text-align:right;font-size:11px;border:1px solid #aaa;border-radius:2px;padding:3px 4px;outline:none;background:#fff;}
+.inp:focus{border-color:#1E2761;}
+.inp:disabled{background:#c0c0c0;cursor:not-allowed;}
+
+.del-btn{padding:2px 8px;background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;border-radius:3px;font-size:10px;cursor:pointer;}
+.del-btn:hover{background:#DC2626;color:#fff;}
+.add-btn{padding:6px 16px;background:#1E2761;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;margin-bottom:12px;}
+.add-btn:hover{background:#028090;}
+
+.btn-area{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;}
+.reg-btn{padding:8px 24px;font-size:13px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:6px;cursor:pointer;box-shadow:0 4px 0 #015060;}
+.reg-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
+.reg-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #015060;}
+.clear-btn{padding:8px 16px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#FF6666,#CC2222);color:#fff;border:none;border-radius:6px;cursor:pointer;box-shadow:0 3px 0 #881111;}
+
+.msg{padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:11px;display:none;}
+.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button type="button" class="back-btn" onclick="location.href='daily.html'">◀ 日報に戻る</button>
+    <div class="topbar-title">📮 切手・印紙回収</div>
+  </div>
+  <div class="topbar-right">
+    <span class="store-name" id="store-name"></span>
+    <span class="date-name" id="date-name"></span>
+    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-badge" id="badge-recovery">確認中...</div>
+  <div class="status-badge" id="badge-monthend">確認中...</div>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<div class="main">
+  <button type="button" class="add-btn" onclick="addRow()">＋ 行を追加</button>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">切手・印紙種類</th>
+          <th class="pink" style="width:90px;">額面金額</th>
+          <th class="pink" style="width:80px;">回収枚数</th>
+          <th class="pink" style="width:100px;">回収金額</th>
+          <th class="blue" style="width:80px;">月末在庫<br>枚数</th>
+          <th class="blue" style="width:100px;">月末在庫<br>金額</th>
+          <th style="width:40px;"></th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <div class="btn-area">
+    <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
+    <button type="button" class="reg-btn" id="reg-btn" onclick="handleSave()">📝 登録</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+
+function showMsg(text,type='success'){
+  const el=document.getElementById('msg');
+  el.textContent=text;el.className='msg '+type;el.style.display='block';
+  setTimeout(()=>el.style.display='none',4000);
+}
+
+const params=new URLSearchParams(location.search);
+const reportDate=params.get('date')||new Date().toISOString().slice(0,10);
+const storeId=params.get('store')||'';
+const storeName=localStorage.getItem('store')||'';
+
+let isRecoveryDay=false;
+let isMonthEnd=false;
+let rowCount=0;
+
+// 種類オプション
+const STAMP_TYPES=[
+  '印紙','はがき','バラ切手',
+  '切手10枚シート','切手20枚シート','切手50枚シート','切手100枚シート','その他'
+];
+
+// 種類ごとの枚数倍率
+function getMultiplier(type){
+  if(type==='切手10枚シート') return 10;
+  if(type==='切手20枚シート') return 20;
+  if(type==='切手50枚シート') return 50;
+  if(type==='切手100枚シート') return 100;
+  return 1;
+}
+
+// 月末かどうか確認
+function checkMonthEnd(dateStr){
+  const d=new Date(dateStr);
+  const lastDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  return d.getDate()===lastDay;
+}
+
+// 回収日チェック
+async function checkRecoveryDay(){
+  const res1=await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&store_id=is.null`);
+  const data1=await res1.json()||[];
+  const res2=storeId?await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&store_id=eq.${storeId}`):null;
+  const data2=res2?await res2.json()||[]:[];
+  isRecoveryDay=[...data1,...data2].length>0;
+
+  const badge=document.getElementById('badge-recovery');
+  if(isRecoveryDay){
+    badge.className='status-badge badge-recovery';
+    badge.textContent='✅ 本日は回収日です';
+  } else {
+    badge.className='status-badge badge-no-recovery';
+    badge.textContent='❌ 本日は回収日ではありません';
+  }
+}
+
+// 行を追加
+function addRow(data=null){
+  rowCount++;
+  const id=rowCount;
+  const tbody=document.getElementById('tbl-body');
+  const tr=document.createElement('tr');
+  tr.id='row_'+id;
+
+  const type=data?.stamp_type||'';
+  const face=data?.face_value||0;
+  const recCount=data?.recovery_count||0;
+  const stockCount=data?.stock_count||0;
+
+  // 種類セレクト
+  const typeOpts=STAMP_TYPES.map(t=>`<option value="${t}" ${t===type?'selected':''}>${t}</option>`).join('');
+
+  tr.innerHTML=`
+    <td><select class="sel" id="type_${id}" onchange="recalc(${id})">${typeOpts}</select></td>
+    <td><input type="number" class="inp" id="face_${id}" value="${face}" min="0" oninput="recalc(${id})"></td>
+    <td><input type="number" class="inp" id="rec_${id}" value="${recCount}" min="0" oninput="recalc(${id})" ${!isRecoveryDay?'disabled':''}></td>
+    <td class="amt" id="rec_amt_${id}">0</td>
+    <td><input type="number" class="inp" id="stock_${id}" value="${stockCount}" min="0" oninput="recalc(${id})" ${!isMonthEnd?'disabled':''}></td>
+    <td class="amt" id="stock_amt_${id}">0</td>
+    <td><button type="button" class="del-btn" onclick="delRow(${id})">削除</button></td>
+  `;
+  tbody.appendChild(tr);
+  recalc(id);
+
+  // 回収日以外はグレーアウト
+  if(!isRecoveryDay){
+    const recInp=document.getElementById('rec_'+id);
+    if(recInp){recInp.disabled=true;recInp.style.background='#c0c0c0';}
+  }
+  // 月末以外はグレーアウト
+  if(!isMonthEnd){
+    const stockInp=document.getElementById('stock_'+id);
+    if(stockInp){stockInp.disabled=true;stockInp.style.background='#c0c0c0';}
+  }
+}
+
+function recalc(id){
+  const type=document.getElementById('type_'+id)?.value||'';
+  const face=parseInt(document.getElementById('face_'+id)?.value||0)||0;
+  const rec=parseInt(document.getElementById('rec_'+id)?.value||0)||0;
+  const stock=parseInt(document.getElementById('stock_'+id)?.value||0)||0;
+  const mult=getMultiplier(type);
+  const recAmt=face*mult*rec;
+  const stockAmt=face*mult*stock;
+  const recAmtEl=document.getElementById('rec_amt_'+id);
+  const stockAmtEl=document.getElementById('stock_amt_'+id);
+  if(recAmtEl)recAmtEl.textContent=recAmt.toLocaleString('ja-JP');
+  if(stockAmtEl)stockAmtEl.textContent=stockAmt.toLocaleString('ja-JP');
+}
+
+function delRow(id){
+  const row=document.getElementById('row_'+id);
+  if(row)row.remove();
+}
+
+function handleClear(){
+  if(!confirm('入力内容をクリアしますか？'))return;
+  document.getElementById('tbl-body').innerHTML='';
+  rowCount=0;
+  addRow();
+}
+
+async function handleSave(){
+  const btn=document.getElementById('reg-btn');
+  btn.disabled=true;btn.textContent='登録中...';
+
+  try{
+    const records=[];
+    for(let i=1;i<=rowCount;i++){
+      const row=document.getElementById('row_'+i);
+      if(!row)continue;
+      const type=document.getElementById('type_'+i)?.value||'';
+      const face=parseInt(document.getElementById('face_'+i)?.value||0)||0;
+      const rec=parseInt(document.getElementById('rec_'+i)?.value||0)||0;
+      const stock=parseInt(document.getElementById('stock_'+i)?.value||0)||0;
+      if(!type)continue;
+      const mult=getMultiplier(type);
+      records.push({
+        store_id:parseInt(storeId),
+        record_date:reportDate,
+        stamp_type:type,
+        face_value:face,
+        recovery_count:rec,
+        recovery_amount:face*mult*rec,
+        stock_count:stock,
+        stock_amount:face*mult*stock,
+      });
+    }
+
+    if(records.length===0){showMsg('入力データがありません。','error');btn.disabled=false;btn.textContent='📝 登録';return;}
+
+    // 既存データ削除
+    await apiFetch(`stamp_recovery?store_id=eq.${storeId}&record_date=eq.${reportDate}`,'DELETE');
+
+    const res=await apiFetch('stamp_recovery','POST',records);
+    if(!res.ok){const err=await res.text();showMsg('登録エラー：'+err,'error');btn.disabled=false;btn.textContent='📝 登録';return;}
+
+    showMsg('✅ '+records.length+'件を登録しました。','success');
+    btn.textContent='登録済み ✓';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='📝 登録';},3000);
+
+  }catch(e){
+    showMsg('通信エラー：'+e.message,'error');
+    btn.disabled=false;btn.textContent='📝 登録';
+  }
+}
+
+// 既存データ読み込み
+async function loadTodayData(){
+  if(!storeId)return;
+  const res=await apiFetch(`stamp_recovery?store_id=eq.${storeId}&record_date=eq.${reportDate}&order=id`);
+  const data=await res.json()||[];
+  if(data.length>0){
+    document.getElementById('tbl-body').innerHTML='';
+    rowCount=0;
+    data.forEach(d=>addRow(d));
+  }
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+async function init(){
+  document.getElementById('store-name').textContent=storeName;
+  document.getElementById('date-name').textContent=reportDate;
+
+  // 月末チェック
+  isMonthEnd=checkMonthEnd(reportDate);
+  const monthBadge=document.getElementById('badge-monthend');
+  if(isMonthEnd){
+    monthBadge.className='status-badge badge-monthend';
+    monthBadge.textContent='📅 月末です。月末在庫が入力できます。';
+  } else {
+    monthBadge.className='status-badge badge-no-monthend';
+    monthBadge.textContent='月末在庫は月末のみ入力可';
+  }
+
+  await checkRecoveryDay();
+  await loadTodayData();
+
+  // 既存データがなければ1行追加
+  if(document.getElementById('tbl-body').children.length===0){
+    addRow();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
