@@ -80,6 +80,14 @@ tr:hover td{filter:brightness(0.97);}
 }
 .clear-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #881111;}
 
+.reg-btn{
+  padding:8px 24px;font-size:13px;font-weight:bold;
+  background:linear-gradient(180deg,#0FAA7A,#028090);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 4px 0 #015060;
+}
+.reg-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
+.reg-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #015060;}
 .msg{padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:11px;display:none;}
 .msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
 .msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
@@ -125,10 +133,11 @@ tr:hover td{filter:brightness(0.97);}
     </table>
   </div>
 
-  <div class="btn-area">
+  <div class="btn-area" style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;align-items:center;">
+    <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
     <button type="button" class="recover-btn" id="recover-btn" onclick="handleRecover()" disabled>🔄 回収する</button>
     <button type="button" class="save-btn" id="save-btn" onclick="handleSave()" disabled>💾 回収しないで登録</button>
-    <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
+    <button type="button" class="reg-btn" id="reg-btn" onclick="handleRegister()">📝 登録</button>
   </div>
 </div>
 
@@ -181,13 +190,15 @@ async function checkRecoveryDay(){
   const bar=document.getElementById('recovery-bar');
   if(isRecoveryDay){
     bar.className='recovery-bar is-day';
-    bar.textContent='✅ 本日（'+reportDate+'）は回収日です。「回収する」ボタンが使えます。';
+    bar.textContent='✅ 本日（'+reportDate+'）は回収日です。「回収する」「回収しないで登録」が使えます。';
     document.getElementById('recover-btn').disabled=false;
+    document.getElementById('save-btn').disabled=false;
   } else {
     bar.className='recovery-bar not-day';
-    bar.textContent='❌ 本日（'+reportDate+'）は回収日ではありません。「回収しないで登録」のみ使えます。';
+    bar.textContent='❌ 本日（'+reportDate+'）は回収日ではありません。入力して「登録」のみ使えます。';
+    document.getElementById('recover-btn').disabled=true;
+    document.getElementById('save-btn').disabled=true;
   }
-  document.getElementById('save-btn').disabled=false;
 }
 
 // 前日繰越を取得（直近の登録データから）
@@ -261,7 +272,15 @@ function buildTable(){
   tbody.innerHTML=h;
 }
 
-// 回収しないで登録
+// 通常登録（回収日以外）
+async function handleRegister(){
+  const btn=document.getElementById('reg-btn');
+  btn.disabled=true;btn.textContent='登録中...';
+  await saveData(false);
+  btn.disabled=false;btn.textContent='📝 登録';
+}
+
+// 回収しないで登録（回収日のみ）
 async function handleSave(){
   const btn=document.getElementById('save-btn');
   btn.disabled=true;btn.textContent='登録中...';
