@@ -44,18 +44,19 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;back
 .tbl-header-wrap{
   overflow:hidden;
   flex-shrink:0;
+  width:100%;
 }
 .tbl-body-wrap{
   overflow:auto;
   flex:1;
   scrollbar-width:auto;scrollbar-color:#888 #ddd;
+  width:100%;
 }
 .tbl-body-wrap::-webkit-scrollbar{height:14px;width:14px;}
 .tbl-body-wrap::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
 .tbl-body-wrap::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
-.tbl-header-wrap table,.tbl-body-wrap table{
-  border-collapse:collapse;table-layout:fixed;width:3500px;
-}
+#tbl-header{border-collapse:collapse;table-layout:fixed;width:3500px;}
+#tbl-body-table{border-collapse:collapse;table-layout:fixed;width:3500px;}
 .tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
 .tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
 .tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
@@ -633,7 +634,14 @@ async function init(){
 function setupScroll(){
   const bodyWrap=document.getElementById('tbl-body-wrap');
   const headerWrap=document.getElementById('tbl-header-wrap');
-  if(!bodyWrap||!headerWrap)return;
+  const headerTable=document.getElementById('tbl-header');
+  if(!bodyWrap||!headerWrap||!headerTable)return;
+
+  // ヘッダーテーブルの幅をボディテーブルと同じに
+  const bodyTable=document.getElementById('tbl-body-table');
+  if(bodyTable) headerTable.style.width=bodyTable.style.width||'3500px';
+
+  // 横スクロール同期（ボディ→ヘッダー）
   bodyWrap.addEventListener('scroll',function(){
     headerWrap.scrollLeft=this.scrollLeft;
   });
