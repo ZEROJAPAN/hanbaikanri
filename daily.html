@@ -36,27 +36,13 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;back
 .tbl-outer{
   flex:1;
   background:#fff;border-radius:8px;padding:10px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  max-height:calc(100vh - 200px);
-}
-.tbl-header-wrap{
-  overflow:hidden;
-  flex-shrink:0;
-  width:100%;
-}
-.tbl-body-wrap{
   overflow:auto;
-  flex:1;
+  max-height:calc(100vh - 200px);
   scrollbar-width:auto;scrollbar-color:#888 #ddd;
-  width:100%;
 }
-.tbl-body-wrap::-webkit-scrollbar{height:14px;width:14px;}
-.tbl-body-wrap::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
-.tbl-body-wrap::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
-#tbl-header{border-collapse:collapse;table-layout:fixed;width:3500px;}
-#tbl-body-table{border-collapse:collapse;table-layout:fixed;width:3500px;}
+.tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
+.tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
+.tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
 .tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
 .tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
 .tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
@@ -185,8 +171,7 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
 
   <!-- テーブル -->
   <div class="tbl-outer">
-    <div class="tbl-header-wrap" id="tbl-header-wrap">
-    <table id="tbl-header">
+    <table id="tbl-main">
       <colgroup>
         <col style="width:130px;">
         <col style="width:50px;"><col style="width:80px;">
@@ -260,37 +245,8 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
           <th class="qty-hdr">件数</th><th class="amt-hdr">金額</th>
         </tr>
       </thead>
-    </table>
-    </div>
-    <div class="tbl-body-wrap" id="tbl-body-wrap">
-    <table id="tbl-body-table">
-      <colgroup>
-        <col style="width:130px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-      </colgroup>
       <tbody id="tbl-body"></tbody>
     </table>
-    </div>
   </div>
 
   <!-- 右サイドボタン -->
@@ -627,24 +583,31 @@ async function init(){
     await loadExistingData();
   });
 
-  // 横スクロール同期
-  requestAnimationFrame(setupScroll);
+  // ヘッダー固定をJSで設定
+  requestAnimationFrame(()=>requestAnimationFrame(fixStickyHeader));
 }
 
-function setupScroll(){
-  const bodyWrap=document.getElementById('tbl-body-wrap');
-  const headerWrap=document.getElementById('tbl-header-wrap');
-  const headerTable=document.getElementById('tbl-header');
-  if(!bodyWrap||!headerWrap||!headerTable)return;
-
-  // ヘッダーテーブルの幅をボディテーブルと同じに
-  const bodyTable=document.getElementById('tbl-body-table');
-  if(bodyTable) headerTable.style.width=bodyTable.style.width||'3500px';
-
-  // 横スクロール同期（ボディ→ヘッダー）
-  bodyWrap.addEventListener('scroll',function(){
-    headerWrap.scrollLeft=this.scrollLeft;
+function fixStickyHeader(){
+  const table=document.getElementById('tbl-main');
+  if(!table)return;
+  const rows=table.querySelectorAll('thead tr');
+  if(rows.length<2)return;
+  const h1=rows[0].offsetHeight;
+  // 1行目
+  rows[0].querySelectorAll('th').forEach(th=>{
+    th.style.position='sticky';
+    th.style.top='0';
+    th.style.zIndex='3';
   });
+  // 2行目
+  rows[1].querySelectorAll('th').forEach(th=>{
+    th.style.position='sticky';
+    th.style.top=h1+'px';
+    th.style.zIndex='3';
+  });
+  // 商品名
+  const nameTh=rows[0].querySelector('th.name-th');
+  if(nameTh){nameTh.style.position='sticky';nameTh.style.left='0';nameTh.style.top='0';nameTh.style.zIndex='6';}
 }
 
 init();
