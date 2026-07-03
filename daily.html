@@ -3,50 +3,143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>日報入力</title>
+<title>日報入力 - ゼロジャパン</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;background:#90ee90;}
-.wrap{padding:4px;}
-.nav-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;align-items:center;}
-.nbtn{padding:2px 8px;font-size:11px;font-weight:bold;border:1px solid #555;border-radius:2px;cursor:pointer;background:#ffff99;color:#000;white-space:nowrap;}
-.nbtn.active{background:#ffff00;}
-.nbtn.master{background:#ff8888;}
-.nbtn.side{background:#ddd;width:100%;padding:4px 6px;}
-.nbtn.logout{background:#fff;}
-.store-sel{font-size:11px;padding:1px 3px;border:1px solid #888;}
-.date-input{font-size:11px;padding:1px 3px;border:1px solid #888;border-radius:2px;}
-.main-area{display:flex;gap:6px;align-items:flex-start;}
-.tbl-outer{flex:1;overflow-x:auto;overflow-y:visible;scrollbar-width:auto;scrollbar-color:#888 #ddd;padding-bottom:12px;}
-.tbl-outer::-webkit-scrollbar{height:16px;}
+.wrap{padding:6px;}
+
+/* トップバー */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:#1E2761;border-radius:8px;
+  padding:8px 14px;margin-bottom:8px;
+}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{
+  padding:5px 14px;background:#fff;color:#1E2761;
+  border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;
+}
+.back-btn:hover{background:#EEF2FF;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.store-sel{font-size:11px;padding:4px 8px;border:1px solid #9FE1CB;border-radius:4px;background:#fff;}
+.date-input{font-size:11px;padding:4px 8px;border:1px solid #9FE1CB;border-radius:4px;background:#fff;color:#1E2761;font-weight:bold;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.logout-btn:hover{background:#EEF2FF;}
+.user-info{font-size:10px;color:#9FE1CB;}
+
+/* メインエリア */
+.main-area{display:flex;gap:8px;align-items:flex-start;}
+
+/* テーブルラッパー */
+.tbl-outer{
+  flex:1;overflow-x:auto;overflow-y:auto;
+  scrollbar-width:auto;scrollbar-color:#888 #ddd;
+  padding-bottom:12px;
+  background:#fff;border-radius:8px;padding:10px;
+  max-height:calc(100vh - 220px);
+}
+.tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
 .tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
 .tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
+
 table{border-collapse:collapse;table-layout:fixed;width:3500px;}
 .cat-td{border:1.5px solid #c08080;padding:2px 5px;background:#d0f0f8;font-size:10px;white-space:nowrap;width:130px;position:sticky;left:0;z-index:2;}
-th.name-th{width:130px;position:sticky;left:0;z-index:3;background:#f4a0a0;border:1.5px solid #c08080;}
+th.name-th{width:130px;position:sticky;left:0;top:0;z-index:4;background:#1E2761;color:#fff;border:1.5px solid #1E2761;}
 .td-qty{width:50px;border:2px solid #cc8800;padding:1px;background:#ffff00;}
 .td-qty input{width:50px;border:none;background:#ffff88;font-size:10px;text-align:right;padding:1px 2px;outline:none;font-weight:bold;}
 .td-amt{width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;}
 .td-amt input{width:80px;border:none;background:#ffffff;font-size:10px;text-align:right;padding:1px 3px;outline:none;}
-th{border:1.5px solid #c08080;padding:2px 3px;text-align:center;background:#f4a0a0;font-size:10px;white-space:nowrap;}
-th.buy-hdr{background:#ffcccc;}
-th.qty-hdr{width:50px;background:#ffff00;font-size:9px;font-weight:bold;border:1.5px solid #cc8800;}
-th.amt-hdr{width:80px;background:#ffffff;font-size:9px;border:1.5px solid #8888bb;}
-.sum-label{border:1.5px solid #c08080;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#ffff88;position:sticky;left:0;z-index:2;width:130px;}
+th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E2761;color:#fff;font-size:10px;white-space:nowrap;position:sticky;top:0;z-index:1;}
+th.buy-hdr{background:#2D4FBA;}
+th.qty-hdr{width:50px;background:#cc8800;color:#fff;font-size:9px;font-weight:bold;border:1.5px solid #cc8800;}
+th.amt-hdr{width:80px;background:#4455aa;color:#fff;font-size:9px;border:1.5px solid #4455aa;}
+.sum-label{border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;}
 .sum-qty{width:50px;border:2px solid #cc8800;padding:2px 2px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;}
-.sum-amt{width:80px;border:2px solid #8888bb;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#ffffff;}
+.sum-amt{width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;}
 .gray-qty{width:50px;border:1px solid #aaa;background:#c0c0c0;}
 .gray-amt{width:80px;border:1px solid #aaa;background:#c0c0c0;}
-.right-btns{display:flex;flex-direction:column;gap:5px;min-width:95px;}
-.bottom-area{display:flex;align-items:center;gap:12px;margin-top:8px;}
-.visitor-box{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
-.visitor-lbl{background:#ff4444;color:#fff;font-weight:bold;padding:2px 8px;font-size:11px;border-radius:2px;}
-.visitor-inp{width:80px;text-align:right;font-size:12px;border:1px solid #888;padding:2px 3px;}
-.reg-btn{padding:6px 24px;font-size:13px;font-weight:bold;background:#4488ff;color:#fff;border:none;border-radius:3px;cursor:pointer;}
-.reg-btn.done{background:#44aa44;}
-.reg-btn:disabled{background:#94A3B8;cursor:not-allowed;}
-.clear-btn{padding:6px 14px;font-size:11px;background:#ffaaaa;border:1px solid #cc4444;border-radius:3px;cursor:pointer;}
-.status-bar{margin-top:6px;padding:3px 8px;background:rgba(0,0,0,0.18);border-radius:3px;font-size:10px;color:#fff;display:flex;gap:16px;flex-wrap:wrap;}
+
+/* 右サイドボタン */
+.right-btns{
+  display:flex;flex-direction:column;gap:6px;
+  min-width:110px;
+  background:#fff;border-radius:8px;padding:10px;
+}
+.right-btns-title{
+  font-size:10px;font-weight:bold;color:#64748B;
+  margin-bottom:4px;padding-bottom:4px;
+  border-bottom:1px solid #E2E8F0;
+}
+.side-btn{
+  padding:8px 6px;font-size:11px;font-weight:bold;
+  border:none;border-radius:6px;cursor:pointer;
+  text-align:center;width:100%;
+  transition:all 0.1s;
+}
+.side-btn:active{transform:translateY(1px);}
+.side-btn-blue{
+  background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
+  color:#fff;
+  box-shadow:0 3px 0 #0F1640,0 4px 6px rgba(0,0,0,0.2);
+}
+.side-btn-blue:hover{background:linear-gradient(180deg,#3D6FCA 0%,#2D3E8F 100%);}
+.side-btn-blue:active{box-shadow:0 1px 0 #0F1640;}
+.side-btn-green{
+  background:linear-gradient(180deg,#0FAA7A 0%,#028090 100%);
+  color:#fff;
+  box-shadow:0 3px 0 #015060,0 4px 6px rgba(0,0,0,0.2);
+}
+.side-btn-green:hover{background:linear-gradient(180deg,#1FBA8A 0%,#029090 100%);}
+.side-btn-green:active{box-shadow:0 1px 0 #015060;}
+
+/* 下部エリア */
+.bottom-area{
+  display:flex;align-items:center;gap:12px;
+  margin-top:8px;background:#fff;border-radius:8px;padding:10px 14px;
+}
+.visitor-box{display:flex;align-items:center;gap:8px;}
+.visitor-lbl{
+  background:linear-gradient(180deg,#DC2626 0%,#991B1B 100%);
+  color:#fff;font-weight:bold;padding:5px 10px;
+  font-size:11px;border-radius:5px;
+  box-shadow:0 3px 0 #7F1D1D;
+}
+.visitor-inp{width:72px;text-align:right;font-size:12px;border:2px solid #CBD5E1;padding:4px 6px;border-radius:4px;outline:none;}
+.visitor-inp:focus{border-color:#1E2761;}
+
+.reg-btn{
+  padding:8px 28px;font-size:13px;font-weight:bold;
+  background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 4px 0 #0F1640,0 5px 8px rgba(0,0,0,0.2);
+  transition:all 0.1s;
+}
+.reg-btn:hover{background:linear-gradient(180deg,#3D6FCA 0%,#2D3E8F 100%);}
+.reg-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0F1640;}
+.reg-btn.done{background:linear-gradient(180deg,#0FAA7A 0%,#028090 100%);box-shadow:0 4px 0 #015060;}
+.reg-btn:disabled{background:linear-gradient(180deg,#94A3B8 0%,#64748B 100%);box-shadow:none;cursor:not-allowed;}
+
+.clear-btn{
+  padding:8px 16px;font-size:11px;font-weight:bold;
+  background:linear-gradient(180deg,#FF6666 0%,#CC2222 100%);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 3px 0 #881111;
+}
+.clear-btn:hover{background:linear-gradient(180deg,#FF8888 0%,#DD3333 100%);}
+.clear-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #881111;}
+
+/* ステータスバー */
+.status-bar{
+  margin-top:6px;padding:5px 12px;
+  background:#1E2761;border-radius:6px;
+  font-size:10px;color:#CADCFC;
+  display:flex;gap:20px;flex-wrap:wrap;
+}
+.status-bar span strong{color:#fff;}
+
+/* メッセージ */
 .msg{padding:6px 12px;border-radius:4px;margin-top:6px;font-size:11px;display:none;}
 .msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
 .msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
@@ -55,49 +148,28 @@ th.amt-hdr{width:80px;background:#ffffff;font-size:9px;border:1.5px solid #8888b
 <body>
 <div class="wrap">
 
-<div class="nav-row">
-  <button type="button" class="nbtn" onclick="location.href='index.html'">メニュー</button>
-  <button type="button" class="nbtn active">日報入力</button>
-  <button type="button" class="nbtn">地金換金</button>
-  <button type="button" class="nbtn">テレカ・金券換金</button>
-  <button type="button" class="nbtn">店舗間移動</button>
-  <button type="button" class="nbtn">仕入れ入力</button>
-  <button type="button" class="nbtn">評価入力</button>
-  <button type="button" class="nbtn">CSV取込・取出</button>
-  <button type="button" class="nbtn">現金出納帳</button>
-  <button type="button" class="nbtn">費用登録</button>
-  <button type="button" class="nbtn">費用グループ</button>
-  <button type="button" class="nbtn logout" style="margin-left:8px;" onclick="handleLogout()">🏠 ログアウト</button>
-</div>
-<div class="nav-row">
-  <select class="store-sel" id="store"></select>
-  <button type="button" class="nbtn">日報帳票</button>
-  <button type="button" class="nbtn">売上月次報告書</button>
-  <button type="button" class="nbtn">売上集計報告書</button>
-  <button type="button" class="nbtn">順位表</button>
-  <button type="button" class="nbtn">地金換金表</button>
-  <button type="button" class="nbtn">テレカ・金券換金表</button>
-  <button type="button" class="nbtn">店舗間移動集計</button>
-  <button type="button" class="nbtn">テレカ・金券回収チェック</button>
-</div>
-<div class="nav-row">
-  <button type="button" class="nbtn">業務中間レポート</button>
-  <button type="button" class="nbtn">買取順位表</button>
-  <button type="button" class="nbtn">成果給出力</button>
-  <button type="button" class="nbtn">定量ランキング</button>
-  <button type="button" class="nbtn">現金推移表</button>
-</div>
-<div class="nav-row">
-  <button type="button" class="nbtn master" onclick="location.href='master.html'">⚙️ マスタ管理</button>
-</div>
-
-<div style="margin:5px 0;">
-  <input type="date" class="date-input" id="rdate">
+<!-- トップバー -->
+<div class="topbar">
+  <div class="topbar-left">
+    <button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+    <div>
+      <div class="topbar-title">📋 日報入力</div>
+      <div class="user-info" id="user-info"></div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="store-sel" id="store"></select>
+    <input type="date" class="date-input" id="rdate">
+    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
 </div>
 
 <div class="msg" id="msg"></div>
 
+<!-- メインエリア -->
 <div class="main-area">
+
+  <!-- テーブル -->
   <div class="tbl-outer">
     <table>
       <colgroup>
@@ -177,19 +249,19 @@ th.amt-hdr{width:80px;background:#ffffff;font-size:9px;border:1.5px solid #8888b
     </table>
   </div>
 
+  <!-- 右サイドボタン -->
   <div class="right-btns">
-    <button type="button" class="nbtn side">クレジット明細</button>
-    <button type="button" class="nbtn side">買取明細</button>
-    <button type="button" class="nbtn side">地金回収</button>
-    <button type="button" class="nbtn side">テレカ・金券回収</button>
-    <button type="button" class="nbtn side">切手・印紙回収</button>
-    <button type="button" class="nbtn side">金庫〜レジ</button>
-    <div style="margin-top:8px;">
-      <button type="button" class="nbtn side">CSV取込</button>
-    </div>
+    <div class="right-btns-title">関連入力</div>
+    <button type="button" class="side-btn side-btn-blue" onclick="location.href='credit_detail.html?date='+getDate()+'&store='+getStoreId()">💳 クレジット明細</button>
+    <button type="button" class="side-btn side-btn-blue" onclick="location.href='purchase_detail.html?date='+getDate()+'&store='+getStoreId()">🛒 買取明細</button>
+    <button type="button" class="side-btn side-btn-green" onclick="location.href='gold_recovery.html?date='+getDate()+'&store='+getStoreId()">💰 地金回収</button>
+    <button type="button" class="side-btn side-btn-green" onclick="location.href='telecard_recovery.html?date='+getDate()+'&store='+getStoreId()">🎫 テレカ・金券回収</button>
+    <button type="button" class="side-btn side-btn-green" onclick="location.href='stamp_recovery.html?date='+getDate()+'&store='+getStoreId()">📮 切手・印紙回収</button>
+    <button type="button" class="side-btn side-btn-blue" onclick="location.href='cash_register.html?date='+getDate()+'&store='+getStoreId()">🏦 金庫〜レジ</button>
   </div>
 </div>
 
+<!-- 下部：来店客数・登録 -->
 <div class="bottom-area">
   <div class="visitor-box">
     <div class="visitor-lbl">来店客数</div>
@@ -199,13 +271,15 @@ th.amt-hdr{width:80px;background:#ffffff;font-size:9px;border:1.5px solid #8888b
   <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
 </div>
 
+<!-- ステータスバー -->
 <div class="status-bar">
-  <span id="st-store">店舗：</span>
-  <span id="st-user">ユーザー：</span>
-  <span id="st-date">日付：</span>
-  <span id="st-sales">純売上合計：¥0</span>
-  <span id="st-tax">消費税：¥0</span>
+  <span id="st-store"><strong>店舗：</strong></span>
+  <span id="st-user"><strong>ユーザー：</strong></span>
+  <span id="st-date"><strong>日付：</strong></span>
+  <span id="st-sales"><strong>純売上合計：</strong>¥0</span>
+  <span id="st-tax"><strong>消費税：</strong>¥0</span>
 </div>
+
 </div>
 
 <script>
@@ -218,13 +292,8 @@ async function apiFetch(path,method='GET',body=null){
   return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
 }
 
-// 商品カテゴリ・チャネル定義
-const CATS=[
-  {id:1,name:'1.金'},{id:2,name:'2.プラチナ'},{id:3,name:'3.コンビ'},
-  {id:4,name:'4.ジュエリー'},{id:5,name:'5.時計'},{id:6,name:'6.ブランド品'},
-  {id:7,name:'7.テレカ・金券類（非課税）'},{id:8,name:'8.お酒'},{id:9,name:'9.その他'},
-  {id:10,name:'10.切手・印紙'},{id:11,name:'サービス券値引き'},{id:12,name:'返品・ジュエリー'},
-];
+// 商品カテゴリはDBから取得（仕入商品カテゴリーマスタと連動）
+let CATS=[];
 const COLS=[
   {key:'buy',chId:1},{key:'cancel',chId:2},{key:'shop',chId:3},{key:'free',chId:4},
   {key:'honten',chId:5},{key:'raku',chId:6},{key:'rakuEx',chId:7},{key:'yahoo',chId:8},
@@ -236,11 +305,24 @@ const COLS=[
 const SALE_KEYS=COLS.filter(c=>c.key!=='buy'&&c.key!=='cancel').map(c=>c.key);
 
 const data={};
-CATS.forEach(c=>{data[c.id]={};COLS.forEach(col=>{data[c.id][col.key]={q:'',a:''};});});
+
+async function loadCats(){
+  const res=await apiFetch('product_categories?is_active=eq.true&order=sort_order');
+  CATS=await res.json()||[];
+  // dataを初期化
+  CATS.forEach(c=>{
+    if(!data[c.id]){
+      data[c.id]={};
+      COLS.forEach(col=>{data[c.id][col.key]={q:'',a:''};});
+    }
+  });
+}
 
 let storeList=[];
 let currentStoreId=null;
-let currentUserId=null;
+
+function getDate(){return document.getElementById('rdate').value;}
+function getStoreId(){return currentStoreId||'';}
 
 function fmt(n){return(n||0).toLocaleString('ja-JP');}
 function num(v){const n=parseInt((v||'').replace(/[^0-9\-]/g,''),10);return isNaN(n)?0:n;}
@@ -271,8 +353,8 @@ function recalc(){
   const et=document.getElementById('tax_shop');if(et)et.textContent=fmt(tax);
   const eth=document.getElementById('tax_hon');if(eth)eth.textContent=fmt(taxH);
   const eg=document.getElementById('genk');if(eg)eg.textContent=fmt(colSum('shop','a'));
-  document.getElementById('st-sales').textContent='純売上合計：¥'+fmt(pure);
-  document.getElementById('st-tax').textContent='消費税：¥'+fmt(tax);
+  document.getElementById('st-sales').innerHTML='<strong>純売上合計：</strong>¥'+fmt(pure);
+  document.getElementById('st-tax').innerHTML='<strong>消費税：</strong>¥'+fmt(tax);
 }
 
 function buildTable(){
@@ -286,12 +368,10 @@ function buildTable(){
     });
     h+=`</tr>`;
   });
-
   // 計行
   h+=`<tr><td class="sum-label">計</td>`;
   COLS.forEach(col=>{h+=`<td class="sum-qty" id="sq_${col.key}">0</td><td class="sum-amt" id="sa_${col.key}">0</td>`;});
   h+=`</tr>`;
-
   // 純売上行
   h+=`<tr><td class="sum-label">純売上</td>`;
   COLS.forEach(col=>{
@@ -299,7 +379,6 @@ function buildTable(){
     else{h+=`<td class="gray-qty"></td><td class="sum-amt" id="pu_${col.key}">0</td>`;}
   });
   h+=`</tr>`;
-
   // 消費税行
   h+=`<tr><td class="sum-label">消費税</td>`;
   COLS.forEach(col=>{
@@ -308,7 +387,6 @@ function buildTable(){
     else{h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
   });
   h+=`</tr>`;
-
   // 現計行
   h+=`<tr><td class="sum-label">現計</td>`;
   COLS.forEach(col=>{
@@ -316,7 +394,6 @@ function buildTable(){
     else{h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
   });
   h+=`</tr>`;
-
   // 掛計行
   h+=`<tr><td class="sum-label">掛計</td>`;
   COLS.forEach(col=>{
@@ -324,28 +401,22 @@ function buildTable(){
     else{h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
   });
   h+=`</tr>`;
-
   // 客数行
   h+=`<tr><td class="sum-label">客数</td>`;
   COLS.forEach(()=>{
     h+=`<td class="gray-qty"></td><td class="td-amt"><input type="text" inputmode="numeric" value="0" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
   });
   h+=`</tr>`;
-
   tbody.innerHTML=h;
 }
 
-// 既存データを読み込む
 async function loadExistingData(){
   const storeId=currentStoreId;
   const date=document.getElementById('rdate').value;
   if(!storeId||!date)return;
-
   const res=await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&select=*`);
   const rows=await res.json();
   if(!rows||rows.length===0)return;
-
-  // 既存データをセット
   rows.forEach(row=>{
     const cat=CATS.find(c=>c.id===row.category_id);
     const col=COLS.find(c=>c.chId===row.channel_id);
@@ -357,82 +428,37 @@ async function loadExistingData(){
     if(qEl)qEl.value=row.quantity>0?row.quantity:'';
     if(aEl)aEl.value=row.amount>0?row.amount:'';
   });
-
-  // 来店客数
   const visitors=rows.find(r=>r.visitors>0);
   if(visitors)document.getElementById('visitors').value=visitors.visitors;
-
   recalc();
 }
 
-// 登録処理
 async function handleSave(){
   if(!currentStoreId){showMsg('店舗を選択してください。','error');return;}
   const date=document.getElementById('rdate').value;
   if(!date){showMsg('日付を選択してください。','error');return;}
-
   const btn=document.getElementById('reg-btn');
   btn.disabled=true;btn.textContent='登録中...';
-
   const visitors=parseInt(document.getElementById('visitors').value)||0;
-
-  // 登録データを配列で作成
   const records=[];
   CATS.forEach(cat=>{
     COLS.forEach(col=>{
       const q=num(data[cat.id][col.key].q);
       const a=num(data[cat.id][col.key].a);
-      if(q===0&&a===0)return; // 0は省略
-      records.push({
-        report_date:date,
-        store_id:currentStoreId,
-        user_id:currentUserId||null,
-        category_id:cat.id,
-        channel_id:col.chId,
-        quantity:q,
-        amount:a,
-        visitors:visitors,
-      });
+      if(q===0&&a===0)return;
+      records.push({report_date:date,store_id:currentStoreId,user_id:null,category_id:cat.id,channel_id:col.chId,quantity:q,amount:a,visitors:visitors});
     });
   });
-
-  if(records.length===0){
-    showMsg('入力データがありません。','error');
-    btn.disabled=false;btn.textContent='登録';
-    return;
-  }
-
+  if(records.length===0){showMsg('入力データがありません。','error');btn.disabled=false;btn.textContent='登録';return;}
   try{
-    // 既存データを削除してから再登録（UPSERT）
-    const delRes=await apiFetch(
-      `daily_reports?report_date=eq.${date}&store_id=eq.${currentStoreId}`,
-      'DELETE'
-    );
-
-    if(!delRes.ok&&delRes.status!==404){
-      const err=await delRes.text();
-      showMsg('削除エラー：'+err,'error');
-      btn.disabled=false;btn.textContent='登録';
-      return;
-    }
-
-    // 新規登録
+    await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${currentStoreId}`,'DELETE');
     const insRes=await apiFetch('daily_reports','POST',records);
-
-    if(!insRes.ok){
-      const err=await insRes.text();
-      showMsg('登録エラー：'+err,'error');
-      btn.disabled=false;btn.textContent='登録';
-      return;
-    }
-
+    if(!insRes.ok){const err=await insRes.text();showMsg('登録エラー：'+err,'error');btn.disabled=false;btn.textContent='登録';return;}
     btn.textContent='登録済み ✓';btn.classList.add('done');
     showMsg(`✅ ${records.length}件のデータを登録しました。（${date}）`,'success');
     setTimeout(()=>{btn.disabled=false;btn.textContent='登録';btn.classList.remove('done');},3000);
-
   }catch(e){
-    showMsg('通信エラー：'+e.message,'error');
-    btn.disabled=false;btn.textContent='登録';
+    showMsg('通信エラー：'+e.message,'error');btn.disabled=false;btn.textContent='登録';
   }
 }
 
@@ -452,7 +478,6 @@ function handleLogout(){
   if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
 }
 
-// 店舗一覧をDBから取得
 async function loadStores(){
   const res=await apiFetch('stores?is_active=eq.true&order=sort_order');
   storeList=await res.json()||[];
@@ -462,56 +487,39 @@ async function loadStores(){
     const o=document.createElement('option');
     o.value=s.id;o.textContent=s.name;sel.appendChild(o);
   });
-
-  // ログイン時の店舗を選択
   const savedStore=localStorage.getItem('store')||'';
   const matched=storeList.find(s=>s.name===savedStore);
-  if(matched){
-    sel.value=matched.id;
-    currentStoreId=matched.id;
-  } else if(storeList.length>0){
-    currentStoreId=storeList[0].id;
-  }
-  document.getElementById('st-store').textContent='店舗：'+sel.options[sel.selectedIndex]?.text;
+  if(matched){sel.value=matched.id;currentStoreId=matched.id;}
+  else if(storeList.length>0){currentStoreId=parseInt(storeList[0].id);}
+  const selText=sel.options[sel.selectedIndex]?.text||'';
+  document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+selText;
 }
 
-// 初期化
 async function init(){
-  // 日付セット
   const t=new Date();
   const ds=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
   document.getElementById('rdate').value=ds;
-  document.getElementById('st-date').textContent='日付：'+ds;
-
-  // ユーザー情報
+  document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+ds;
   const savedUser=localStorage.getItem('userid')||'';
   const savedName=localStorage.getItem('user_name')||'';
-  document.getElementById('st-user').textContent='ユーザー：'+(savedName||savedUser);
-
-  // テーブル構築
-  buildTable();
-  recalc();
-
-  // 店舗読み込み
+  document.getElementById('user-info').textContent='ログイン中：'+(savedName||savedUser);
+  document.getElementById('st-user').innerHTML='<strong>ユーザー：</strong>'+(savedName||savedUser);
+  await loadCats();
+  alert('商品数：'+CATS.length+'件\n例：'+( CATS[0]?.name||'なし'));
+  buildTable();recalc();
   await loadStores();
-
-  // 既存データ読み込み
   await loadExistingData();
 
-  // 日付変更時
   document.getElementById('rdate').addEventListener('change',async function(){
-    document.getElementById('st-date').textContent='日付：'+this.value;
-    handleClear();
-    await loadExistingData();
+    document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+this.value;
+    handleClear();await loadExistingData();
   });
-
-  // 店舗変更時
   document.getElementById('store').addEventListener('change',async function(){
     currentStoreId=parseInt(this.value);
-    localStorage.setItem('store',this.options[this.selectedIndex].text);
-    document.getElementById('st-store').textContent='店舗：'+this.options[this.selectedIndex].text;
-    handleClear();
-    await loadExistingData();
+    const txt=this.options[this.selectedIndex].text;
+    localStorage.setItem('store',txt);
+    document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+txt;
+    handleClear();await loadExistingData();
   });
 }
 
