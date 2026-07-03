@@ -34,12 +34,15 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;back
 
 /* テーブルラッパー */
 .tbl-outer{
-  flex:1;overflow-x:auto;overflow-y:auto;
-  scrollbar-width:auto;scrollbar-color:#888 #ddd;
-  padding-bottom:12px;
+  flex:1;
   background:#fff;border-radius:8px;padding:10px;
-  max-height:calc(100vh - 220px);
+  overflow:auto;
+  max-height:calc(100vh - 200px);
+  scrollbar-width:auto;scrollbar-color:#888 #ddd;
 }
+.tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
+.tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
+.tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
 .tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
 .tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
 .tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
@@ -581,6 +584,43 @@ async function init(){
     handleClear();
     await loadExistingData();
   });
+
+  // ヘッダー固定をJSで動的に設定（描画後に実行）
+  requestAnimationFrame(()=>requestAnimationFrame(fixHeaders));
+}
+
+function fixHeaders(){
+  const table=document.querySelector('#tbl-body')?.closest('table');
+  if(!table)return;
+  const thead=table.querySelector('thead');
+  const rows=thead.querySelectorAll('tr');
+  if(rows.length<2)return;
+
+  // 1行目の実際の高さを取得
+  const row1Height=rows[0].offsetHeight||28;
+
+  // 1行目のth（買取・キャンセル...の行）
+  rows[0].querySelectorAll('th').forEach(th=>{
+    th.style.position='sticky';
+    th.style.top='0px';
+    th.style.zIndex='3';
+  });
+
+  // 2行目のth（件数・金額の行）
+  rows[1].querySelectorAll('th').forEach(th=>{
+    th.style.position='sticky';
+    th.style.top=row1Height+'px';
+    th.style.zIndex='3';
+  });
+
+  // 商品名（rowspan=2）は両行にまたがるので特別扱い
+  const nameTh=rows[0].querySelector('th.name-th');
+  if(nameTh){
+    nameTh.style.position='sticky';
+    nameTh.style.left='0px';
+    nameTh.style.top='0px';
+    nameTh.style.zIndex='6';
+  }
 }
 
 init();
