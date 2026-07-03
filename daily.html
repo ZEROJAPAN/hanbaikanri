@@ -424,16 +424,16 @@ function buildTable(){
   const tbody=document.getElementById('tbl-body');
   let h='';
   CATS.forEach(c=>{
-    h+=`<tr><td class="cat-td">${c.name}</td>`;
+    h+=`<tr><td class="cat-td" style="border:1.5px solid #c08080;padding:2px 5px;background:#d0f0f8;font-size:10px;white-space:nowrap;width:130px;position:sticky;left:0;z-index:2;">${c.name}</td>`;
     COLS.forEach(col=>{
-      h+=`<td class="td-qty"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_q" oninput="updateCell(${c.id},'${col.key}','q',this.value)"></td>`;
-      h+=`<td class="td-amt"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_a" oninput="updateCell(${c.id},'${col.key}','a',this.value)"></td>`;
+      h+=`<td style="width:50px;border:2px solid #cc8800;padding:1px;background:#ffff00;"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_q" oninput="updateCell(${c.id},'${col.key}','q',this.value)" style="width:50px;border:none;background:#ffff88;font-size:10px;text-align:right;padding:1px 2px;outline:none;font-weight:bold;"></td>`;
+      h+=`<td style="width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_a" oninput="updateCell(${c.id},'${col.key}','a',this.value)" style="width:80px;border:none;background:#ffffff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
     });
     h+=`</tr>`;
   });
   // 計行
-  h+=`<tr><td class="sum-label">計</td>`;
-  COLS.forEach(col=>{h+=`<td class="sum-qty" id="sq_${col.key}">0</td><td class="sum-amt" id="sa_${col.key}">0</td>`;});
+  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">計</td>`;
+  COLS.forEach(col=>{h+=`<td style="width:50px;border:2px solid #cc8800;padding:2px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;" id="sq_${col.key}">0</td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="sa_${col.key}">0</td>`;});
   h+=`</tr>`;
   // 純売上行
   h+=`<tr><td class="sum-label">純売上</td>`;
@@ -443,49 +443,49 @@ function buildTable(){
   });
   h+=`</tr>`;
   // 消費税行（免税列以外はすべて表示）
-  h+=`<tr><td class="sum-label">消費税</td>`;
+  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">消費税</td>`;
   COLS.forEach(col=>{
     if(col.taxfree||col.key==='buy'||col.key==='cancel'){
-      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
     } else {
-      h+=`<td class="gray-qty"></td><td class="sum-amt" id="tax_${col.key}">0</td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="tax_${col.key}">0</td>`;
     }
   });
   h+=`</tr>`;
-  // クレジット計行（買取・キャンセル以外）
-  h+=`<tr><td class="sum-label">クレジット計</td>`;
+  // クレジット計行
+  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">クレジット計</td>`;
   COLS.forEach(col=>{
     if(col.key==='buy'||col.key==='cancel'){
-      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
     } else {
-      h+=`<td class="gray-qty"></td><td class="input-amt"><input type="text" inputmode="numeric" id="credit_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" id="credit_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
     }
   });
   h+=`</tr>`;
-  // 掛計行（買取・キャンセル以外）
-  h+=`<tr><td class="sum-label">掛計</td>`;
+  // 掛計行
+  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">掛計</td>`;
   COLS.forEach(col=>{
     if(col.key==='buy'||col.key==='cancel'){
-      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
     } else {
-      h+=`<td class="gray-qty"></td><td class="input-amt"><input type="text" inputmode="numeric" id="kakekei_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" id="kakekei_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
     }
   });
   h+=`</tr>`;
-  // 現計行（自動計算・買取・キャンセル以外）
-  h+=`<tr><td class="sum-label">現計</td>`;
+  // 現計行
+  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">現計</td>`;
   COLS.forEach(col=>{
     if(col.key==='buy'||col.key==='cancel'){
-      h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
     } else {
-      h+=`<td class="gray-qty"></td><td class="sum-amt" id="genk_${col.key}">0</td>`;
+      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="genk_${col.key}">0</td>`;
     }
   });
   h+=`</tr>`;
   // 客数行
-  h+=`<tr><td class="sum-label">客数</td>`;
+  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">客数</td>`;
   COLS.forEach(()=>{
-    h+=`<td class="gray-qty"></td><td class="td-amt"><input type="text" inputmode="numeric" value="0" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+    h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" value="0" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
   });
   h+=`</tr>`;
   tbody.innerHTML=h;
