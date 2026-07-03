@@ -184,8 +184,13 @@ function showMsg2(text,type='success'){
 
 // 回収日かどうか確認
 async function checkRecoveryDay(){
-  const res=await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&or=(store_id.is.null,store_id.eq.${storeId})`);
-  const data=await res.json()||[];
+  // 全店共通（store_id IS NULL）と店舗個別を別々に取得
+  const res1=await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&store_id=is.null`);
+  const data1=await res1.json()||[];
+  const res2=storeId?await apiFetch(`recovery_calendar?recover_date=eq.${reportDate}&store_id=eq.${storeId}`):Promise.resolve({json:()=>[]});
+  const data2=storeId?await res2.json()||[]:[];
+  const res={json:()=>[...data1,...data2]};
+  const data=res.json();
   isRecoveryDay=data.length>0;
   const bar=document.getElementById('recovery-bar');
   if(isRecoveryDay){
