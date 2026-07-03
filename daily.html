@@ -583,18 +583,7 @@ async function init(){
     await loadExistingData();
   });
 
-  // ヘッダー固定をJSで設定（500ms後に実行）
-  setTimeout(fixStickyHeader, 500);
-}
-
-function fixStickyHeader(){
-  const table=document.getElementById('tbl-main');
-  if(!table){alert('テーブルが見つかりません');return;}
-  const rows=table.querySelectorAll('thead tr');
-  alert('thead行数:'+rows.length);
-  if(rows.length<2)return;
-  const h1=rows[0].offsetHeight;
-  alert('1行目の高さ:'+h1+'px');
+  // ヘッダー固定完了
 }
 
 init();
