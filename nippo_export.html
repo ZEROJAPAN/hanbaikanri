@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日報出力 - ゼロジャパン</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.back-btn:hover{background:#EEF2FF;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+
+.main{background:#fff;border-radius:8px;padding:20px;}
+.section{margin-bottom:24px;}
+.section-title{font-size:13px;font-weight:bold;color:#1E2761;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1E2761;}
+
+.form-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+.form-label{font-size:12px;font-weight:bold;color:#475569;min-width:80px;}
+.form-input{padding:7px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;font-family:'Meiryo','Yu Gothic',sans-serif;}
+.form-input:focus{border-color:#1E2761;}
+.store-sel{min-width:200px;}
+
+.export-btn{
+  padding:10px 28px;font-size:13px;font-weight:bold;
+  background:linear-gradient(180deg,#0FAA7A,#028090);
+  color:#fff;border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 4px 0 #015060;
+  display:flex;align-items:center;gap:8px;
+}
+.export-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
+.export-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #015060;}
+.export-btn:disabled{background:#94A3B8;box-shadow:none;cursor:not-allowed;}
+
+.msg{padding:8px 14px;border-radius:5px;margin-top:10px;font-size:12px;display:none;}
+.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+.msg.info{background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;}
+
+.divider{border:none;border-top:1px solid #E2E8F0;margin:20px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button type="button" class="back-btn" onclick="location.href='daily.html'">◀ 日報入力に戻る</button>
+    <div class="topbar-title">📄 日報帳票出力</div>
+  </div>
+  <div>
+    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- 日次出力 -->
+  <div class="section">
+    <div class="section-title">📋 日報出力（1日分）</div>
+    <div class="form-row">
+      <span class="form-label">店舗</span>
+      <select class="form-input store-sel" id="store-single"></select>
+    </div>
+    <div class="form-row">
+      <span class="form-label">日付</span>
+      <input type="date" class="form-input" id="date-single">
+    </div>
+    <button type="button" class="export-btn" id="btn-single" onclick="exportSingle()">
+      📥 日報をExcelで出力
+    </button>
+    <div class="msg" id="msg-single"></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 期間出力 -->
+  <div class="section">
+    <div class="section-title">📊 日報出力（期間）</div>
+    <div class="form-row">
+      <span class="form-label">店舗</span>
+      <select class="form-input store-sel" id="store-range"></select>
+    </div>
+    <div class="form-row">
+      <span class="form-label">期間</span>
+      <input type="date" class="form-input" id="date-from">
+      <span>〜</span>
+      <input type="date" class="form-input" id="date-to">
+    </div>
+    <button type="button" class="export-btn" id="btn-range" onclick="exportRange()">
+      📥 期間日報をExcelで出力
+    </button>
+    <div class="msg" id="msg-range"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path){
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+  });
+  return await res.json();
+}
+
+function showMsg(id,text,type='info'){
+  const el=document.getElementById(id);
+  el.textContent=text;el.className='msg '+type;el.style.display='block';
+}
+
+function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
+
+// チャンネル定義
+const COLS=[
+  {key:'buy',chId:1,name:'買取'},{key:'cancel',chId:2,name:'キャンセル'},
+  {key:'shop',chId:3,name:'店売り'},{key:'free',chId:4,name:'店売り（免税）'},
+  {key:'honten',chId:5,name:'本店'},{key:'raku',chId:6,name:'楽天国内'},
+  {key:'rakuEx',chId:7,name:'楽天海外（免税）'},{key:'yahoo',chId:8,name:'YahooShop'},
+  {key:'yahuoku',chId:9,name:'ヤフオク'},{key:'wowma',chId:10,name:'Wowma!'},
+  {key:'merukari',chId:11,name:'メルカリ'},{key:'ebay',chId:12,name:'ebay（免税）'},
+  {key:'lux',chId:13,name:'LuxUness'},{key:'amazon',chId:14,name:'Amazon'},
+  {key:'subscr',chId:15,name:'サブスク'},{key:'rakuma',chId:16,name:'ラクマ'},
+  {key:'qoo10',chId:17,name:'Qoo10'},{key:'globa',chId:18,name:'GLOBAZONE'},
+  {key:'auction',chId:19,name:'オークション'},{key:'web',chId:20,name:'WEB販売'},
+  {key:'other',chId:21,name:'その他販売'},
+];
+const TAXFREE_IDS=[4,7,12]; // 免税チャンネルID
+
+// データ取得
+async function fetchDailyData(storeId, date){
+  const [daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons]=await Promise.all([
+    apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&select=*`),
+    apiFetch(`product_categories?is_active=eq.true&order=sort_order`),
+    apiFetch(`cash_register?store_id=eq.${storeId}&record_date=eq.${date}&select=*`),
+    apiFetch(`purchase_details?store_id=eq.${storeId}&report_date=eq.${date}&select=*`),
+    apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=eq.${date}&select=*,precious_metal_types(name)`),
+    apiFetch(`telecard_recovery?store_id=eq.${storeId}&record_date=eq.${date}&select=*,gift_card_types(name)`),
+    apiFetch(`stamp_recovery?store_id=eq.${storeId}&record_date=eq.${date}&select=*`),
+    apiFetch(`visit_reasons?is_active=eq.true&order=sort_order`),
+  ]);
+  return {daily,cats,cashReg:cashReg[0]||null,purchase,goldRec,teleRec,stampRec,visitReasons};
+}
+
+// Excelワークブック作成
+function buildWorkbook(storeName, date, data){
+  const {daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons}=data;
+  const wb=XLSX.utils.book_new();
+  const ws=[];
+
+  // ヘルパー
+  const V=(v,t)=>({v,t:t||'s'});
+  const N=(v)=>({v:v||0,t:'n'});
+
+  // データマップ作成: {catId: {chId: {qty, amt}}}
+  const dataMap={};
+  cats.forEach(c=>{dataMap[c.id]={};COLS.forEach(col=>{dataMap[c.id][col.chId]={qty:0,amt:0};});});
+  daily.forEach(r=>{
+    if(dataMap[r.category_id]&&dataMap[r.category_id][r.channel_id]){
+      dataMap[r.category_id][r.channel_id]={qty:r.quantity||0,amt:r.amount||0};
+    }
+  });
+  // 来店客数
+  const visitorsRow=daily.find(r=>r.visitors>0);
+  const visitors=visitorsRow?.visitors||0;
+
+  let row=0;
+
+  // ① タイトル行
+  const titleRow=[V(storeName)];
+  COLS.forEach(()=>{titleRow.push(V(''));titleRow.push(V(''));});
+  titleRow.push(V(''));titleRow.push(V(date));
+  ws.push(titleRow);row++;
+
+  // ② チャンネル名行
+  const chRow=[V('')];
+  COLS.forEach(c=>{chRow.push(V(c.name));chRow.push(V(''));});
+  ws.push(chRow);row++;
+
+  // ③ 商品名・件数・金額ヘッダー行
+  const hdrRow=[V('商品名')];
+  COLS.forEach(()=>{hdrRow.push(V('点数'));hdrRow.push(V('金額'));});
+  ws.push(hdrRow);row++;
+
+  // ④ 商品データ行
+  cats.forEach(cat=>{
+    const dataRow=[V(cat.name)];
+    COLS.forEach(col=>{
+      const d=dataMap[cat.id]?.[col.chId]||{qty:0,amt:0};
+      dataRow.push(N(d.qty));
+      dataRow.push(N(d.amt));
+    });
+    ws.push(dataRow);row++;
+  });
+
+  // ⑤ 計行
+  const sumRow=[V('計')];
+  COLS.forEach(col=>{
+    const sumQty=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.qty||0),0);
+    const sumAmt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
+    sumRow.push(N(sumQty));sumRow.push(N(sumAmt));
+  });
+  ws.push(sumRow);row++;
+
+  // ⑥ 純売上行
+  const pureRow=[V('純売上')];
+  COLS.forEach(col=>{
+    if(col.chId===1||col.chId===2){pureRow.push(V(''));pureRow.push(V(''));}
+    else{
+      const amt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
+      pureRow.push(V(''));pureRow.push(N(amt));
+    }
+  });
+  ws.push(pureRow);row++;
+
+  // ⑦ 消費税行
+  const taxRow=[V('消費税')];
+  COLS.forEach(col=>{
+    if(col.chId===1||col.chId===2||TAXFREE_IDS.includes(col.chId)){taxRow.push(V(''));taxRow.push(V(''));}
+    else{
+      const amt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
+      taxRow.push(V(''));taxRow.push(N(Math.floor(amt*10/110)));
+    }
+  });
+  ws.push(taxRow);row++;
+
+  // ⑧ 現計・掛計行
+  const shopAmt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[3]?.amt||0),0);
+  const freeAmt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[4]?.amt||0),0);
+  ws.push([V('現計'),V(''),N(shopAmt),V(''),N(freeAmt),...Array(COLS.length*2-4).fill(V(''))]);
+  ws.push([V('掛計'),V(''),N(0),V(''),N(0),...Array(COLS.length*2-4).fill(V(''))]);row+=2;
+
+  // ⑨ 客数行
+  const visitRow=[V('客数'),N(visitors)];
+  COLS.slice(1).forEach(()=>{visitRow.push(V(''));visitRow.push(V(''));});
+  ws.push(visitRow);row++;
+
+  // 空行
+  ws.push([V('')]);row++;
+  ws.push([V(''),V(''),V(''),V(''),V(''),V(''),V('来店客数'),V(''),N(visitors)]);row++;
+  ws.push([V('')]);row++;
+
+  // ⑩ 金庫・レジセクション
+  const cr=cashReg||{};
+  ws.push([V('金庫・レジ'),V(''),V(''),V(''),V(''),V(''),V('買取件数明細'),V(''),V(''),V(''),V(''),V(''),V('地金回収'),V(''),V(''),V(''),V(storeName)]);
+  ws.push([V(''),V('レジ'),V(''),V(''),V(''),V(''),V('初めて'),V(''),V(''),V(purchase.find(p=>p)?.first_visit||0),V(0),V(''),V(''),V('前日繰越'),V('本日'),V('商品化重量'),V('つぶし重量'),V('製品から戻し'),V('回収分'),V('翌日繰越')]);
+  ws.push([V('前日繰越'),N(cr.carry_over||0),V(''),V(''),V(''),V(''),V('２回目'),V(''),V(''),N(purchase.reduce((s,p)=>s+(p.repeat_visit||0),0)),N(purchase.reduce((s,p)=>s+(p.amount||0),0))]);
+
+  // 地金回収データ
+  goldRec.forEach((g,i)=>{
+    const baseRow=ws[ws.length-(3-i<0?0:3-i)];
+    // 地金は別列に追加
+  });
+
+  // シンプルに金庫レジ
+  ws.push([V('本部から入金'),N(cr.hq_deposit||0)]);
+  ws.push([V('店売り（現計）'),N(cr.shop_sales||0)]);
+  ws.push([V('買取'),N(cr.purchase||0)]);
+  ws.push([V('出金'),N(cr.withdrawal||0)]);
+  ws.push([V('本日有高'),N(cr.todays_amount||0)]);
+  ws.push([V('過不足'),N(cr.shortage||0)]);
+  ws.push([V('')]);
+
+  // ⑪ 金種表
+  ws.push([V('金種表')]);
+  ws.push([V('金種'),V('枚数'),V(''),V('金額')]);
+  const denoms=[{n:'¥10,000',k:'count_10000',v:10000},{n:'¥5,000',k:'count_5000',v:5000},{n:'¥1,000',k:'count_1000',v:1000},{n:'¥500',k:'count_500',v:500},{n:'¥100',k:'count_100',v:100},{n:'¥50',k:'count_50',v:50},{n:'¥10',k:'count_10',v:10},{n:'¥5',k:'count_5',v:5},{n:'¥1',k:'count_1',v:1}];
+  denoms.forEach(d=>{
+    const cnt=cr[d.k]||0;
+    ws.push([V(d.n),N(cnt),V(''),N(cnt*d.v)]);
+  });
+  ws.push([V('レジ内実現金'),V(''),V(''),N(cr.register_cash||0)]);
+  ws.push([V('本部入金'),N(cr.hq_payment||0),V(''),N(cr.hq_payment||0)]);
+  ws.push([V('レジ内繰越'),V(''),V(''),N(cr.register_carry||0)]);
+  ws.push([V('')]);
+
+  // ⑫ 買取件数明細（来店動機）
+  ws.push([V('買取件数明細（来店動機）')]);
+  ws.push([V('来店動機'),V('件数'),V('金額')]);
+  visitReasons.forEach(r=>{
+    const p=purchase.find(pd=>pd.visit_reason_id===r.id);
+    ws.push([V(r.name),N(p?.visitors||0),N(p?.amount||0)]);
+  });
+  const totalV=purchase.reduce((s,p)=>s+(p.visitors||0),0);
+  const totalA=purchase.reduce((s,p)=>s+(p.amount||0),0);
+  const firstV=purchase.reduce((s,p)=>s+(p.first_visit||0),0);
+  const repeatV=purchase.reduce((s,p)=>s+(p.repeat_visit||0),0);
+  ws.push([V('小計'),N(totalV),N(totalA)]);
+  ws.push([V('初回ご来店'),N(firstV)]);
+  ws.push([V('2回目以降'),N(repeatV)]);
+  const noPurchase=purchase[0]?.no_purchase||0;
+  const cancelCount=purchase[0]?.cancel_count||0;
+  ws.push([V('買取不可'),N(noPurchase)]);
+  ws.push([V('キャンセル'),N(cancelCount)]);
+  const cancelRate=totalV>0?(cancelCount/(totalV+cancelCount)*100):0;
+  const repeatRate=totalV>0?(repeatV/totalV*100):0;
+  ws.push([V('キャンセル率'),V(cancelRate.toFixed(1)+'%')]);
+  ws.push([V('リピーター率'),V(repeatRate.toFixed(1)+'%')]);
+  ws.push([V('')]);
+
+  // ⑬ 地金回収
+  ws.push([V('地金回収'),V(''),V(''),V(''),V(storeName)]);
+  ws.push([V('金種'),V('前日繰越'),V('本日'),V('商品化重量'),V('つぶし重量'),V('製品から戻し'),V('回収分'),V('翌日繰越')]);
+  goldRec.forEach(g=>{
+    ws.push([V(g.precious_metal_types?.name||''),V('重量'),N(g.carry_over||0),N(g.today_weight||0),N(g.product_weight||0),N(g.crush_weight||0),N(g.return_weight||0),N(g.recovery_weight||0),N(g.next_carry_over||0)]);
+  });
+  ws.push([V('')]);
+
+  // ⑭ テレカ・金券回収
+  ws.push([V('テレカ・金券回収'),V(''),V(''),V(''),V(storeName)]);
+  ws.push([V('種別'),V('前日繰越'),V('本日買取'),V('回収枚数'),V('店頭販売'),V('翌日繰越'),V('累計枚数')]);
+  teleRec.forEach(t=>{
+    ws.push([V(t.gift_card_types?.name||''),N(t.carry_over||0),N(t.today_purchase||0),N(t.recovery_count||0),N(t.shop_sales||0),N(t.next_carry_over||0),N(t.cumulative||0)]);
+  });
+  ws.push([V('')]);
+
+  // ⑮ 切手・印紙回収
+  ws.push([V('切手・印紙回収'),V(''),V(''),V(''),V(storeName)]);
+  ws.push([V('種類'),V('額面金額'),V('回収枚数'),V('回収金額'),V('月末在庫枚数'),V('月末在庫金額')]);
+  stampRec.forEach(s=>{
+    ws.push([V(s.stamp_type||''),N(s.face_value||0),N(s.recovery_count||0),N(s.recovery_amount||0),N(s.stock_count||0),N(s.stock_amount||0)]);
+  });
+
+  // ワークシート作成
+  const sheet=XLSX.utils.aoa_to_sheet(ws);
+  XLSX.utils.book_append_sheet(wb,sheet,'日報');
+  return wb;
+}
+
+// 1日分出力
+async function exportSingle(){
+  const btn=document.getElementById('btn-single');
+  const storeId=document.getElementById('store-single').value;
+  const storeName=document.getElementById('store-single').options[document.getElementById('store-single').selectedIndex]?.text||'';
+  const date=document.getElementById('date-single').value;
+  if(!storeId||!date){showMsg('msg-single','店舗と日付を選択してください。','error');return;}
+
+  btn.disabled=true;btn.textContent='出力中...';
+  showMsg('msg-single','データを取得中...','info');
+
+  try{
+    const data=await fetchDailyData(storeId,date);
+    const wb=buildWorkbook(storeName,date,data);
+    XLSX.writeFile(wb,`日報_${storeName}_${date}.xlsx`);
+    showMsg('msg-single','✅ 出力しました。','success');
+  }catch(e){
+    showMsg('msg-single','エラー：'+e.message,'error');
+  }
+  btn.disabled=false;btn.textContent='📥 日報をExcelで出力';
+}
+
+// 期間出力
+async function exportRange(){
+  const btn=document.getElementById('btn-range');
+  const storeId=document.getElementById('store-range').value;
+  const storeName=document.getElementById('store-range').options[document.getElementById('store-range').selectedIndex]?.text||'';
+  const dateFrom=document.getElementById('date-from').value;
+  const dateTo=document.getElementById('date-to').value;
+  if(!storeId||!dateFrom||!dateTo){showMsg('msg-range','店舗と期間を選択してください。','error');return;}
+  if(dateFrom>dateTo){showMsg('msg-range','開始日は終了日以前にしてください。','error');return;}
+
+  btn.disabled=true;btn.textContent='出力中...';
+  showMsg('msg-range','データを取得中...','info');
+
+  try{
+    const wb=XLSX.utils.book_new();
+    // 期間内の日付を列挙
+    const dates=[];
+    let d=new Date(dateFrom);
+    const end=new Date(dateTo);
+    while(d<=end){
+      dates.push(d.toISOString().slice(0,10));
+      d.setDate(d.getDate()+1);
+    }
+
+    for(const date of dates){
+      const data=await fetchDailyData(storeId,date);
+      if(data.daily.length===0&&!data.cashReg)continue; // データがない日はスキップ
+      const ws=buildWorkbook(storeName,date,data);
+      const sheet=ws.Sheets['日報'];
+      XLSX.utils.book_append_sheet(wb,sheet,date);
+    }
+
+    if(wb.SheetNames.length===0){
+      showMsg('msg-range','期間内にデータがありませんでした。','error');
+      btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';
+      return;
+    }
+
+    XLSX.writeFile(wb,`日報_${storeName}_${dateFrom}_${dateTo}.xlsx`);
+    showMsg('msg-range','✅ '+wb.SheetNames.length+'日分を出力しました。','success');
+  }catch(e){
+    showMsg('msg-range','エラー：'+e.message,'error');
+  }
+  btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';
+}
+
+// 店舗一覧読み込み
+async function loadStores(){
+  const stores=await apiFetch('stores?is_active=eq.true&order=sort_order');
+  const savedStoreId=localStorage.getItem('store_id')||'';
+  ['store-single','store-range'].forEach(id=>{
+    const sel=document.getElementById(id);
+    stores.forEach(s=>{
+      const o=document.createElement('option');
+      o.value=s.id;o.textContent=s.name;
+      if(String(s.id)===String(savedStoreId))o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+// 初期化
+async function init(){
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('date-single').value=today;
+  document.getElementById('date-from').value=today.slice(0,8)+'01';
+  document.getElementById('date-to').value=today;
+  await loadStores();
+}
+
+init();
+</script>
+</body>
+</html>
