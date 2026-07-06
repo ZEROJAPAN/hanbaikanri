@@ -705,10 +705,13 @@ async function exportSingle(){
 
   try{
     const data=await fetchDailyData(storeId,date);
-    const wb=new ExcelJS.Workbook();
-    await buildExcelJSSheet(wb,storeName,date,data);
-    const buf=await wb.xlsx.writeBuffer();
-    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const res=await fetch('/api/nippo',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({storeName,date,data})
+    });
+    if(!res.ok){const err=await res.text();showMsg('msg-single','エラー：'+err,'error');btn.disabled=false;btn.textContent='📥 日報をExcelで出力';return;}
+    const blob=await res.blob();
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;a.download=`日報_${storeName}_${date}.xlsx`;a.click();
@@ -743,27 +746,32 @@ async function exportRange(){
       d.setDate(d.getDate()+1);
     }
 
-    let sheetCount=0;
+    // 期間内の全日付でAPI呼び出し（1日ずつ生成してZIP化は複雑なため、1日ごとにDL）
+    let dlCount=0;
     for(const date of dates){
       const data=await fetchDailyData(storeId,date);
       if(data.daily.length===0&&!data.cashReg)continue;
-      await buildExcelJSSheet(wb,storeName,date,data);
-      sheetCount++;
+      showMsg('msg-range',`${date} を出力中...`,'info');
+      const res=await fetch('/api/nippo',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({storeName,date,data})
+      });
+      if(!res.ok)continue;
+      const blob=await res.blob();
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download=`日報_${storeName}_${date}.xlsx`;a.click();
+      URL.revokeObjectURL(url);
+      dlCount++;
+      await new Promise(r=>setTimeout(r,500)); // DL間隔
     }
-
-    if(sheetCount===0){
+    if(dlCount===0){
       showMsg('msg-range','期間内にデータがありませんでした。','error');
       btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';
       return;
     }
-
-    const buf=await wb.xlsx.writeBuffer();
-    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=`日報_${storeName}_${dateFrom}_${dateTo}.xlsx`;a.click();
-    URL.revokeObjectURL(url);
-    showMsg('msg-range','✅ '+sheetCount+'日分を出力しました。','success');
+    showMsg('msg-range','✅ '+dlCount+'日分を出力しました。','success');
   }catch(e){
     showMsg('msg-range','エラー：'+e.message,'error');
   }
