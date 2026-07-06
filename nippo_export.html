@@ -474,19 +474,89 @@ async function buildExcelJSSheet(wb, storeName, date, data){
   });
 
   // 集計行を追加
-  const sumLabels=['計','純売上','消費税','クレジット計','掛計','現計','客数'];
-  sumLabels.forEach(label=>{
+  const TAXFREE_CH=[4,7,12]; // 免税チャンネルID
+  const NON_SALE_CH=[1,2];   // 買取・キャンセル
+
+  // 計行
+  const sumRowData=['計'];
+  COLS.forEach(col=>{
+    const sumQty=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.qty||0),0);
+    const sumAmt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
+    sumRowData.push(sumQty);sumRowData.push(sumAmt);
+  });
+  const sumRow=ws.addRow(sumRowData);
+  sumRow.height=15;
+  sumRow.eachCell((cell,colNum)=>{
+    cell.border=allBorder;
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFF88'}};
+    cell.font={bold:true,size:9};
+    if(colNum===1){cell.alignment={horizontal:'center'};}
+    else{cell.alignment={horizontal:'right'};if(typeof cell.value==='number')cell.numFmt='#,##0';}
+  });
+
+  // 純売上行
+  const pureRowData=['純売上'];
+  COLS.forEach(col=>{
+    if(NON_SALE_CH.includes(col.chId)){pureRowData.push('');pureRowData.push('');}
+    else{
+      const amt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
+      pureRowData.push('');pureRowData.push(amt);
+    }
+  });
+  const pureRow=ws.addRow(pureRowData);
+  pureRow.height=15;
+  pureRow.eachCell((cell,colNum)=>{
+    cell.border=allBorder;
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF2FF'}};
+    cell.font={bold:true,size:9};
+    if(colNum===1){cell.alignment={horizontal:'center'};}
+    else if(typeof cell.value==='number'){cell.alignment={horizontal:'right'};cell.numFmt='#,##0';}
+  });
+
+  // 消費税行
+  const taxRowData=['消費税'];
+  COLS.forEach(col=>{
+    if(NON_SALE_CH.includes(col.chId)||TAXFREE_CH.includes(col.chId)){taxRowData.push('');taxRowData.push('');}
+    else{
+      const amt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
+      taxRowData.push('');taxRowData.push(Math.floor(amt*10/110));
+    }
+  });
+  const taxRow=ws.addRow(taxRowData);
+  taxRow.height=15;
+  taxRow.eachCell((cell,colNum)=>{
+    cell.border=allBorder;
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF2FF'}};
+    cell.font={bold:true,size:9};
+    if(colNum===1){cell.alignment={horizontal:'center'};}
+    else if(typeof cell.value==='number'){cell.alignment={horizontal:'right'};cell.numFmt='#,##0';}
+  });
+
+  // クレジット計・掛計・現計行（空欄）
+  ['クレジット計','掛計','現計'].forEach(label=>{
     const rowData=[label];
-    COLS.forEach(col=>{rowData.push('');rowData.push('');});
+    COLS.forEach(()=>{rowData.push('');rowData.push('');});
     const row=ws.addRow(rowData);
     row.height=15;
     row.eachCell(cell=>{
       cell.border=allBorder;
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFC0C0C0'}};
       cell.font={bold:true,size:9};
-      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
-      cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};
       cell.alignment={horizontal:'center'};
     });
+  });
+
+  // 客数行
+  const visitRowData=['客数',visitors];
+  COLS.slice(1).forEach(()=>{visitRowData.push('');visitRowData.push('');});
+  const visitRow=ws.addRow(visitRowData);
+  visitRow.height=15;
+  visitRow.eachCell((cell,colNum)=>{
+    cell.border=allBorder;
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFF88'}};
+    cell.font={bold:true,size:9};
+    if(colNum===1){cell.alignment={horizontal:'center'};}
+    else if(typeof cell.value==='number'){cell.alignment={horizontal:'right'};cell.numFmt='#,##0';}
   });
 
   // 空行
