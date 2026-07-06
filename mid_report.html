@@ -281,7 +281,7 @@ function exportExcel(){
   const ws_data=[];
 
   // タイトル行
-  ws_data.push(['業務中間レポート','','',currentDate]);
+  ws_data.push(['業務中間レポート','','','','','',currentDate]);
   ws_data.push(['店舗コード','店舗名','最終更新日時','店売り客数','店売り金額','買取客数','買取金額']);
 
   let totalShopV=0,totalShopA=0,totalBuyV=0,totalBuyA=0;
@@ -308,7 +308,43 @@ function exportExcel(){
   const ws=XLSX.utils.aoa_to_sheet(ws_data);
 
   // 列幅設定
-  ws['!cols']=[{wch:10},{wch:25},{wch:20},{wch:10},{wch:14},{wch:10},{wch:14}];
+  ws['!cols']=[{wch:10},{wch:28},{wch:22},{wch:12},{wch:16},{wch:12},{wch:16}];
+
+  // 罫線スタイル
+  const border={
+    top:{style:'thin',color:{rgb:'000000'}},
+    bottom:{style:'thin',color:{rgb:'000000'}},
+    left:{style:'thin',color:{rgb:'000000'}},
+    right:{style:'thin',color:{rgb:'000000'}}
+  };
+  const headerFill={fgColor:{rgb:'1E2761'},type:'pattern',patternType:'solid'};
+  const headerFont={color:{rgb:'FFFFFF'},bold:true};
+  const totalFill={fgColor:{rgb:'FFFF88'},type:'pattern',patternType:'solid'};
+  const totalFont={bold:true};
+  const numFmt='#,##0';
+
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=range.s.r;R<=range.e.r;R++){
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr])ws[addr]={v:'',t:'s'};
+      ws[addr].s={border};
+
+      // ヘッダー行（2行目）スタイル
+      if(R===1){
+        ws[addr].s={border,fill:headerFill,font:headerFont,alignment:{horizontal:'center'}};
+      }
+      // 合計行スタイル
+      if(R===range.e.r){
+        ws[addr].s={border,fill:totalFill,font:totalFont,alignment:{horizontal:C===1?'center':'right'}};
+      }
+      // 数値列の書式（客数・金額列）
+      if(R>1&&R<range.e.r&&C>=3){
+        ws[addr].s={border,alignment:{horizontal:'right'}};
+        if(ws[addr].t==='n')ws[addr].z=numFmt;
+      }
+    }
+  }
 
   XLSX.utils.book_append_sheet(wb,ws,'業務中間レポート');
   XLSX.writeFile(wb,`業務中間レポート_${currentDate}.xlsx`);
