@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>日報出力 - ゼロジャパン</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
@@ -391,6 +392,175 @@ function buildWorkbook(storeName, date, data){
   return wb;
 }
 
+// ExcelJSで日報ワークシートを作成
+async function buildExcelJSSheet(wb, storeName, date, data){
+  const {daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons}=data;
+  const ws=wb.addWorksheet(date);
+
+  const thinBorder={style:'thin',color:{argb:'FF000000'}};
+  const allBorder={top:thinBorder,bottom:thinBorder,left:thinBorder,right:thinBorder};
+
+  // データマップ作成
+  const dataMap={};
+  cats.forEach(c=>{dataMap[c.id]={};COLS.forEach(col=>{dataMap[c.id][col.chId]={qty:0,amt:0};});});
+  daily.forEach(r=>{
+    if(dataMap[r.category_id]&&dataMap[r.category_id][r.channel_id]){
+      dataMap[r.category_id][r.channel_id]={qty:r.quantity||0,amt:r.amount||0};
+    }
+  });
+  const visitorsRow=daily.find(r=>r.visitors>0);
+  const visitors=visitorsRow?.visitors||0;
+
+  // 列幅設定
+  const cols=[{width:22}];
+  COLS.forEach(()=>{cols.push({width:8});cols.push({width:14});});
+  ws.columns=cols;
+
+  // タイトル行
+  const titleData=[storeName];
+  COLS.forEach(()=>{titleData.push('');titleData.push('');});
+  titleData.push('');titleData.push(date);
+  const titleRow=ws.addRow(titleData);
+  titleRow.font={bold:true,size:12};
+  titleRow.height=20;
+
+  // チャンネル名行
+  const chData=[''];
+  COLS.forEach(c=>{chData.push(c.name);chData.push('');});
+  const chRow=ws.addRow(chData);
+  chRow.height=18;
+  chRow.eachCell(cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
+    cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};
+    cell.alignment={horizontal:'center',vertical:'middle'};
+    cell.border=allBorder;
+  });
+
+  // ヘッダー行
+  const hdrData=['商品名'];
+  COLS.forEach(()=>{hdrData.push('件数');hdrData.push('金額');});
+  const hdrRow=ws.addRow(hdrData);
+  hdrRow.height=16;
+  hdrRow.eachCell(cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2D4FBA'}};
+    cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};
+    cell.alignment={horizontal:'center'};
+    cell.border=allBorder;
+  });
+
+  // 商品データ行
+  cats.forEach(cat=>{
+    const rowData=[cat.name];
+    COLS.forEach(col=>{
+      const d=dataMap[cat.id]?.[col.chId]||{qty:0,amt:0};
+      rowData.push(d.qty);rowData.push(d.amt);
+    });
+    const row=ws.addRow(rowData);
+    row.height=15;
+    row.eachCell((cell,colNum)=>{
+      cell.border=allBorder;
+      cell.font={size:9};
+      if(colNum===1){
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD0F0F8'}};
+        cell.alignment={horizontal:'left'};
+      } else {
+        cell.alignment={horizontal:'right'};
+        if(colNum%2===0){
+          cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFF00'}};
+        }
+        if(cell.value!==0&&cell.value!=='')cell.numFmt='#,##0';
+      }
+    });
+  });
+
+  // 集計行を追加
+  const sumLabels=['計','純売上','消費税','クレジット計','掛計','現計','客数'];
+  sumLabels.forEach(label=>{
+    const rowData=[label];
+    COLS.forEach(col=>{rowData.push('');rowData.push('');});
+    const row=ws.addRow(rowData);
+    row.height=15;
+    row.eachCell(cell=>{
+      cell.border=allBorder;
+      cell.font={bold:true,size:9};
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
+      cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};
+      cell.alignment={horizontal:'center'};
+    });
+  });
+
+  // 空行
+  ws.addRow([]);
+
+  // 金庫・レジセクション
+  const cr=cashReg||{};
+  const crSection=[
+    ['金庫〜レジ'],
+    ['','レジ'],
+    ['前日繰越',cr.carry_over||0],
+    ['本部から入金',cr.hq_deposit||0],
+    ['店売り（現計）',cr.shop_sales||0],
+    ['買取',cr.purchase||0],
+    ['出金',cr.withdrawal||0],
+    ['本日有高',cr.todays_amount||0],
+    ['過不足',cr.shortage||0],
+  ];
+  crSection.forEach(rowData=>{
+    const row=ws.addRow(rowData);
+    row.height=15;
+    row.eachCell((cell,colNum)=>{
+      cell.border=allBorder;
+      cell.font={size:10};
+      if(colNum===1){
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFB3C1'}};
+        cell.font={bold:true,size:10};
+      } else if(cell.value!==''&&typeof cell.value==='number'){
+        cell.alignment={horizontal:'right'};
+        cell.numFmt='#,##0';
+      }
+    });
+  });
+
+  // 来店動機セクション
+  ws.addRow([]);
+  const hdr2=ws.addRow(['来店動機','件数','金額']);
+  hdr2.eachCell(cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
+    cell.font={color:{argb:'FFFFFFFF'},bold:true,size:10};
+    cell.alignment={horizontal:'center'};
+    cell.border=allBorder;
+  });
+  visitReasons.forEach(r=>{
+    const p=purchase.find(pd=>pd.visit_reason_id===r.id);
+    const row=ws.addRow([r.name,p?.visitors||0,p?.amount||0]);
+    row.eachCell((cell,colNum)=>{
+      cell.border=allBorder;
+      cell.font={size:10};
+      if(colNum>1){cell.alignment={horizontal:'right'};cell.numFmt='#,##0';}
+    });
+  });
+
+  // 地金回収セクション
+  if(goldRec.length>0){
+    ws.addRow([]);
+    const ghdr=ws.addRow(['地金回収','前日繰越','本日','商品化重量','つぶし重量','製品から戻し','回収分','翌日繰越']);
+    ghdr.eachCell(cell=>{
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
+      cell.font={color:{argb:'FFFFFFFF'},bold:true,size:10};
+      cell.alignment={horizontal:'center'};
+      cell.border=allBorder;
+    });
+    goldRec.forEach(g=>{
+      const row=ws.addRow([g.precious_metal_types?.name||'',g.carry_over||0,g.today_weight||0,g.product_weight||0,g.crush_weight||0,g.return_weight||0,g.recovery_weight||0,g.next_carry_over||0]);
+      row.eachCell((cell,colNum)=>{
+        cell.border=allBorder;
+        cell.font={size:10};
+        if(colNum>1){cell.alignment={horizontal:'right'};cell.numFmt='#,##0.00';}
+      });
+    });
+  }
+}
+
 // 1日分出力
 async function exportSingle(){
   const btn=document.getElementById('btn-single');
@@ -404,8 +574,14 @@ async function exportSingle(){
 
   try{
     const data=await fetchDailyData(storeId,date);
-    const wb=buildWorkbook(storeName,date,data);
-    XLSX.writeFile(wb,`日報_${storeName}_${date}.xlsx`);
+    const wb=new ExcelJS.Workbook();
+    await buildExcelJSSheet(wb,storeName,date,data);
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`日報_${storeName}_${date}.xlsx`;a.click();
+    URL.revokeObjectURL(url);
     showMsg('msg-single','✅ 出力しました。','success');
   }catch(e){
     showMsg('msg-single','エラー：'+e.message,'error');
@@ -427,8 +603,7 @@ async function exportRange(){
   showMsg('msg-range','データを取得中...','info');
 
   try{
-    const wb=XLSX.utils.book_new();
-    // 期間内の日付を列挙
+    const wb=new ExcelJS.Workbook();
     const dates=[];
     let d=new Date(dateFrom);
     const end=new Date(dateTo);
@@ -437,22 +612,27 @@ async function exportRange(){
       d.setDate(d.getDate()+1);
     }
 
+    let sheetCount=0;
     for(const date of dates){
       const data=await fetchDailyData(storeId,date);
-      if(data.daily.length===0&&!data.cashReg)continue; // データがない日はスキップ
-      const ws=buildWorkbook(storeName,date,data);
-      const sheet=ws.Sheets['日報'];
-      XLSX.utils.book_append_sheet(wb,sheet,date);
+      if(data.daily.length===0&&!data.cashReg)continue;
+      await buildExcelJSSheet(wb,storeName,date,data);
+      sheetCount++;
     }
 
-    if(wb.SheetNames.length===0){
+    if(sheetCount===0){
       showMsg('msg-range','期間内にデータがありませんでした。','error');
       btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';
       return;
     }
 
-    XLSX.writeFile(wb,`日報_${storeName}_${dateFrom}_${dateTo}.xlsx`);
-    showMsg('msg-range','✅ '+wb.SheetNames.length+'日分を出力しました。','success');
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`日報_${storeName}_${dateFrom}_${dateTo}.xlsx`;a.click();
+    URL.revokeObjectURL(url);
+    showMsg('msg-range','✅ '+sheetCount+'日分を出力しました。','success');
   }catch(e){
     showMsg('msg-range','エラー：'+e.message,'error');
   }
