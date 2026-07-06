@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>日報出力 - ゼロジャパン</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -16,52 +15,35 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
 .back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
 .back-btn:hover{background:#EEF2FF;}
 .logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
-
 .main{background:#fff;border-radius:8px;padding:20px;}
 .section{margin-bottom:24px;}
 .section-title{font-size:13px;font-weight:bold;color:#1E2761;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1E2761;}
-
 .form-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
 .form-label{font-size:12px;font-weight:bold;color:#475569;min-width:80px;}
 .form-input{padding:7px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;font-family:'Meiryo','Yu Gothic',sans-serif;}
 .form-input:focus{border-color:#1E2761;}
 .store-sel{min-width:200px;}
-
-.export-btn{
-  padding:10px 28px;font-size:13px;font-weight:bold;
-  background:linear-gradient(180deg,#0FAA7A,#028090);
-  color:#fff;border:none;border-radius:6px;cursor:pointer;
-  box-shadow:0 4px 0 #015060;
-  display:flex;align-items:center;gap:8px;
-}
+.export-btn{padding:10px 28px;font-size:13px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:6px;cursor:pointer;box-shadow:0 4px 0 #015060;}
 .export-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
 .export-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #015060;}
 .export-btn:disabled{background:#94A3B8;box-shadow:none;cursor:not-allowed;}
-
 .msg{padding:8px 14px;border-radius:5px;margin-top:10px;font-size:12px;display:none;}
 .msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
 .msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
 .msg.info{background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;}
-
 .divider{border:none;border-top:1px solid #E2E8F0;margin:20px 0;}
 </style>
 </head>
 <body>
 <div class="wrap">
-
 <div class="topbar">
   <div class="topbar-left">
     <button type="button" class="back-btn" onclick="location.href='daily.html'">◀ 日報入力に戻る</button>
     <div class="topbar-title">📄 日報帳票出力</div>
   </div>
-  <div>
-    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
-  </div>
+  <div><button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button></div>
 </div>
-
 <div class="main">
-
-  <!-- 日次出力 -->
   <div class="section">
     <div class="section-title">📋 日報出力（1日分）</div>
     <div class="form-row">
@@ -72,15 +54,10 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
       <span class="form-label">日付</span>
       <input type="date" class="form-input" id="date-single">
     </div>
-    <button type="button" class="export-btn" id="btn-single" onclick="exportSingle()">
-      📥 日報をExcelで出力
-    </button>
+    <button type="button" class="export-btn" id="btn-single" onclick="exportSingle()">📥 日報をExcelで出力</button>
     <div class="msg" id="msg-single"></div>
   </div>
-
   <hr class="divider">
-
-  <!-- 期間出力 -->
   <div class="section">
     <div class="section-title">📊 日報出力（期間）</div>
     <div class="form-row">
@@ -93,51 +70,32 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
       <span>〜</span>
       <input type="date" class="form-input" id="date-to">
     </div>
-    <button type="button" class="export-btn" id="btn-range" onclick="exportRange()">
-      📥 期間日報をExcelで出力
-    </button>
+    <button type="button" class="export-btn" id="btn-range" onclick="exportRange()">📥 期間日報をExcelで出力</button>
     <div class="msg" id="msg-range"></div>
   </div>
-
 </div>
 </div>
-
 <script>
 const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
 
 async function apiFetch(path){
-  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{
-    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-  });
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
   return await res.json();
 }
+function showMsg(id,text,type='info'){const el=document.getElementById(id);el.textContent=text;el.className='msg '+type;el.style.display='block';}
 
-function showMsg(id,text,type='info'){
-  const el=document.getElementById(id);
-  el.textContent=text;el.className='msg '+type;el.style.display='block';
-}
-
-function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
-
-// チャンネル定義
 const COLS=[
-  {key:'buy',chId:1,name:'買取'},{key:'cancel',chId:2,name:'キャンセル'},
-  {key:'shop',chId:3,name:'店売り'},{key:'free',chId:4,name:'店売り（免税）'},
-  {key:'honten',chId:5,name:'本店'},{key:'raku',chId:6,name:'楽天国内'},
-  {key:'rakuEx',chId:7,name:'楽天海外（免税）'},{key:'yahoo',chId:8,name:'YahooShop'},
-  {key:'yahuoku',chId:9,name:'ヤフオク'},{key:'wowma',chId:10,name:'Wowma!'},
-  {key:'merukari',chId:11,name:'メルカリ'},{key:'ebay',chId:12,name:'ebay（免税）'},
-  {key:'lux',chId:13,name:'LuxUness'},{key:'amazon',chId:14,name:'Amazon'},
-  {key:'subscr',chId:15,name:'サブスク'},{key:'rakuma',chId:16,name:'ラクマ'},
-  {key:'qoo10',chId:17,name:'Qoo10'},{key:'globa',chId:18,name:'GLOBAZONE'},
-  {key:'auction',chId:19,name:'オークション'},{key:'web',chId:20,name:'WEB販売'},
-  {key:'other',chId:21,name:'その他販売'},
+  {chId:1,name:'買取'},{chId:2,name:'キャンセル'},{chId:3,name:'店売り'},{chId:4,name:'店売り（免税）'},
+  {chId:5,name:'本店'},{chId:6,name:'楽天国内'},{chId:7,name:'楽天海外（免税）'},{chId:8,name:'YahooShop'},
+  {chId:9,name:'ヤフオク'},{chId:10,name:'Wowma!'},{chId:11,name:'メルカリ'},{chId:12,name:'ebay（免税）'},
+  {chId:13,name:'LuxUness'},{chId:14,name:'Amazon'},{chId:15,name:'サブスク'},{chId:16,name:'ラクマ'},
+  {chId:17,name:'Qoo10'},{chId:18,name:'GLOBAZONE'},{chId:19,name:'オークション'},{chId:20,name:'WEB販売'},{chId:21,name:'その他販売'},
 ];
-const TAXFREE_IDS=[4,7,12]; // 免税チャンネルID
+const TAXFREE=[4,7,12];
+const NON_SALE=[1,2];
 
-// データ取得
-async function fetchDailyData(storeId, date){
+async function fetchData(storeId,date){
   const [daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons]=await Promise.all([
     apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&select=*`),
     apiFetch(`product_categories?is_active=eq.true&order=sort_order`),
@@ -151,579 +109,297 @@ async function fetchDailyData(storeId, date){
   return {daily,cats,cashReg:cashReg[0]||null,purchase,goldRec,teleRec,stampRec,visitReasons};
 }
 
-// Excelワークブック作成
-function buildWorkbook(storeName, date, data){
-  const {daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons}=data;
-  const wb=XLSX.utils.book_new();
-  const ws=[];
+// スタイル定義
+const FILLS={
+  pink:'FFFFB3C1', yellow:'FFFFFF88', lyellow:'FFFFFF00', white:'FFFFFFFF',
+  lblue:'FFD0F0F8', lblue2:'FFE0E0FF', gray:'FFC0C0C0', hdr:'FFFFCCCC',
+};
+const thin={style:'thin',color:{argb:'FF000000'}};
+const allBorder={top:thin,bottom:thin,left:thin,right:thin};
 
-  // ヘルパー
-  const V=(v,t)=>({v,t:t||'s'});
-  const N=(v)=>({v:v||0,t:'n'});
-
-  // データマップ作成: {catId: {chId: {qty, amt}}}
-  const dataMap={};
-  cats.forEach(c=>{dataMap[c.id]={};COLS.forEach(col=>{dataMap[c.id][col.chId]={qty:0,amt:0};});});
-  daily.forEach(r=>{
-    if(dataMap[r.category_id]&&dataMap[r.category_id][r.channel_id]){
-      dataMap[r.category_id][r.channel_id]={qty:r.quantity||0,amt:r.amount||0};
-    }
-  });
-  // 来店客数
-  const visitorsRow=daily.find(r=>r.visitors>0);
-  const visitors=visitorsRow?.visitors||0;
-
-  let row=0;
-
-  // ① タイトル行
-  const titleRow=[V(storeName)];
-  COLS.forEach(()=>{titleRow.push(V(''));titleRow.push(V(''));});
-  titleRow.push(V(''));titleRow.push(V(date));
-  ws.push(titleRow);row++;
-
-  // ② チャンネル名行
-  const chRow=[V('')];
-  COLS.forEach(c=>{chRow.push(V(c.name));chRow.push(V(''));});
-  ws.push(chRow);row++;
-
-  // ③ 商品名・件数・金額ヘッダー行
-  const hdrRow=[V('商品名')];
-  COLS.forEach(()=>{hdrRow.push(V('点数'));hdrRow.push(V('金額'));});
-  ws.push(hdrRow);row++;
-
-  // ④ 商品データ行
-  cats.forEach(cat=>{
-    const dataRow=[V(cat.name)];
-    COLS.forEach(col=>{
-      const d=dataMap[cat.id]?.[col.chId]||{qty:0,amt:0};
-      dataRow.push(N(d.qty));
-      dataRow.push(N(d.amt));
-    });
-    ws.push(dataRow);row++;
-  });
-
-  // ⑤ 計行
-  const sumRow=[V('計')];
-  COLS.forEach(col=>{
-    const sumQty=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.qty||0),0);
-    const sumAmt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
-    sumRow.push(N(sumQty));sumRow.push(N(sumAmt));
-  });
-  ws.push(sumRow);row++;
-
-  // ⑥ 純売上行
-  const pureRow=[V('純売上')];
-  COLS.forEach(col=>{
-    if(col.chId===1||col.chId===2){pureRow.push(V(''));pureRow.push(V(''));}
-    else{
-      const amt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
-      pureRow.push(V(''));pureRow.push(N(amt));
-    }
-  });
-  ws.push(pureRow);row++;
-
-  // ⑦ 消費税行
-  const taxRow=[V('消費税')];
-  COLS.forEach(col=>{
-    if(col.chId===1||col.chId===2||TAXFREE_IDS.includes(col.chId)){taxRow.push(V(''));taxRow.push(V(''));}
-    else{
-      const amt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0);
-      taxRow.push(V(''));taxRow.push(N(Math.floor(amt*10/110)));
-    }
-  });
-  ws.push(taxRow);row++;
-
-  // ⑧ 現計・掛計行
-  const shopAmt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[3]?.amt||0),0);
-  const freeAmt=cats.reduce((s,c)=>s+(dataMap[c.id]?.[4]?.amt||0),0);
-  ws.push([V('現計'),V(''),N(shopAmt),V(''),N(freeAmt),...Array(COLS.length*2-4).fill(V(''))]);
-  ws.push([V('掛計'),V(''),N(0),V(''),N(0),...Array(COLS.length*2-4).fill(V(''))]);row+=2;
-
-  // ⑨ 客数行
-  const visitRow=[V('客数'),N(visitors)];
-  COLS.slice(1).forEach(()=>{visitRow.push(V(''));visitRow.push(V(''));});
-  ws.push(visitRow);row++;
-
-  // 空行
-  ws.push([V('')]);row++;
-  ws.push([V(''),V(''),V(''),V(''),V(''),V(''),V('来店客数'),V(''),N(visitors)]);row++;
-  ws.push([V('')]);row++;
-
-  // ⑩ 金庫・レジセクション
-  const cr=cashReg||{};
-  ws.push([V('金庫・レジ'),V(''),V(''),V(''),V(''),V(''),V('買取件数明細'),V(''),V(''),V(''),V(''),V(''),V('地金回収'),V(''),V(''),V(''),V(storeName)]);
-  ws.push([V(''),V('レジ'),V(''),V(''),V(''),V(''),V('初めて'),V(''),V(''),V(purchase.find(p=>p)?.first_visit||0),V(0),V(''),V(''),V('前日繰越'),V('本日'),V('商品化重量'),V('つぶし重量'),V('製品から戻し'),V('回収分'),V('翌日繰越')]);
-  ws.push([V('前日繰越'),N(cr.carry_over||0),V(''),V(''),V(''),V(''),V('２回目'),V(''),V(''),N(purchase.reduce((s,p)=>s+(p.repeat_visit||0),0)),N(purchase.reduce((s,p)=>s+(p.amount||0),0))]);
-
-  // 地金回収データ
-  goldRec.forEach((g,i)=>{
-    const baseRow=ws[ws.length-(3-i<0?0:3-i)];
-    // 地金は別列に追加
-  });
-
-  // シンプルに金庫レジ
-  ws.push([V('本部から入金'),N(cr.hq_deposit||0)]);
-  ws.push([V('店売り（現計）'),N(cr.shop_sales||0)]);
-  ws.push([V('買取'),N(cr.purchase||0)]);
-  ws.push([V('出金'),N(cr.withdrawal||0)]);
-  ws.push([V('本日有高'),N(cr.todays_amount||0)]);
-  ws.push([V('過不足'),N(cr.shortage||0)]);
-  ws.push([V('')]);
-
-  // ⑪ 金種表
-  ws.push([V('金種表')]);
-  ws.push([V('金種'),V('枚数'),V(''),V('金額')]);
-  const denoms=[{n:'¥10,000',k:'count_10000',v:10000},{n:'¥5,000',k:'count_5000',v:5000},{n:'¥1,000',k:'count_1000',v:1000},{n:'¥500',k:'count_500',v:500},{n:'¥100',k:'count_100',v:100},{n:'¥50',k:'count_50',v:50},{n:'¥10',k:'count_10',v:10},{n:'¥5',k:'count_5',v:5},{n:'¥1',k:'count_1',v:1}];
-  denoms.forEach(d=>{
-    const cnt=cr[d.k]||0;
-    ws.push([V(d.n),N(cnt),V(''),N(cnt*d.v)]);
-  });
-  ws.push([V('レジ内実現金'),V(''),V(''),N(cr.register_cash||0)]);
-  ws.push([V('本部入金'),N(cr.hq_payment||0),V(''),N(cr.hq_payment||0)]);
-  ws.push([V('レジ内繰越'),V(''),V(''),N(cr.register_carry||0)]);
-  ws.push([V('')]);
-
-  // ⑫ 買取件数明細（来店動機）
-  ws.push([V('買取件数明細（来店動機）')]);
-  ws.push([V('来店動機'),V('件数'),V('金額')]);
-  visitReasons.forEach(r=>{
-    const p=purchase.find(pd=>pd.visit_reason_id===r.id);
-    ws.push([V(r.name),N(p?.visitors||0),N(p?.amount||0)]);
-  });
-  const totalV=purchase.reduce((s,p)=>s+(p.visitors||0),0);
-  const totalA=purchase.reduce((s,p)=>s+(p.amount||0),0);
-  const firstV=purchase.reduce((s,p)=>s+(p.first_visit||0),0);
-  const repeatV=purchase.reduce((s,p)=>s+(p.repeat_visit||0),0);
-  ws.push([V('小計'),N(totalV),N(totalA)]);
-  ws.push([V('初回ご来店'),N(firstV)]);
-  ws.push([V('2回目以降'),N(repeatV)]);
-  const noPurchase=purchase[0]?.no_purchase||0;
-  const cancelCount=purchase[0]?.cancel_count||0;
-  ws.push([V('買取不可'),N(noPurchase)]);
-  ws.push([V('キャンセル'),N(cancelCount)]);
-  const cancelRate=totalV>0?(cancelCount/(totalV+cancelCount)*100):0;
-  const repeatRate=totalV>0?(repeatV/totalV*100):0;
-  ws.push([V('キャンセル率'),V(cancelRate.toFixed(1)+'%')]);
-  ws.push([V('リピーター率'),V(repeatRate.toFixed(1)+'%')]);
-  ws.push([V('')]);
-
-  // ⑬ 地金回収
-  ws.push([V('地金回収'),V(''),V(''),V(''),V(storeName)]);
-  ws.push([V('金種'),V('前日繰越'),V('本日'),V('商品化重量'),V('つぶし重量'),V('製品から戻し'),V('回収分'),V('翌日繰越')]);
-  goldRec.forEach(g=>{
-    ws.push([V(g.precious_metal_types?.name||''),V('重量'),N(g.carry_over||0),N(g.today_weight||0),N(g.product_weight||0),N(g.crush_weight||0),N(g.return_weight||0),N(g.recovery_weight||0),N(g.next_carry_over||0)]);
-  });
-  ws.push([V('')]);
-
-  // ⑭ テレカ・金券回収
-  ws.push([V('テレカ・金券回収'),V(''),V(''),V(''),V(storeName)]);
-  ws.push([V('種別'),V('前日繰越'),V('本日買取'),V('回収枚数'),V('店頭販売'),V('翌日繰越'),V('累計枚数')]);
-  teleRec.forEach(t=>{
-    ws.push([V(t.gift_card_types?.name||''),N(t.carry_over||0),N(t.today_purchase||0),N(t.recovery_count||0),N(t.shop_sales||0),N(t.next_carry_over||0),N(t.cumulative||0)]);
-  });
-  ws.push([V('')]);
-
-  // ⑮ 切手・印紙回収
-  ws.push([V('切手・印紙回収'),V(''),V(''),V(''),V(storeName)]);
-  ws.push([V('種類'),V('額面金額'),V('回収枚数'),V('回収金額'),V('月末在庫枚数'),V('月末在庫金額')]);
-  stampRec.forEach(s=>{
-    ws.push([V(s.stamp_type||''),N(s.face_value||0),N(s.recovery_count||0),N(s.recovery_amount||0),N(s.stock_count||0),N(s.stock_amount||0)]);
-  });
-
-  // ワークシート作成
-  const sheet=XLSX.utils.aoa_to_sheet(ws);
-
-  // 列幅設定
-  const colWidths=[{wch:22}];
-  COLS.forEach(()=>{colWidths.push({wch:8});colWidths.push({wch:14});});
-  sheet['!cols']=colWidths;
-
-  // 罫線スタイル
-  const border={
-    top:{style:'thin',color:{rgb:'000000'}},
-    bottom:{style:'thin',color:{rgb:'000000'}},
-    left:{style:'thin',color:{rgb:'000000'}},
-    right:{style:'thin',color:{rgb:'000000'}}
-  };
-  const headerFill={fgColor:{rgb:'1E2761'},type:'pattern',patternType:'solid'};
-  const headerFont={color:{rgb:'FFFFFF'},bold:true,sz:9};
-  const sumFill={fgColor:{rgb:'FFFF88'},type:'pattern',patternType:'solid'};
-  const sumFont={bold:true,sz:9};
-  const catFill={fgColor:{rgb:'D0F0F8'},type:'pattern',patternType:'solid'};
-  const numFmt='#,##0';
-
-  const range=XLSX.utils.decode_range(sheet['!ref']||'A1');
-  for(let R=range.s.r;R<=range.e.r;R++){
-    for(let C=range.s.c;C<=range.e.c;C++){
-      const addr=XLSX.utils.encode_cell({r:R,c:C});
-      if(!sheet[addr])sheet[addr]={v:'',t:'s'};
-
-      let s={border};
-
-      // ヘッダー行（1・2行目）
-      if(R<=1){
-        s={border,fill:headerFill,font:headerFont,alignment:{horizontal:'center',wrapText:true}};
-      }
-      // 商品名列（左端）
-      else if(C===0){
-        const v=sheet[addr].v;
-        const isSumLabel=['計','純売上','消費税','現計','掛計','客数'].includes(String(v));
-        if(isSumLabel){
-          s={border,fill:{fgColor:{rgb:'1E2761'},type:'pattern',patternType:'solid'},font:{color:{rgb:'FFFFFF'},bold:true,sz:9},alignment:{horizontal:'center'}};
-        } else {
-          s={border,fill:catFill,font:{sz:9},alignment:{horizontal:'left'}};
-        }
-      }
-      // 数値セル
-      else if(sheet[addr].t==='n'){
-        s={border,alignment:{horizontal:'right'},font:{sz:9}};
-        sheet[addr].z=numFmt;
-        // 計行
-        if(R>=2+ws.length-6){
-          s={border,fill:sumFill,font:sumFont,alignment:{horizontal:'right'}};
-        }
-      }
-
-      sheet[addr].s=s;
-    }
-  }
-
-  XLSX.utils.book_append_sheet(wb,sheet,'日報');
-  return wb;
+function sf(ws,r,c,val,fillKey,bold,size,align,fmt){
+  const cell=ws.getCell(r,c);
+  cell.value=val;
+  if(fillKey&&FILLS[fillKey])cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:FILLS[fillKey]}};
+  cell.font={bold:!!bold,size:size||9,name:'Meiryo'};
+  cell.alignment={horizontal:align||'center',vertical:'middle'};
+  cell.border=allBorder;
+  if(fmt&&(typeof val==='number'))cell.numFmt=fmt;
 }
+function mc(ws,r1,c1,r2,c2){ws.mergeCells(r1,c1,r2,c2);}
 
-
-// ExcelJSで日報ワークシートを現行フォーマットに合わせて作成
-async function buildExcelJSSheet(wb, storeName, date, data){
+async function buildSheet(wb,storeName,date,data){
   const {daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons}=data;
   const ws=wb.addWorksheet(date);
   const cr=cashReg||{};
 
-  const thin={style:'thin',color:{argb:'FF000000'}};
-  const all={top:thin,bottom:thin,left:thin,right:thin};
-  const numFmt='#,##0';
-  const decFmt='#,##0.00';
+  // 列幅
+  ws.getColumn(1).width=22;
+  for(let i=0;i<COLS.length;i++){ws.getColumn(2+i*2).width=7;ws.getColumn(3+i*2).width=12;}
+  ws.getColumn(2+COLS.length*2).width=14;
 
-  // データマップ作成
-  const dataMap={};
-  cats.forEach(c=>{dataMap[c.id]={};COLS.forEach(col=>{dataMap[c.id][col.chId]={qty:0,amt:0};});});
-  daily.forEach(r=>{
-    if(dataMap[r.category_id]&&dataMap[r.category_id][r.channel_id]){
-      dataMap[r.category_id][r.channel_id]={qty:r.quantity||0,amt:r.amount||0};
-    }
-  });
+  // データマップ
+  const dm={};
+  cats.forEach(c=>{dm[c.id]={};COLS.forEach(col=>{dm[c.id][col.chId]={qty:0,amt:0};});});
+  daily.forEach(r=>{if(dm[r.category_id]&&dm[r.category_id][r.channel_id])dm[r.category_id][r.channel_id]={qty:r.quantity||0,amt:r.amount||0};});
   const visitors=daily.find(r=>r.visitors>0)?.visitors||0;
-  const TAXFREE_CH=[4,7,12];
-  const NON_SALE_CH=[1,2];
 
-  // 列幅設定
-  const colWidths=[{width:22}];
-  COLS.forEach(()=>{colWidths.push({width:7});colWidths.push({width:12});});
-  // 右側セクション用の追加列
-  for(let i=0;i<12;i++)colWidths.push({width:14});
-  ws.columns=colWidths;
+  // 行高設定
+  for(let i=1;i<=88;i++)ws.getRow(i).height=14.5;
+  ws.getRow(1).height=12;
 
-  // セルスタイル設定ヘルパー
-  function setCell(row,col,value,fillColor,bold,size,align,border2,fmt){
-    const cell=ws.getCell(row,col);
-    cell.value=value;
-    if(border2!==false)cell.border=all;
-    if(fillColor)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fillColor}};
-    cell.font={bold:!!bold,size:size||10};
-    if(align)cell.alignment={horizontal:align};
-    if(fmt&&typeof value==='number')cell.numFmt=fmt;
+  // 行1: 店舗名・日付
+  ws.getCell(1,1).value=storeName;ws.getCell(1,1).font={bold:true,size:11,name:'Meiryo'};
+  ws.getCell(1,2+COLS.length*2).value=date;
+  ws.getCell(1,2+COLS.length*2).font={bold:true,size:11,name:'Meiryo'};
+  ws.getCell(1,2+COLS.length*2).alignment={horizontal:'right'};
+
+  // 行2: チャンネル名（2列結合）
+  sf(ws,2,1,'','hdr',true,9);
+  for(let i=0;i<COLS.length;i++){
+    const c1=2+i*2,c2=3+i*2;
+    sf(ws,2,c1,COLS[i].name,'hdr',true,9);sf(ws,2,c2,'','hdr',true,9);
+    mc(ws,2,c1,2,c2);
   }
 
-  // ===== 1行目：店舗名・日付 =====
-  ws.getCell(1,1).value=storeName;
-  ws.getCell(1,1).font={bold:true,size:11};
-  ws.getCell(1,COLS.length*2+2).value=date;
-  ws.getCell(1,COLS.length*2+2).font={bold:true,size:11};
-  ws.getRow(1).height=18;
+  // 行3: 商品名/点数/金額
+  sf(ws,3,1,'商品名','hdr',true,9);
+  for(let i=0;i<COLS.length;i++){sf(ws,3,2+i*2,'点数','hdr',true,9);sf(ws,3,3+i*2,'金額','hdr',true,9);}
 
-  // ===== 2行目：チャンネル名 =====
-  ws.getRow(2).height=16;
-  COLS.forEach((c,i)=>{
-    const col=2+i*2;
-    setCell(2,col,c.name,'FFFFCCCC',true,9,'center');
-    setCell(2,col+1,'','FFFFCCCC',true,9,'center');
-  });
-
-  // ===== 3行目：ヘッダー =====
-  ws.getRow(3).height=15;
-  setCell(3,1,'商品名','FFFFCCCC',true,9,'center');
-  COLS.forEach((c,i)=>{
-    setCell(3,2+i*2,'点数','FFFFCCCC',true,9,'center');
-    setCell(3,3+i*2,'金額','FFFFCCCC',true,9,'center');
-  });
-
-  // ===== 商品データ行 =====
-  let dataStartRow=4;
+  // 商品データ行
   cats.forEach((cat,ci)=>{
-    const r=dataStartRow+ci;
-    ws.getRow(r).height=14;
-    setCell(r,1,cat.name,'FFD0F0F8',false,9,'left');
+    const r=4+ci;
+    sf(ws,r,1,cat.name,'lblue',false,9,'left');
     COLS.forEach((col,i)=>{
-      const d=dataMap[cat.id]?.[col.chId]||{qty:0,amt:0};
-      setCell(r,2+i*2,d.qty,'FFFFFF00',false,9,'right',true,numFmt);
-      setCell(r,3+i*2,d.amt,'FFFFFF',false,9,'right',true,numFmt);
+      const d=dm[cat.id]?.[col.chId]||{qty:0,amt:0};
+      sf(ws,r,2+i*2,d.qty,'lyellow',false,9,'right','#,##0');
+      sf(ws,r,3+i*2,d.amt,'white',false,9,'right','#,##0');
     });
   });
 
-  let nextRow=dataStartRow+cats.length;
+  let nr=4+cats.length;
 
-  // ===== 計行 =====
-  ws.getRow(nextRow).height=14;
-  setCell(nextRow,1,'計','FFFFFF88',true,9,'center');
+  // 計行
+  sf(ws,nr,1,'計','yellow',true,9);
   COLS.forEach((col,i)=>{
-    setCell(nextRow,2+i*2,cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.qty||0),0),'FFFFFF88',true,9,'right',true,numFmt);
-    setCell(nextRow,3+i*2,cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0),'FFFFFF88',true,9,'right',true,numFmt);
-  });
-  nextRow++;
+    const sq=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.qty||0),0);
+    const sa=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.amt||0),0);
+    sf(ws,nr,2+i*2,sq,'yellow',true,9,'right','#,##0');
+    sf(ws,nr,3+i*2,sa,'yellow',true,9,'right','#,##0');
+  });nr++;
 
-  // ===== 純売上行 =====
-  ws.getRow(nextRow).height=14;
-  setCell(nextRow,1,'純売上','FFE0E0FF',true,9,'center');
+  // 純売上行
+  sf(ws,nr,1,'純売上','lblue2',true,9);
   COLS.forEach((col,i)=>{
-    if(NON_SALE_CH.includes(col.chId)){
-      setCell(nextRow,2+i*2,'','FFC0C0C0',false,9);
-      setCell(nextRow,3+i*2,'','FFC0C0C0',false,9);
-    } else {
-      setCell(nextRow,2+i*2,'','FFC0C0C0',false,9);
-      setCell(nextRow,3+i*2,cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0),'FFE0E0FF',true,9,'right',true,numFmt);
+    if(NON_SALE.includes(col.chId)){sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,'','gray',false,9);}
+    else{
+      const amt=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.amt||0),0);
+      sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,amt,'lblue2',true,9,'right','#,##0');
     }
-  });
-  nextRow++;
+  });nr++;
 
-  // ===== 消費税行 =====
-  ws.getRow(nextRow).height=14;
-  setCell(nextRow,1,'消費税','FFE0E0FF',true,9,'center');
+  // 消費税行
+  sf(ws,nr,1,'消費税','lblue2',true,9);
   COLS.forEach((col,i)=>{
-    if(NON_SALE_CH.includes(col.chId)||TAXFREE_CH.includes(col.chId)){
-      setCell(nextRow,2+i*2,'','FFC0C0C0',false,9);
-      setCell(nextRow,3+i*2,'','FFC0C0C0',false,9);
-    } else {
-      setCell(nextRow,2+i*2,'','FFC0C0C0',false,9);
-      const tax=Math.floor(cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.amt||0),0)*10/110);
-      setCell(nextRow,3+i*2,tax,'FFE0E0FF',true,9,'right',true,numFmt);
+    if(NON_SALE.includes(col.chId)||TAXFREE.includes(col.chId)){sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,'','gray',false,9);}
+    else{
+      const amt=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.amt||0),0);
+      sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,Math.floor(amt*10/110),'lblue2',true,9,'right','#,##0');
     }
-  });
-  nextRow++;
+  });nr++;
 
-  // ===== 現計・掛計行 =====
-  ['現計','掛計'].forEach(label=>{
-    ws.getRow(nextRow).height=14;
-    setCell(nextRow,1,label,'FFC0C0C0',true,9,'center');
-    COLS.forEach((col,i)=>{
-      setCell(nextRow,2+i*2,'','FFC0C0C0',false,9);
-      setCell(nextRow,3+i*2,'','FFC0C0C0',false,9);
-    });
-    nextRow++;
+  // 現計・掛計
+  ['現計','掛計'].forEach(lbl=>{
+    sf(ws,nr,1,lbl,'gray',true,9);
+    COLS.forEach((col,i)=>{sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,'','gray',false,9);});nr++;
   });
 
-  // ===== 客数行 =====
-  ws.getRow(nextRow).height=14;
-  setCell(nextRow,1,'客数','FFFFFF88',true,9,'center');
+  // 客数行
+  sf(ws,nr,1,'客数','yellow',true,9);
   COLS.forEach((col,i)=>{
-    setCell(nextRow,2+i*2,cats.reduce((s,c)=>s+(dataMap[c.id]?.[col.chId]?.qty||0),0),'FFFFFF88',true,9,'right',true,numFmt);
-    setCell(nextRow,3+i*2,'','FFFFFF88',false,9);
-  });
-  nextRow++;
+    const sq=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.qty||0),0);
+    sf(ws,nr,2+i*2,sq,'yellow',true,9,'right','#,##0');sf(ws,nr,3+i*2,'','yellow',false,9);
+  });nr++;
 
   // 来店客数
-  ws.getCell(nextRow,7).value='来店客数';
-  ws.getCell(nextRow,7).font={bold:true,size:10};
-  ws.getCell(nextRow,9).value=visitors;
-  ws.getCell(nextRow,9).numFmt=numFmt;
-  ws.getCell(nextRow,9).font={bold:true,size:10};
-  nextRow+=2;
+  ws.getCell(nr,7).value='来店客数';ws.getCell(nr,7).font={bold:true,size:10,name:'Meiryo'};ws.getCell(nr,7).alignment={horizontal:'center'};
+  ws.getCell(nr,9).value=visitors;ws.getCell(nr,9).font={bold:true,size:10,name:'Meiryo'};ws.getCell(nr,9).alignment={horizontal:'right'};ws.getCell(nr,9).numFmt='#,##0';
+  nr+=2;
 
   // ===== 下部セクション =====
-  const secRow=nextRow;
+  const sec=nr;
+  ws.getCell(sec,1).value='金庫・レジ';ws.getCell(sec,1).font={bold:true,size:10,name:'Meiryo'};
+  ws.getCell(sec,6).value='買取件数明細';ws.getCell(sec,6).font={bold:true,size:10,name:'Meiryo'};
+  ws.getCell(sec,13).value='地金回収';ws.getCell(sec,13).font={bold:true,size:10,name:'Meiryo'};
+  ws.getCell(sec,18).value=storeName;ws.getCell(sec,18).font={bold:true,size:9,name:'Meiryo'};
 
-  // タイトル行
-  ws.getCell(secRow,1).value='金庫・レジ';ws.getCell(secRow,1).font={bold:true,size:10};
-  ws.getCell(secRow,7).value='買取件数明細';ws.getCell(secRow,7).font={bold:true,size:10};
-  ws.getCell(secRow,13).value='地金回収';ws.getCell(secRow,13).font={bold:true,size:10};
-  ws.getCell(secRow,17).value=storeName;ws.getCell(secRow,17).font={bold:true,size:9};
-  nextRow++;
-
+  const hr=sec+1;
   // 金庫レジヘッダー
-  setCell(nextRow,1,'','FFFFB3C1',true,10,'center');
-  setCell(nextRow,2,'レジ','FFFFB3C1',true,10,'center');
-
-  // 買取明細ヘッダー
-  setCell(nextRow,7,'','FFFFB3C1',true,9,'center');
-  setCell(nextRow,9,'','FFFFB3C1',true,9,'center');
-  setCell(nextRow,10,'件数','FFFFB3C1',true,9,'center');
-  setCell(nextRow,11,'金額','FFFFB3C1',true,9,'center');
-
+  sf(ws,hr,1,'','pink',true,9);sf(ws,hr,2,'','pink',true,9);sf(ws,hr,3,'レジ','pink',true,9);sf(ws,hr,4,'','pink',true,9);
+  mc(ws,hr,1,hr,2);mc(ws,hr,3,hr,4);
+  // 買取件数ヘッダー
+  sf(ws,hr,6,'','pink',true,9);sf(ws,hr,7,'','pink',true,9);sf(ws,hr,8,'件数','pink',true,9);sf(ws,hr,9,'金額','pink',true,9);
+  mc(ws,hr,6,hr,7);
   // 地金回収ヘッダー
-  ['','前日繰越','本日','商品化','つぶし','製品戻し','回収分','翌繰越'].forEach((h,i)=>{
-    setCell(nextRow,13+i,h,'FFFFB3C1',true,9,'center');
+  const ghdrs=['','前日繰越','本日','商品化','つぶし','製品戻し','回収分','翌繰越'];
+  ghdrs.forEach((h,j)=>{
+    const c1=13+j*2,c2=14+j*2;
+    sf(ws,hr,c1,h,'pink',true,9);sf(ws,hr,c2,'','pink',true,9);
+    if(j>0)mc(ws,hr,c1,hr,c2);
   });
-  nextRow++;
 
-  // 金庫・レジデータ
   const crRows=[
-    ['前日繰越',cr.carry_over||0],
-    ['本部から入金',cr.hq_deposit||0],
-    ['店売り（現計）',cr.shop_sales||0],
-    ['買取',cr.purchase||0],
-    ['出金',cr.withdrawal||0],
-    ['本日有高',cr.todays_amount||0,'FFFFFF88'],
-    ['過不足',cr.shortage||0,'FFFFFF88'],
+    ['前日繰越',cr.carry_over||0,'pink'],['本部から入金',cr.hq_deposit||0,'pink'],
+    ['店売り（現計）',cr.shop_sales||0,'pink'],['買取',cr.purchase||0,'pink'],
+    ['出金',cr.withdrawal||0,'pink'],['本日有高',cr.todays_amount||0,'yellow'],
+    ['過不足',cr.shortage||0,'yellow'],
   ];
 
-  // 来店動機データ
   const totalV=purchase.reduce((s,p)=>s+(p.visitors||0),0);
   const totalA=purchase.reduce((s,p)=>s+(p.amount||0),0);
   const firstV=purchase.reduce((s,p)=>s+(p.first_visit||0),0);
   const repeatV=purchase.reduce((s,p)=>s+(p.repeat_visit||0),0);
   const noPurchase=purchase[0]?.no_purchase||0;
   const cancelCount=purchase[0]?.cancel_count||0;
-  const cancelRate=totalV>0?(cancelCount/(totalV+cancelCount)*100):0;
+  const cancelRate=totalV+cancelCount>0?(cancelCount/(totalV+cancelCount)*100):0;
 
   const visitRows=[
-    ['初めて','',firstV,0],
-    ['２回目','',repeatV,totalA],
-    ['小計','',totalV,totalA],
-    ...visitReasons.map(r=>{
-      const p=purchase.find(pd=>pd.visit_reason_id===r.id);
-      return [r.name,'',p?.visitors||0,p?.amount||0];
+    ['初めて',firstV,0,'yellow'],['２回目',repeatV,totalA,'yellow'],['小計',totalV,totalA,'yellow'],
+    ...visitReasons.map(vr=>{
+      const p=purchase.find(x=>x.visit_reason_id===vr.id);
+      return [vr.name,p?.visitors||0,p?.amount||0,'white'];
     }),
-    ['小計','',totalV,totalA],
-    ['買取不可','',noPurchase,''],
-    ['キャンセル','',cancelCount,''],
-    ['キャンセル率','',cancelRate.toFixed(1)+'%',''],
+    ['小計',totalV,totalA,'yellow'],['買取不可',noPurchase,'','yellow'],
+    ['キャンセル',cancelCount,'','yellow'],[`キャンセル率`,`${cancelRate.toFixed(1)}%`,'','yellow'],
   ];
 
-  // 地金回収データ（データある行のみ）
   const goldData=goldRec.filter(g=>(g.today_weight||0)+(g.carry_over||0)>0);
+  const maxRows=Math.max(crRows.length,visitRows.length,goldData.length);
 
-  const maxR=Math.max(crRows.length,visitRows.length,goldData.length);
-  for(let i=0;i<maxR;i++){
+  for(let i=0;i<maxRows;i++){
+    const r=hr+1+i;
     // 金庫レジ
     if(i<crRows.length){
-      const fill=crRows[i][2]||'FFFFB3C1';
-      setCell(nextRow,1,crRows[i][0],fill,true,10);
-      setCell(nextRow,2,crRows[i][1],'FFFFFF',false,10,'right');
-      if(typeof crRows[i][1]==='number')ws.getCell(nextRow,2).numFmt=numFmt;
+      const [lbl,val,fill]=crRows[i];
+      sf(ws,r,1,lbl,fill,true,9,'left');sf(ws,r,2,'',fill,false,9);
+      sf(ws,r,3,val,fill==='pink'?'white':fill,fill==='yellow',9,'right','#,##0');sf(ws,r,4,'',fill==='pink'?'white':fill,false,9);
+      mc(ws,r,1,r,2);mc(ws,r,3,r,4);
     }
-    // 買取明細
+    // 買取件数明細
     if(i<visitRows.length){
-      const vr=visitRows[i];
-      const isSub=['初めて','２回目','小計','買取不可','キャンセル','キャンセル率'].includes(vr[0]);
-      const vFill=isSub?'FFFFFF88':'FFFFFF';
-      setCell(nextRow,7,vr[0],vFill,isSub,9);
-      setCell(nextRow,9,vr[1],vFill,false,9);
-      setCell(nextRow,10,vr[2],vFill,isSub,9,'right');
-      if(typeof vr[2]==='number')ws.getCell(nextRow,10).numFmt=numFmt;
-      if(vr[3]!==''){setCell(nextRow,11,vr[3],vFill,isSub,9,'right');if(typeof vr[3]==='number')ws.getCell(nextRow,11).numFmt=numFmt;}
+      const [lbl,cnt,amt,fill]=visitRows[i];
+      sf(ws,r,6,lbl,fill,fill==='yellow',9,'left');sf(ws,r,7,'',fill,false,9);
+      sf(ws,r,8,cnt,fill,fill==='yellow',9,'right',typeof cnt==='number'?'#,##0':null);
+      sf(ws,r,9,amt,fill,fill==='yellow',9,'right',typeof amt==='number'?'#,##0':null);
+      mc(ws,r,6,r,7);
     }
     // 地金回収
     if(i<goldData.length){
       const g=goldData[i];
-      setCell(nextRow,13,g.precious_metal_types?.name||'','FFD0F0F8',false,9);
-      setCell(nextRow,14,'重量','FFD0F0F8',false,9,'center');
-      [g.carry_over,g.today_weight,g.product_weight,g.crush_weight,g.return_weight,g.recovery_weight,g.next_carry_over].forEach((v,j)=>{
-        setCell(nextRow,15+j,v||0,'FFFFFF',false,9,'right');
-        ws.getCell(nextRow,15+j).numFmt=decFmt;
+      const mname=typeof g.precious_metal_types==='object'?g.precious_metal_types?.name||'':'';
+      sf(ws,r,13,mname,'lblue',false,9,'left');sf(ws,r,14,'重量','lblue',false,9);
+      ['carry_over','today_weight','product_weight','crush_weight','return_weight','recovery_weight','next_carry_over'].forEach((key,j)=>{
+        const c1=15+j*2,c2=16+j*2;
+        sf(ws,r,c1,g[key]||0,'white',false,9,'right','#,##0.00');sf(ws,r,c2,'','white',false,9);
+        mc(ws,r,c1,r,c2);
       });
     }
-    nextRow++;
   }
 
-  // 金種表
-  nextRow++;
-  ws.getCell(nextRow,1).value='金種表';ws.getCell(nextRow,1).font={bold:true,size:10};nextRow++;
-  setCell(nextRow,1,'金種','FFFFB3C1',true,9,'center');
-  setCell(nextRow,2,'枚数','FFFFB3C1',true,9,'center');
-  setCell(nextRow,4,'金額','FFFFB3C1',true,9,'center');nextRow++;
-  const denoms=[{n:'¥10,000',k:'count_10000',v:10000},{n:'¥5,000',k:'count_5000',v:5000},{n:'¥1,000',k:'count_1000',v:1000},{n:'¥500',k:'count_500',v:500},{n:'¥100',k:'count_100',v:100},{n:'¥50',k:'count_50',v:50},{n:'¥10',k:'count_10',v:10},{n:'¥5',k:'count_5',v:5},{n:'¥1',k:'count_1',v:1}];
-  denoms.forEach(d=>{
-    const cnt=cr[d.k]||0;
-    setCell(nextRow,1,d.n,'FFD0F0F8',false,9,'right');
-    setCell(nextRow,2,cnt,'FFFFFF',false,9,'right');ws.getCell(nextRow,2).numFmt=numFmt;
-    setCell(nextRow,4,cnt*d.v,'FFFFFF',false,9,'right');ws.getCell(nextRow,4).numFmt=numFmt;
-    nextRow++;
-  });
-  setCell(nextRow,1,'レジ内実現金','FFFFFF88',true,9);
-  setCell(nextRow,4,cr.register_cash||0,'FFFFFF88',true,9,'right');ws.getCell(nextRow,4).numFmt=numFmt;nextRow++;
-  setCell(nextRow,1,'本部入金','FFFFB3C1',true,9);
-  setCell(nextRow,2,cr.hq_payment||0,'FFFFFF',false,9,'right');ws.getCell(nextRow,2).numFmt=numFmt;
-  setCell(nextRow,4,cr.hq_payment||0,'FFFFFF',false,9,'right');ws.getCell(nextRow,4).numFmt=numFmt;nextRow++;
-  setCell(nextRow,1,'レジ内繰越','FFFFFF88',true,9);
-  setCell(nextRow,4,cr.register_carry||0,'FFFFFF88',true,9,'right');ws.getCell(nextRow,4).numFmt=numFmt;nextRow++;
+  // 金種表（42行目固定）
+  const kn=42;
+  ws.getCell(kn,1).value='金種表';ws.getCell(kn,1).font={bold:true,size:10,name:'Meiryo'};
+  sf(ws,kn+1,1,'金種','pink',true,9);sf(ws,kn+1,2,'枚数','pink',true,9);
+  sf(ws,kn+1,3,'金額','pink',true,9);sf(ws,kn+1,4,'','pink',true,9);mc(ws,kn+1,3,kn+1,4);
 
-  // テレカ・金券回収
+  const denoms=[['¥10,000','count_10000',10000],['¥5,000','count_5000',5000],['¥1,000','count_1000',1000],
+    ['¥500','count_500',500],['¥100','count_100',100],['¥50','count_50',50],
+    ['¥10','count_10',10],['¥5','count_5',5],['¥1','count_1',1]];
+  denoms.forEach(([name,key,val],di)=>{
+    const r=kn+2+di,cnt=cr[key]||0;
+    sf(ws,r,1,name,'lblue',false,9,'right');sf(ws,r,2,cnt,'white',false,9,'right','#,##0');
+    sf(ws,r,3,cnt*val,'white',false,9,'right','#,##0');sf(ws,r,4,'','white',false,9);mc(ws,r,3,r,4);
+  });
+  let kr=kn+2+denoms.length;
+  sf(ws,kr,1,'レジ内実現金','yellow',true,9);sf(ws,kr,2,'','yellow',true,9);
+  sf(ws,kr,3,cr.register_cash||0,'yellow',true,9,'right','#,##0');sf(ws,kr,4,'','yellow',true,9);
+  mc(ws,kr,1,kr,2);mc(ws,kr,3,kr,4);kr++;
+  sf(ws,kr,1,'本部入金','pink',true,9);sf(ws,kr,2,cr.hq_payment||0,'white',false,9,'right','#,##0');
+  sf(ws,kr,3,cr.hq_payment||0,'white',false,9,'right','#,##0');sf(ws,kr,4,'','white',false,9);mc(ws,kr,3,kr,4);kr++;
+  sf(ws,kr,1,'レジ内繰越','yellow',true,9);sf(ws,kr,2,'','yellow',true,9);
+  sf(ws,kr,3,cr.register_carry||0,'yellow',true,9,'right','#,##0');sf(ws,kr,4,'','yellow',true,9);
+  mc(ws,kr,1,kr,2);mc(ws,kr,3,kr,4);
+
+  // テレカ・金券回収（地金の下+2行）
+  let teleEndRow=hr+1+goldData.length+2;
   if(teleRec.length>0){
-    nextRow++;
-    ws.getCell(nextRow,1).value='テレカ・金券回収';ws.getCell(nextRow,1).font={bold:true,size:10};
-    ws.getCell(nextRow,5).value=storeName;ws.getCell(nextRow,5).font={bold:true,size:9};nextRow++;
-    ['種別','前日繰越','本日買取','回収枚数','店頭販売','翌日繰越','累計枚数'].forEach((h,i)=>{
-      setCell(nextRow,1+i,h,'FFFFB3C1',true,9,'center');
-    });nextRow++;
-    teleRec.forEach(t=>{
-      setCell(nextRow,1,t.gift_card_types?.name||'','FFD0F0F8',false,9);
-      [t.carry_over,t.today_purchase,t.recovery_count,t.shop_sales,t.next_carry_over,t.cumulative].forEach((v,j)=>{
-        setCell(nextRow,2+j,v||0,'FFFFFF',false,9,'right');ws.getCell(nextRow,2+j).numFmt=numFmt;
-      });nextRow++;
+    const tc=13,tr=teleEndRow;
+    ws.getCell(tr,tc).value='テレカ・金券回収';ws.getCell(tr,tc).font={bold:true,size:10,name:'Meiryo'};
+    ws.getCell(tr,tc+4).value=storeName;ws.getCell(tr,tc+4).font={bold:true,size:9,name:'Meiryo'};
+    const th=tr+1;
+    ['種別','前日繰越','本日買取','回収枚数','店頭販売','翌日繰越','累計枚数'].forEach((h,j)=>{
+      const c1=tc+j*2,c2=c1+1;
+      sf(ws,th,c1,h,'pink',true,9);sf(ws,th,c2,'','pink',true,9);mc(ws,th,c1,th,c2);
     });
+    let tdr=th+1;
+    teleRec.forEach(t=>{
+      const tname=typeof t.gift_card_types==='object'?t.gift_card_types?.name||'':'';
+      sf(ws,tdr,tc,tname,'lblue',false,9,'left');sf(ws,tdr,tc+1,'','lblue',false,9);mc(ws,tdr,tc,tdr,tc+1);
+      ['carry_over','today_purchase','recovery_count','shop_sales','next_carry_over','cumulative'].forEach((key,j)=>{
+        const c1=tc+2+j*2,c2=c1+1;
+        sf(ws,tdr,c1,t[key]||0,'white',false,9,'right','#,##0');sf(ws,tdr,c2,'','white',false,9);mc(ws,tdr,c1,tdr,c2);
+      });tdr++;
+    });
+    teleEndRow=tdr+1;
   }
 
   // 切手・印紙回収
   if(stampRec.length>0){
-    nextRow++;
-    ws.getCell(nextRow,1).value='切手・印紙回収';ws.getCell(nextRow,1).font={bold:true,size:10};nextRow++;
-    ['種類','額面金額','回収枚数','回収金額','月末在庫枚数','月末在庫金額'].forEach((h,i)=>{
-      setCell(nextRow,1+i,h,'FFFFB3C1',true,9,'center');
-    });nextRow++;
+    const sc2=13,sr=teleEndRow;
+    ws.getCell(sr,sc2).value='切手印紙回収';ws.getCell(sr,sc2).font={bold:true,size:10,name:'Meiryo'};
+    ws.getCell(sr,sc2+4).value=storeName;ws.getCell(sr,sc2+4).font={bold:true,size:9,name:'Meiryo'};
+    const sh=sr+1;
+    ['種類','回収枚数','回収金額','月末在庫枚数','月末在庫金額'].forEach((h,j)=>{
+      const c1=sc2+j*2,c2=c1+1;
+      sf(ws,sh,c1,h,'pink',true,9);sf(ws,sh,c2,'','pink',true,9);mc(ws,sh,c1,sh,c2);
+    });
+    let sdr=sh+1;
     stampRec.forEach(s=>{
-      setCell(nextRow,1,s.stamp_type||'','FFD0F0F8',false,9);
-      [s.face_value,s.recovery_count,s.recovery_amount,s.stock_count,s.stock_amount].forEach((v,j)=>{
-        setCell(nextRow,2+j,v||0,'FFFFFF',false,9,'right');ws.getCell(nextRow,2+j).numFmt=numFmt;
-      });nextRow++;
+      sf(ws,sdr,sc2,s.stamp_type||'','lblue',false,9,'left');sf(ws,sdr,sc2+1,'','lblue',false,9);mc(ws,sdr,sc2,sdr,sc2+1);
+      ['recovery_count','recovery_amount','stock_count','stock_amount'].forEach((key,j)=>{
+        const c1=sc2+2+j*2,c2=c1+1;
+        sf(ws,sdr,c1,s[key]||0,'white',false,9,'right','#,##0');sf(ws,sdr,c2,'','white',false,9);mc(ws,sdr,c1,sdr,c2);
+      });sdr++;
     });
   }
 
-  // 店舗名（最終行）
-  nextRow++;
-  ws.getCell(nextRow,1).value=storeName;ws.getCell(nextRow,1).font={bold:true,size:10};
+  // 最終行：店舗名
+  const lastR=ws.rowCount+2;
+  ws.getCell(lastR,1).value=storeName;ws.getCell(lastR,1).font={bold:true,size:10,name:'Meiryo'};
 }
 
-// 1日分出力
 async function exportSingle(){
   const btn=document.getElementById('btn-single');
   const storeId=document.getElementById('store-single').value;
   const storeName=document.getElementById('store-single').options[document.getElementById('store-single').selectedIndex]?.text||'';
   const date=document.getElementById('date-single').value;
   if(!storeId||!date){showMsg('msg-single','店舗と日付を選択してください。','error');return;}
-
   btn.disabled=true;btn.textContent='出力中...';
   showMsg('msg-single','データを取得中...','info');
-
   try{
-    const data=await fetchDailyData(storeId,date);
-    const res=await fetch('/api/nippo',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({storeName,date,data})
-    });
-    if(!res.ok){const err=await res.text();showMsg('msg-single','エラー：'+err,'error');btn.disabled=false;btn.textContent='📥 日報をExcelで出力';return;}
-    const blob=await res.blob();
+    const data=await fetchData(storeId,date);
+    const wb=new ExcelJS.Workbook();
+    await buildSheet(wb,storeName,date,data);
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=`日報_${storeName}_${date}.xlsx`;a.click();
+    const a=document.createElement('a');a.href=url;a.download=`日報_${storeName}_${date}.xlsx`;a.click();
     URL.revokeObjectURL(url);
     showMsg('msg-single','✅ 出力しました。','success');
-  }catch(e){
-    showMsg('msg-single','エラー：'+e.message,'error');
-  }
+  }catch(e){showMsg('msg-single','エラー：'+e.message,'error');}
   btn.disabled=false;btn.textContent='📥 日報をExcelで出力';
 }
 
-// 期間出力
 async function exportRange(){
   const btn=document.getElementById('btn-range');
   const storeId=document.getElementById('store-range').value;
@@ -732,72 +408,44 @@ async function exportRange(){
   const dateTo=document.getElementById('date-to').value;
   if(!storeId||!dateFrom||!dateTo){showMsg('msg-range','店舗と期間を選択してください。','error');return;}
   if(dateFrom>dateTo){showMsg('msg-range','開始日は終了日以前にしてください。','error');return;}
-
   btn.disabled=true;btn.textContent='出力中...';
   showMsg('msg-range','データを取得中...','info');
-
   try{
     const wb=new ExcelJS.Workbook();
     const dates=[];
     let d=new Date(dateFrom);
-    const end=new Date(dateTo);
-    while(d<=end){
-      dates.push(d.toISOString().slice(0,10));
-      d.setDate(d.getDate()+1);
-    }
-
-    // 期間内の全日付でAPI呼び出し（1日ずつ生成してZIP化は複雑なため、1日ごとにDL）
-    let dlCount=0;
+    while(d<=new Date(dateTo)){dates.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1);}
+    let cnt=0;
     for(const date of dates){
-      const data=await fetchDailyData(storeId,date);
+      const data=await fetchData(storeId,date);
       if(data.daily.length===0&&!data.cashReg)continue;
-      showMsg('msg-range',`${date} を出力中...`,'info');
-      const res=await fetch('/api/nippo',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({storeName,date,data})
-      });
-      if(!res.ok)continue;
-      const blob=await res.blob();
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url;a.download=`日報_${storeName}_${date}.xlsx`;a.click();
-      URL.revokeObjectURL(url);
-      dlCount++;
-      await new Promise(r=>setTimeout(r,500)); // DL間隔
+      await buildSheet(wb,storeName,date,data);cnt++;
     }
-    if(dlCount===0){
-      showMsg('msg-range','期間内にデータがありませんでした。','error');
-      btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';
-      return;
-    }
-    showMsg('msg-range','✅ '+dlCount+'日分を出力しました。','success');
-  }catch(e){
-    showMsg('msg-range','エラー：'+e.message,'error');
-  }
+    if(cnt===0){showMsg('msg-range','期間内にデータがありませんでした。','error');btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';return;}
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=`日報_${storeName}_${dateFrom}_${dateTo}.xlsx`;a.click();
+    URL.revokeObjectURL(url);
+    showMsg('msg-range',`✅ ${cnt}日分を出力しました。`,'success');
+  }catch(e){showMsg('msg-range','エラー：'+e.message,'error');}
   btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';
 }
 
-// 店舗一覧読み込み
 async function loadStores(){
   const stores=await apiFetch('stores?is_active=eq.true&order=sort_order');
-  const savedStoreId=localStorage.getItem('store_id')||'';
+  const savedId=localStorage.getItem('store_id')||'';
   ['store-single','store-range'].forEach(id=>{
     const sel=document.getElementById(id);
     stores.forEach(s=>{
       const o=document.createElement('option');
       o.value=s.id;o.textContent=s.name;
-      if(String(s.id)===String(savedStoreId))o.selected=true;
+      if(String(s.id)===String(savedId))o.selected=true;
       sel.appendChild(o);
     });
   });
 }
-
-function handleLogout(){
-  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
-}
-
-// 初期化
+function handleLogout(){if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}}
 async function init(){
   const today=new Date().toISOString().slice(0,10);
   document.getElementById('date-single').value=today;
@@ -805,7 +453,6 @@ async function init(){
   document.getElementById('date-to').value=today;
   await loadStores();
 }
-
 init();
 </script>
 </body>
