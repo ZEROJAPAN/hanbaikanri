@@ -145,8 +145,8 @@ async function buildSheet(wb,storeName,date,data){
   const visitors=daily.find(r=>r.visitors>0)?.visitors||0;
 
   // 行高設定
-  for(let i=1;i<=88;i++)ws.getRow(i).height=14.5;
-  ws.getRow(1).height=12;
+  for(let i=1;i<=88;i++)ws.getRow(i).height=17;
+  ws.getRow(1).height=17;
 
   // 行1: 店舗名・日付
   ws.getCell(1,1).value=storeName;ws.getCell(1,1).font={bold:true,size:11,name:'Meiryo'};
