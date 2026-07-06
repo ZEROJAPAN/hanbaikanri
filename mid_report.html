@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>業務中間レポート - ゼロジャパン</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
@@ -274,28 +275,63 @@ function renderSummary(){
   `;
 }
 
-function exportExcel(){
+async function exportExcel(){
   if(reportData.length===0){alert('先にデータを取得してください。');return;}
 
-  const wb=XLSX.utils.book_new();
-  const ws_data=[];
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('業務中間レポート');
+
+  // 列幅設定
+  ws.columns=[
+    {key:'code',  width:12},
+    {key:'name',  width:30},
+    {key:'time',  width:24},
+    {key:'shopV', width:14},
+    {key:'shopA', width:16},
+    {key:'buyV',  width:14},
+    {key:'buyA',  width:16},
+  ];
+
+  // 罫線定義
+  const thinBorder={style:'thin',color:{argb:'FF000000'}};
+  const allBorder={top:thinBorder,bottom:thinBorder,left:thinBorder,right:thinBorder};
 
   // タイトル行
-  ws_data.push(['業務中間レポート','','','','','',currentDate]);
-  ws_data.push(['店舗コード','店舗名','最終更新日時','店売り客数','店売り金額','買取客数','買取金額']);
+  const titleRow=ws.addRow(['業務中間レポート','','','','','',currentDate]);
+  titleRow.font={bold:true,size:12};
+  titleRow.height=20;
 
+  // ヘッダー行
+  const hdrRow=ws.addRow(['店舗コード','店舗名','最終更新日時','店売り客数','店売り金額','買取客数','買取金額']);
+  hdrRow.height=18;
+  hdrRow.eachCell(cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
+    cell.font={color:{argb:'FFFFFFFF'},bold:true,size:11};
+    cell.alignment={horizontal:'center',vertical:'middle'};
+    cell.border=allBorder;
+  });
+
+  // データ行
   let totalShopV=0,totalShopA=0,totalBuyV=0,totalBuyA=0;
-
-  reportData.forEach(s=>{
+  reportData.forEach((s,i)=>{
     let timeStr='';
     if(s.lastUpdated){
       timeStr=new Date(s.lastUpdated).toLocaleString('ja-JP');
     }
-    ws_data.push([
-      s.code||'',s.name,timeStr,
-      s.shopVisitors,s.shopAmount,
-      s.buyVisitors,s.buyAmount
-    ]);
+    const row=ws.addRow([s.code||'',s.name,timeStr,s.shopVisitors,s.shopAmount,s.buyVisitors,s.buyAmount]);
+    row.height=16;
+    row.eachCell((cell,colNum)=>{
+      cell.border=allBorder;
+      cell.font={size:11};
+      if(colNum>=4){
+        cell.alignment={horizontal:'right'};
+        cell.numFmt='#,##0';
+      }
+      // 偶数行に薄い背景
+      if(i%2===1){
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}};
+      }
+    });
     totalShopV+=s.shopVisitors;
     totalShopA+=s.shopAmount;
     totalBuyV+=s.buyVisitors;
@@ -303,51 +339,29 @@ function exportExcel(){
   });
 
   // 合計行
-  ws_data.push(['','合　　計','',totalShopV,totalShopA,totalBuyV,totalBuyA]);
-
-  const ws=XLSX.utils.aoa_to_sheet(ws_data);
-
-  // 列幅設定
-  ws['!cols']=[{wch:10},{wch:28},{wch:22},{wch:12},{wch:16},{wch:12},{wch:16}];
-
-  // 罫線スタイル
-  const border={
-    top:{style:'thin',color:{rgb:'000000'}},
-    bottom:{style:'thin',color:{rgb:'000000'}},
-    left:{style:'thin',color:{rgb:'000000'}},
-    right:{style:'thin',color:{rgb:'000000'}}
-  };
-  const headerFill={fgColor:{rgb:'1E2761'},type:'pattern',patternType:'solid'};
-  const headerFont={color:{rgb:'FFFFFF'},bold:true};
-  const totalFill={fgColor:{rgb:'FFFF88'},type:'pattern',patternType:'solid'};
-  const totalFont={bold:true};
-  const numFmt='#,##0';
-
-  const range=XLSX.utils.decode_range(ws['!ref']);
-  for(let R=range.s.r;R<=range.e.r;R++){
-    for(let C=range.s.c;C<=range.e.c;C++){
-      const addr=XLSX.utils.encode_cell({r:R,c:C});
-      if(!ws[addr])ws[addr]={v:'',t:'s'};
-      ws[addr].s={border};
-
-      // ヘッダー行（2行目）スタイル
-      if(R===1){
-        ws[addr].s={border,fill:headerFill,font:headerFont,alignment:{horizontal:'center'}};
-      }
-      // 合計行スタイル
-      if(R===range.e.r){
-        ws[addr].s={border,fill:totalFill,font:totalFont,alignment:{horizontal:C===1?'center':'right'}};
-      }
-      // 数値列の書式（客数・金額列）
-      if(R>1&&R<range.e.r&&C>=3){
-        ws[addr].s={border,alignment:{horizontal:'right'}};
-        if(ws[addr].t==='n')ws[addr].z=numFmt;
-      }
+  const totalRow=ws.addRow(['','合　　計','',totalShopV,totalShopA,totalBuyV,totalBuyA]);
+  totalRow.height=18;
+  totalRow.eachCell((cell,colNum)=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFF99'}};
+    cell.font={bold:true,size:11};
+    cell.border=allBorder;
+    if(colNum>=4){
+      cell.alignment={horizontal:'right'};
+      cell.numFmt='#,##0';
+    } else if(colNum===2){
+      cell.alignment={horizontal:'center'};
     }
-  }
+  });
 
-  XLSX.utils.book_append_sheet(wb,ws,'業務中間レポート');
-  XLSX.writeFile(wb,`業務中間レポート_${currentDate}.xlsx`);
+  // ダウンロード
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`業務中間レポート_${currentDate}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function handleLogout(){
