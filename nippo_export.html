@@ -331,6 +331,62 @@ function buildWorkbook(storeName, date, data){
 
   // ワークシート作成
   const sheet=XLSX.utils.aoa_to_sheet(ws);
+
+  // 列幅設定
+  const colWidths=[{wch:22}];
+  COLS.forEach(()=>{colWidths.push({wch:8});colWidths.push({wch:14});});
+  sheet['!cols']=colWidths;
+
+  // 罫線スタイル
+  const border={
+    top:{style:'thin',color:{rgb:'000000'}},
+    bottom:{style:'thin',color:{rgb:'000000'}},
+    left:{style:'thin',color:{rgb:'000000'}},
+    right:{style:'thin',color:{rgb:'000000'}}
+  };
+  const headerFill={fgColor:{rgb:'1E2761'},type:'pattern',patternType:'solid'};
+  const headerFont={color:{rgb:'FFFFFF'},bold:true,sz:9};
+  const sumFill={fgColor:{rgb:'FFFF88'},type:'pattern',patternType:'solid'};
+  const sumFont={bold:true,sz:9};
+  const catFill={fgColor:{rgb:'D0F0F8'},type:'pattern',patternType:'solid'};
+  const numFmt='#,##0';
+
+  const range=XLSX.utils.decode_range(sheet['!ref']||'A1');
+  for(let R=range.s.r;R<=range.e.r;R++){
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!sheet[addr])sheet[addr]={v:'',t:'s'};
+
+      let s={border};
+
+      // ヘッダー行（1・2行目）
+      if(R<=1){
+        s={border,fill:headerFill,font:headerFont,alignment:{horizontal:'center',wrapText:true}};
+      }
+      // 商品名列（左端）
+      else if(C===0){
+        const v=sheet[addr].v;
+        const isSumLabel=['計','純売上','消費税','現計','掛計','客数'].includes(String(v));
+        if(isSumLabel){
+          s={border,fill:{fgColor:{rgb:'1E2761'},type:'pattern',patternType:'solid'},font:{color:{rgb:'FFFFFF'},bold:true,sz:9},alignment:{horizontal:'center'}};
+        } else {
+          s={border,fill:catFill,font:{sz:9},alignment:{horizontal:'left'}};
+        }
+      }
+      // 数値セル
+      else if(sheet[addr].t==='n'){
+        s={border,alignment:{horizontal:'right'},font:{sz:9}};
+        sheet[addr].z=numFmt;
+        // 計行
+        if(R>=2+ws.length-6){
+          s={border,fill:sumFill,font:sumFont,alignment:{horizontal:'right'}};
+        }
+      }
+
+      sheet[addr].s=s;
+    }
+  }
+
   XLSX.utils.book_append_sheet(wb,sheet,'日報');
   return wb;
 }
