@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>業務中間レポート - ゼロジャパン</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.back-btn:hover{background:#EEF2FF;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+
+.main{background:#fff;border-radius:8px;padding:16px;}
+
+/* 操作バー */
+.ctrl-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.date-input{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;}
+.date-input:focus{border-color:#1E2761;}
+
+.reload-btn{
+  padding:7px 18px;font-size:12px;font-weight:bold;
+  background:linear-gradient(180deg,#2D4FBA,#1E2761);
+  color:#fff;border:none;border-radius:5px;cursor:pointer;
+  box-shadow:0 3px 0 #0F1640;
+}
+.reload-btn:hover{background:linear-gradient(180deg,#3D6FCA,#2D3E8F);}
+.reload-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #0F1640;}
+
+.export-btn{
+  padding:7px 18px;font-size:12px;font-weight:bold;
+  background:linear-gradient(180deg,#0FAA7A,#028090);
+  color:#fff;border:none;border-radius:5px;cursor:pointer;
+  box-shadow:0 3px 0 #015060;
+}
+.export-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
+.export-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #015060;}
+
+.last-updated{font-size:11px;color:#64748B;margin-left:auto;}
+
+/* テーブル */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:#1E2761;color:#fff;padding:8px 10px;text-align:center;white-space:nowrap;border:1px solid #2D4FBA;}
+th.left{text-align:left;}
+td{padding:6px 10px;border:1px solid #E2E8F0;vertical-align:middle;white-space:nowrap;}
+tr:nth-child(even) td{background:#F8FAFC;}
+tr:hover td{background:#EEF2FF;}
+td.code{text-align:center;color:#64748B;font-size:11px;}
+td.name{font-weight:bold;color:#1E2761;}
+td.time{font-size:10px;color:#64748B;text-align:center;}
+td.time.today{color:#059669;font-weight:bold;}
+td.num{text-align:right;}
+td.total{background:#FFF9C4!important;font-weight:bold;text-align:right;}
+td.total-label{background:#FFF9C4!important;font-weight:bold;text-align:center;}
+td.zero{color:#CBD5E1;}
+
+/* 入力済みバッジ */
+.badge-done{background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold;}
+.badge-none{background:#F1F5F9;color:#94A3B8;padding:2px 8px;border-radius:10px;font-size:10px;}
+
+.msg{padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:11px;display:none;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+.msg.info{background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;}
+
+.summary-bar{
+  display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;
+}
+.sum-card{
+  background:#EEF2FF;border:1px solid #C7D2FE;
+  border-radius:6px;padding:8px 14px;font-size:12px;
+}
+.sum-card-title{color:#475569;font-size:11px;}
+.sum-card-value{font-size:16px;font-weight:bold;color:#1E2761;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+    <div class="topbar-title">📊 業務中間レポート</div>
+  </div>
+  <div>
+    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+  </div>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<div class="main">
+  <!-- 操作バー -->
+  <div class="ctrl-bar">
+    <input type="date" class="date-input" id="report-date">
+    <button type="button" class="reload-btn" onclick="loadData()">🔄 更新</button>
+    <button type="button" class="export-btn" onclick="exportExcel()">📥 Excel出力</button>
+    <span class="last-updated" id="last-updated"></span>
+  </div>
+
+  <!-- サマリーカード -->
+  <div class="summary-bar" id="summary-bar"></div>
+
+  <!-- テーブル -->
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="left" style="width:70px;">店舗コード</th>
+          <th class="left" style="min-width:180px;">店舗名</th>
+          <th style="width:140px;">最終更新日時</th>
+          <th style="width:80px;">状態</th>
+          <th style="width:80px;">店売り<br>客数</th>
+          <th style="width:100px;">店売り<br>金額</th>
+          <th style="width:80px;">買取<br>客数</th>
+          <th style="width:100px;">買取<br>金額</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body">
+        <tr><td colspan="8" style="text-align:center;padding:20px;color:#94A3B8;">読み込み中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path){
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+  });
+  return await res.json();
+}
+
+function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
+
+let reportData=[];
+let storeList=[];
+let currentDate='';
+
+async function loadData(){
+  const date=document.getElementById('report-date').value;
+  if(!date)return;
+  currentDate=date;
+
+  document.getElementById('tbl-body').innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#94A3B8;">読み込み中...</td></tr>';
+  document.getElementById('last-updated').textContent='';
+
+  // 店舗一覧・日報データを並行取得
+  const [stores, daily] = await Promise.all([
+    apiFetch('stores?is_active=eq.true&order=sort_order&select=id,code,name'),
+    apiFetch(`daily_reports?report_date=eq.${date}&select=store_id,channel_id,quantity,amount,visitors,updated_at`)
+  ]);
+
+  storeList=stores||[];
+
+  // 店舗ごとに集計
+  reportData=storeList.map(store=>{
+    const storeDaily=daily.filter(d=>d.store_id===store.id);
+
+    // 店売り（channel_id=3）
+    const shopRows=storeDaily.filter(d=>d.channel_id===3);
+    const shopVisitors=shopRows.reduce((s,d)=>s+(d.visitors||0),0);
+    const shopAmount=shopRows.reduce((s,d)=>s+(d.amount||0),0);
+
+    // 買取（channel_id=1）
+    const buyRows=storeDaily.filter(d=>d.channel_id===1);
+    const buyVisitors=buyRows.reduce((s,d)=>s+(d.visitors||0),0);
+    const buyAmount=buyRows.reduce((s,d)=>s+(d.amount||0),0);
+
+    // 最終更新日時（updated_atの最新）
+    const times=storeDaily.map(d=>d.updated_at).filter(Boolean).sort().reverse();
+    const lastUpdated=times[0]||null;
+    const hasData=storeDaily.length>0;
+
+    return {
+      id:store.id,
+      code:store.code,
+      name:store.name,
+      lastUpdated,
+      hasData,
+      shopVisitors,
+      shopAmount,
+      buyVisitors,
+      buyAmount,
+    };
+  });
+
+  renderTable(date);
+  renderSummary();
+  document.getElementById('last-updated').textContent='最終取得：'+new Date().toLocaleTimeString('ja-JP');
+}
+
+function renderTable(date){
+  const tbody=document.getElementById('tbl-body');
+  const today=new Date().toISOString().slice(0,10);
+
+  let totalShopV=0,totalShopA=0,totalBuyV=0,totalBuyA=0;
+  let inputCount=0;
+
+  let h='';
+  reportData.forEach(s=>{
+    totalShopV+=s.shopVisitors;
+    totalShopA+=s.shopAmount;
+    totalBuyV+=s.buyVisitors;
+    totalBuyA+=s.buyAmount;
+    if(s.hasData)inputCount++;
+
+    // 最終更新日時の表示
+    let timeStr='－';
+    let timeClass='time';
+    if(s.lastUpdated){
+      const dt=new Date(s.lastUpdated);
+      const dtDate=dt.toISOString().slice(0,10);
+      timeStr=dt.toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      if(dtDate===date)timeClass='time today';
+    }
+
+    const badge=s.hasData
+      ?'<span class="badge-done">入力済</span>'
+      :'<span class="badge-none">未入力</span>';
+
+    h+=`<tr>
+      <td class="code">${s.code||'－'}</td>
+      <td class="name">${s.name}</td>
+      <td class="${timeClass}">${timeStr}</td>
+      <td style="text-align:center;">${badge}</td>
+      <td class="num ${s.shopVisitors===0?'zero':''}">${fmt(s.shopVisitors)}</td>
+      <td class="num ${s.shopAmount===0?'zero':''}">${fmt(s.shopAmount)}</td>
+      <td class="num ${s.buyVisitors===0?'zero':''}">${fmt(s.buyVisitors)}</td>
+      <td class="num ${s.buyAmount===0?'zero':''}">${fmt(s.buyAmount)}</td>
+    </tr>`;
+  });
+
+  // 合計行
+  h+=`<tr>
+    <td class="total-label" colspan="4">合　　計</td>
+    <td class="total">${fmt(totalShopV)}</td>
+    <td class="total">${fmt(totalShopA)}</td>
+    <td class="total">${fmt(totalBuyV)}</td>
+    <td class="total">${fmt(totalBuyA)}</td>
+  </tr>`;
+
+  tbody.innerHTML=h;
+}
+
+function renderSummary(){
+  const inputCount=reportData.filter(s=>s.hasData).length;
+  const totalShopA=reportData.reduce((s,r)=>s+r.shopAmount,0);
+  const totalBuyA=reportData.reduce((s,r)=>s+r.buyAmount,0);
+
+  document.getElementById('summary-bar').innerHTML=`
+    <div class="sum-card">
+      <div class="sum-card-title">入力済み店舗</div>
+      <div class="sum-card-value">${inputCount} / ${reportData.length} 店舗</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-title">店売り合計金額</div>
+      <div class="sum-card-value">¥${fmt(totalShopA)}</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-title">買取合計金額</div>
+      <div class="sum-card-value">¥${fmt(totalBuyA)}</div>
+    </div>
+  `;
+}
+
+function exportExcel(){
+  if(reportData.length===0){alert('先にデータを取得してください。');return;}
+
+  const wb=XLSX.utils.book_new();
+  const ws_data=[];
+
+  // タイトル行
+  ws_data.push(['業務中間レポート','','',currentDate]);
+  ws_data.push(['店舗コード','店舗名','最終更新日時','店売り客数','店売り金額','買取客数','買取金額']);
+
+  let totalShopV=0,totalShopA=0,totalBuyV=0,totalBuyA=0;
+
+  reportData.forEach(s=>{
+    let timeStr='';
+    if(s.lastUpdated){
+      timeStr=new Date(s.lastUpdated).toLocaleString('ja-JP');
+    }
+    ws_data.push([
+      s.code||'',s.name,timeStr,
+      s.shopVisitors,s.shopAmount,
+      s.buyVisitors,s.buyAmount
+    ]);
+    totalShopV+=s.shopVisitors;
+    totalShopA+=s.shopAmount;
+    totalBuyV+=s.buyVisitors;
+    totalBuyA+=s.buyAmount;
+  });
+
+  // 合計行
+  ws_data.push(['','合　　計','',totalShopV,totalShopA,totalBuyV,totalBuyA]);
+
+  const ws=XLSX.utils.aoa_to_sheet(ws_data);
+
+  // 列幅設定
+  ws['!cols']=[{wch:10},{wch:25},{wch:20},{wch:10},{wch:14},{wch:10},{wch:14}];
+
+  XLSX.utils.book_append_sheet(wb,ws,'業務中間レポート');
+  XLSX.writeFile(wb,`業務中間レポート_${currentDate}.xlsx`);
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+// 初期化
+function init(){
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('report-date').value=today;
+  loadData();
+
+}
+
+init();
+</script>
+</body>
+</html>
