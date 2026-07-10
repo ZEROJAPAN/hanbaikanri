@@ -1,3 +1,5 @@
+const https = require('https');
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -20,19 +22,36 @@ module.exports = async function handler(req, res) {
     const v3 = '\u8cb7\u53d6\u4e0d\u53ef';
     const f2 = '\u53d7\u4ed8\u65e5\u4ed8';
     const query = `${f1} in ("${v1}","${v2}","${v3}") and ${f2}="${date}"`;
-    const url = `https://${domain}/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
+    const path = `/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
 
-    const response = await fetch(url, {
-      headers: { 'X-Cybozu-API-Token': token },
+    const data = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: domain,
+        path: path,
+        method: 'GET',
+        headers: {
+          'X-Cybozu-API-Token': token,
+          'Content-Type': 'application/json',
+        },
+      };
+
+      const req2 = https.request(options, (res2) => {
+        let body = '';
+        res2.on('data', (chunk) => { body += chunk; });
+        res2.on('end', () => {
+          try { resolve({ status: res2.statusCode, data: JSON.parse(body) }); }
+          catch(e) { reject(new Error('JSON parse error: ' + body)); }
+        });
+      });
+      req2.on('error', reject);
+      req2.end();
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(500).json({ error: data });
+    if (data.status !== 200) {
+      return res.status(500).json({ error: data.data });
     }
 
-    return res.status(200).json(data);
+    return res.status(200).json(data.data);
 
   } catch (e) {
     return res.status(500).json({ error: e.message });
