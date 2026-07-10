@@ -155,19 +155,26 @@ async function apiFetch(path,method='GET',body=null){
   return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
 }
 
-// Kintoneからデータ取得
+// Kintoneからデータ取得（Vercelプロキシ経由）
 async function fetchKintone(date){
   addLog('Kintoneからデータ取得中... 日付:'+date,'info');
-  const query=`ドロップダウン_0 in ("成約","キャンセル","買取不可") and 受付日付="${date}"`;
-  const url=`https://${KINTONE_DOMAIN}/k/v1/records.json?app=${KINTONE_APP}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
-
-  const res=await fetch(url,{headers:{'X-Cybozu-API-Token':KINTONE_TOKEN}});
+  const params=new URLSearchParams({
+    date,
+    token:KINTONE_TOKEN,
+    domain:KINTONE_DOMAIN,
+    app:KINTONE_APP,
+  });
+  const res=await fetch('/api/kintone?'+params.toString());
   if(!res.ok){
     const err=await res.text();
     addLog('Kintone取得エラー：'+err,'err');
     throw new Error('Kintone API Error: '+res.status);
   }
   const data=await res.json();
+  if(data.error){
+    addLog('Kintoneエラー：'+data.error,'err');
+    throw new Error(data.error);
+  }
   addLog(`取得完了：${data.records.length}件（合計${data.totalCount}件）`,'ok');
   return data.records;
 }
