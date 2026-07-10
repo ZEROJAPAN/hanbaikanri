@@ -1,368 +1,59 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kintone連携 - ゼロジャパン</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
-.wrap{padding:6px;}
-.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
-.topbar-left{display:flex;align-items:center;gap:12px;}
-.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
-.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
-.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
-.main{background:#fff;border-radius:8px;padding:14px;}
-.status-bar{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
-.sc{background:#EEF2FF;border:1px solid #C7D2FE;border-radius:6px;padding:8px 14px;}
-.sc-title{color:#475569;font-size:11px;}
-.sc-val{font-size:16px;font-weight:bold;color:#1E2761;}
-.sc.green{background:#D1FAE5;border-color:#6EE7B7;}.sc.green .sc-val{color:#065F46;}
-.sc.yellow{background:#FFF9C4;border-color:#FCD34D;}.sc.yellow .sc-val{color:#92400E;}
-.ctrl-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
-.date-input{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;}
-.sync-btn{padding:8px 20px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#2D4FBA,#1E2761);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #0F1640;}
-.sync-btn:disabled{background:#94A3B8;box-shadow:none;cursor:not-allowed;}
-.last-sync{font-size:11px;color:#64748B;}
-.tbl-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:#1E2761;color:#fff;padding:7px 10px;text-align:center;white-space:nowrap;border:1px solid #2D4FBA;}
-th.left{text-align:left;}
-td{padding:6px 8px;border:1px solid #E2E8F0;vertical-align:middle;white-space:nowrap;}
-tr:nth-child(even) td{background:#F8FAFC;}
-td.sname{font-weight:bold;color:#1E2761;}
-td.num{text-align:right;}
-td.total td{background:#FFF9C4!important;font-weight:bold;}
-.badge-ok{background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold;}
-.badge-none{background:#F1F5F9;color:#94A3B8;padding:2px 8px;border-radius:10px;font-size:10px;}
-.log-area{margin-top:14px;background:#1E2761;border-radius:6px;padding:10px 14px;max-height:180px;overflow-y:auto;font-family:'Courier New',monospace;font-size:11px;color:#9FE1CB;}
-.log-line{margin-bottom:2px;}
-.log-line.err{color:#FCA5A5;}
-.log-line.ok{color:#6EE7B7;}
-.log-line.info{color:#93C5FD;}
-</style>
-</head>
-<body>
-<div class="wrap">
-<div class="topbar">
-  <div class="topbar-left">
-    <button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
-    <div class="topbar-title">🔗 Kintone買取データ連携</div>
-  </div>
-  <div><button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button></div>
-</div>
-<div class="main">
-  <div class="status-bar">
-    <div class="sc"><div class="sc-title">取得対象日</div><div class="sc-val" id="s-date">-</div></div>
-    <div class="sc green"><div class="sc-title">取得レコード数</div><div class="sc-val" id="s-count">0件</div></div>
-    <div class="sc yellow"><div class="sc-title">買取合計金額</div><div class="sc-val" id="s-total">¥0</div></div>
-    <div class="sc"><div class="sc-title">対象店舗数</div><div class="sc-val" id="s-stores">0店舗</div></div>
-  </div>
-  <div class="ctrl-bar">
-    <input type="date" class="date-input" id="sync-date">
-    <button type="button" class="sync-btn" id="sync-btn" onclick="doSync()">🔄 Kintoneから取得・同期</button>
-    <span class="last-sync" id="last-sync"></span>
-  </div>
-  <div class="tbl-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th class="left" style="min-width:200px;">店舗名</th>
-          <th style="width:80px;">買取件数</th>
-          <th style="width:110px;">買取金額</th>
-          <th style="width:80px;">キャンセル</th>
-          <th style="width:80px;">買取不可</th>
-          <th style="width:70px;">状態</th>
-        </tr>
-      </thead>
-      <tbody id="tbl-body">
-        <tr><td colspan="6" style="text-align:center;padding:20px;color:#94A3B8;">「Kintoneから取得」ボタンを押してください</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="log-area" id="log-area"><div class="log-line info">▶ Kintone連携システム 起動</div></div>
-</div>
-</div>
-<script>
-const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
-const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
-const KINTONE_DOMAIN='zerojapan.cybozu.com';
-const KINTONE_TOKEN='D4yGlm7RDzTqZzZAFfkrX24a2AfFs45M27EADh3K';
-const KINTONE_APP=6;
+export default async function handler(req) {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+  };
 
-// ===== 店舗対応表（Kintone店舗表示名 → Supabase店舗ID）=====
-const STORE_MAP={
-  'イオン板橋ショッピングセンター店':1,
-  'セレオ国分寺店':2,
-  'イオンモールむさし村山店':3,
-  '昭島モリタウン店':4,
-  '蒲田店':5,
-  '港北トレッサ横浜店':6,
-  'イトーヨーカドー立場店':7,
-  'イオンモール座間店':8,
-  'イオンモール大和店':9,
-  'ococリア多摩センター店':10,
-  '八王子イーアス高尾店':11,
-  'アリオ橋本店':12,
-  'イオンモール羽生店':13,
-  'アズ熊谷店':14,
-  '鶴ヶ島ワカバウォーク店':15,
-  'NEO所沢本店':16,
-  '川越クレアモール店':35,
-  '久喜アリオ鷲宮店':17,
-  'イオンモール高崎店':18,
-  'アリオ上尾店':19,
-  'ララガーデン川口店':20,
-  'アリオ川口店':21,
-  'イオンモール春日部店':22,
-  'ららぽーと新三郷店':23,
-  'イオンモール川口店':24,
-  'チェリオ鹿島店':25,
-  'イトーヨーカドー木場店':36,
-  'イーアスつくば店':26,
-  'イオンモール水戸内原店':27,
-  'アリオ北砂店':28,
-  'イオンモールつくば店':30,
-  'アリオ市原店':31,
-  '松戸セブンタウン常盤平店':32,
-  'セブンパークアリオ柏店':33,
-  'イオンモール幕張新都心店':34,
-  'アリオ亀有店':29,
-  'ららぽーとTOKYO-BAY店':37,
-  '特販催事':38,
-};
-
-// カテゴリー対応表（Kintone→Supabase category_id）
-const CAT_MAP={
-  '金':1,'プラチナ':2,'コンビ':3,'ジュエリー':4,'時計':5,
-  'ブランド品':6,'テレカ・金券類':7,'お酒':8,'その他':9,'切手・印紙':10,
-};
-
-function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
-function addLog(msg,type=''){
-  const area=document.getElementById('log-area');
-  const div=document.createElement('div');
-  div.className='log-line'+(type?' '+type:'');
-  div.textContent=new Date().toLocaleTimeString('ja-JP')+' '+msg;
-  area.appendChild(div);
-  area.scrollTop=area.scrollHeight;
-}
-
-async function apiFetch(path,method='GET',body=null){
-  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
-  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
-  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
-}
-
-// Kintoneからデータ取得（Vercelプロキシ経由）
-async function fetchKintone(date){
-  addLog('Kintoneからデータ取得中... 日付:'+date,'info');
-  const params=new URLSearchParams({
-    date,
-    token:KINTONE_TOKEN,
-    domain:KINTONE_DOMAIN,
-    app:KINTONE_APP,
-  });
-  const res=await fetch('/api/kintone?'+params.toString());
-  if(!res.ok){
-    const err=await res.text();
-    addLog('Kintone取得エラー：'+err,'err');
-    throw new Error('Kintone API Error: '+res.status);
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers });
   }
-  const data=await res.json();
-  if(data.error){
-    addLog('Kintoneエラー：'+data.error,'err');
-    throw new Error(data.error);
-  }
-  addLog(`取得完了：${data.records.length}件（合計${data.totalCount}件）`,'ok');
-  return data.records;
-}
 
-// レコードを集計
-function aggregateRecords(records){
-  const storeData={};
+  try {
+    const url = new URL(req.url);
+    const date = url.searchParams.get('date');
+    const token = url.searchParams.get('token');
+    const domain = url.searchParams.get('domain');
+    const app = url.searchParams.get('app') || '6';
 
-  records.forEach(rec=>{
-    const storeName=rec['ドロップダウン_4']?.value||'';
-    const result=rec['ドロップダウン_0']?.value||'';
-    const storeId=STORE_MAP[storeName];
-    if(!storeId)return; // 対応表にない店舗はスキップ
-
-    if(!storeData[storeId]){
-      storeData[storeId]={
-        storeId,storeName,
-        buyCount:0,buyAmount:0,
-        cancelCount:0,noPurchaseCount:0,
-        catAmounts:{},catCounts:{},
-      };
+    if (!date || !token || !domain) {
+      return new Response(
+        JSON.stringify({ error: 'Missing parameters: date, token, domain are required' }),
+        { status: 400, headers }
+      );
     }
 
-    const s=storeData[storeId];
+    const query = `ドロップダウン_0 in ("成約","キャンセル","買取不可") and 受付日付="${date}"`;
+    const kintoneUrl = `https://${domain}/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
 
-    if(result==='キャンセル'){s.cancelCount++;return;}
-    if(result==='買取不可'){s.noPurchaseCount++;return;}
-
-    // 明細テーブルを集計
-    const rows=rec['テーブル']?.value||[];
-    rows.forEach(row=>{
-      const f=row.value;
-      const cat=f['ドロップダウン_3']?.value||'その他';
-      const amt=parseFloat(f['合計_表示用']?.value||0);
-      const qty=parseFloat(f['数量']?.value||1);
-      const cancelled=(f['キャンセル']?.value||[]).includes('キャンセル');
-      if(cancelled)return;
-
-      s.buyAmount+=amt;
-      s.buyCount++;
-
-      const catId=CAT_MAP[cat]||9;
-      if(!s.catAmounts[catId])s.catAmounts[catId]={qty:0,amt:0};
-      s.catAmounts[catId].qty+=qty;
-      s.catAmounts[catId].amt+=amt;
+    const res = await fetch(kintoneUrl, {
+      method: 'GET',
+      headers: {
+        'X-Cybozu-API-Token': token,
+        'Content-Type': 'application/json',
+      },
     });
-  });
 
-  return storeData;
-}
+    const text = await res.text();
 
-// Supabaseに保存（買取チャンネルのみ）
-async function saveToSupabase(storeData,date){
-  addLog('Supabaseに保存中...','info');
-  let saved=0;
-
-  for(const [storeId,sd] of Object.entries(storeData)){
-    // 既存の買取データを削除（channel_id=1:買取）
-    await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&channel_id=eq.1`,'DELETE');
-
-    // カテゴリー別に保存
-    const records=[];
-    for(const [catId,cd] of Object.entries(sd.catAmounts)){
-      if(cd.amt===0&&cd.qty===0)continue;
-      records.push({
-        report_date:date,
-        store_id:parseInt(storeId),
-        category_id:parseInt(catId),
-        channel_id:1, // 買取
-        quantity:Math.round(cd.qty),
-        amount:Math.round(cd.amt),
-        visitors:0,
-        updated_at:new Date().toISOString(),
-      });
+    if (!res.ok) {
+      return new Response(
+        JSON.stringify({ error: `Kintone error ${res.status}: ${text}` }),
+        { status: 500, headers }
+      );
     }
 
-    if(records.length>0){
-      const res=await apiFetch('daily_reports','POST',records);
-      if(!res.ok){
-        const err=await res.text();
-        addLog(`保存エラー 店舗ID${storeId}：`+err,'err');
-      } else {
-        saved++;
-      }
-    }
+    return new Response(text, { status: 200, headers });
+
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ error: e.message, stack: e.stack }),
+      { status: 500, headers }
+    );
   }
-  addLog(`保存完了：${saved}店舗`,'ok');
 }
 
-// テーブル表示
-function renderTable(storeData,allStores){
-  const tbody=document.getElementById('tbl-body');
-  let totalBuy=0,totalAmt=0,totalCancel=0,totalNoPurchase=0,storeCount=0;
-
-  // Supabaseの全店舗リストを元に表示
-  let h='';
-  allStores.forEach(store=>{
-    const sd=storeData[store.id];
-    if(!sd&&!Object.values(STORE_MAP).includes(store.id))return;
-    const hasData=!!sd;
-    totalBuy+=sd?.buyCount||0;
-    totalAmt+=sd?.buyAmount||0;
-    totalCancel+=sd?.cancelCount||0;
-    totalNoPurchase+=sd?.noPurchaseCount||0;
-    if(hasData)storeCount++;
-
-    h+=`<tr>
-      <td class="sname">${store.name}</td>
-      <td class="num">${fmt(sd?.buyCount||0)}</td>
-      <td class="num">¥${fmt(sd?.buyAmount||0)}</td>
-      <td class="num">${fmt(sd?.cancelCount||0)}</td>
-      <td class="num">${fmt(sd?.noPurchaseCount||0)}</td>
-      <td style="text-align:center;">${hasData?'<span class="badge-ok">取得済</span>':'<span class="badge-none">データなし</span>'}</td>
-    </tr>`;
-  });
-
-  // 合計行
-  h+=`<tr style="background:#FFF9C4;">
-    <td class="sname">合　　計</td>
-    <td class="num" style="font-weight:bold;">${fmt(totalBuy)}</td>
-    <td class="num" style="font-weight:bold;">¥${fmt(totalAmt)}</td>
-    <td class="num" style="font-weight:bold;">${fmt(totalCancel)}</td>
-    <td class="num" style="font-weight:bold;">${fmt(totalNoPurchase)}</td>
-    <td></td>
-  </tr>`;
-
-  tbody.innerHTML=h;
-
-  // ステータスカード更新
-  document.getElementById('s-count').textContent=fmt(totalBuy)+'件';
-  document.getElementById('s-total').textContent='¥'+fmt(totalAmt);
-  document.getElementById('s-stores').textContent=storeCount+'店舗';
-}
-
-let autoTimer=null;
-
-async function doSync(){
-  const btn=document.getElementById('sync-btn');
-  const date=document.getElementById('sync-date').value;
-  if(!date){alert('日付を選択してください');return;}
-
-  btn.disabled=true;btn.textContent='取得中...';
-  document.getElementById('s-date').textContent=date;
-
-  try{
-    // Kintoneからデータ取得
-    const records=await fetchKintone(date);
-
-    // 集計
-    const storeData=aggregateRecords(records);
-    addLog(`集計完了：${Object.keys(storeData).length}店舗のデータあり`,'ok');
-
-    // Supabaseに保存
-    await saveToSupabase(storeData,date);
-
-    // 店舗一覧取得して表示
-    const res=await apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name');
-    const allStores=await res.json()||[];
-    renderTable(storeData,allStores);
-
-    const now=new Date().toLocaleTimeString('ja-JP');
-    document.getElementById('last-sync').textContent='最終同期：'+now;
-    addLog('✅ 同期完了！','ok');
-
-    // 5分後に自動再実行
-    if(autoTimer)clearTimeout(autoTimer);
-    autoTimer=setTimeout(()=>{
-      addLog('⏱ 5分経過 - 自動再同期開始','info');
-      doSync();
-    },5*60*1000);
-
-  }catch(e){
-    addLog('エラー：'+e.message,'err');
-  }
-
-  btn.disabled=false;btn.textContent='🔄 Kintoneから取得・同期';
-}
-
-function handleLogout(){
-  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
-}
-
-// 初期化
-function init(){
-  const today=new Date().toISOString().slice(0,10);
-  document.getElementById('sync-date').value=today;
-}
-init();
-</script>
-</body>
-</html>
+export const config = {
+  runtime: 'edge',
+};
