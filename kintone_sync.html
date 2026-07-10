@@ -14,7 +14,12 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const query = `ドロップダウン_0 in ("成約","キャンセル","買取不可") and 受付日付="${date}"`;
+    const f1 = '\u30c9\u30ed\u30c3\u30d7\u30c0\u30a6\u30f3_0';
+    const v1 = '\u6210\u7d04';
+    const v2 = '\u30ad\u30e3\u30f3\u30bb\u30eb';
+    const v3 = '\u8cb7\u53d6\u4e0d\u53ef';
+    const f2 = '\u53d7\u4ed8\u65e5\u4ed8';
+    const query = `${f1} in ("${v1}","${v2}","${v3}") and ${f2}="${date}"`;
     const url = `https://${domain}/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
 
     const response = await fetch(url, {
