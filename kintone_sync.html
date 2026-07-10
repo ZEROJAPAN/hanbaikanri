@@ -1,59 +1,35 @@
-export default async function handler(req) {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json',
-  };
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers });
+    return res.status(200).end();
+  }
+
+  const { date, token, domain, app = '6' } = req.query;
+
+  if (!date || !token || !domain) {
+    return res.status(400).json({ error: 'Missing parameters' });
   }
 
   try {
-    const url = new URL(req.url);
-    const date = url.searchParams.get('date');
-    const token = url.searchParams.get('token');
-    const domain = url.searchParams.get('domain');
-    const app = url.searchParams.get('app') || '6';
-
-    if (!date || !token || !domain) {
-      return new Response(
-        JSON.stringify({ error: 'Missing parameters: date, token, domain are required' }),
-        { status: 400, headers }
-      );
-    }
-
     const query = `ドロップダウン_0 in ("成約","キャンセル","買取不可") and 受付日付="${date}"`;
-    const kintoneUrl = `https://${domain}/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
+    const url = `https://${domain}/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
 
-    const res = await fetch(kintoneUrl, {
-      method: 'GET',
-      headers: {
-        'X-Cybozu-API-Token': token,
-        'Content-Type': 'application/json',
-      },
+    const response = await fetch(url, {
+      headers: { 'X-Cybozu-API-Token': token },
     });
 
-    const text = await res.text();
+    const data = await response.json();
 
-    if (!res.ok) {
-      return new Response(
-        JSON.stringify({ error: `Kintone error ${res.status}: ${text}` }),
-        { status: 500, headers }
-      );
+    if (!response.ok) {
+      return res.status(500).json({ error: data });
     }
 
-    return new Response(text, { status: 200, headers });
+    return res.status(200).json(data);
 
   } catch (e) {
-    return new Response(
-      JSON.stringify({ error: e.message, stack: e.stack }),
-      { status: 500, headers }
-    );
+    return res.status(500).json({ error: e.message });
   }
-}
-
-export const config = {
-  runtime: 'edge',
 };
