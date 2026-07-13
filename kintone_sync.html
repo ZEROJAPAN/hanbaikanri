@@ -277,6 +277,7 @@ function aggregate(records, date) {
         amount: 0,
         categories: {},
         cancelAmount: 0,
+        cancelCustomers: 0, // 全キャンセル（受付結果=キャンセル）のレコード数のみ。一部キャンセルは含めない
         cancelCategories: {},
       };
     }
@@ -328,6 +329,7 @@ function aggregate(records, date) {
 
     // 受付結果＝キャンセル（レコード全体がキャンセル）の明細も集計
     if (isConfirmed && kekka === 'キャンセル') {
+      s.cancelCustomers += 1; // 1レコード＝1件としてカウント（明細行数ではない）
       const table = (rec['テーブル'] && rec['テーブル'].value) || [];
       for (const row of table) {
         const v = row.value;
@@ -391,6 +393,7 @@ function renderResults(aggregated, recordCount) {
         <div class="box"><div class="num">${s.customers}</div><div class="cap">客数（成約）</div></div>
         <div class="box"><div class="num">¥${s.amount.toLocaleString()}</div><div class="cap">買取金額合計</div></div>
         <div class="box"><div class="num">¥${s.cancelAmount.toLocaleString()}</div><div class="cap">キャンセル金額合計</div></div>
+        <div class="box"><div class="num">${s.cancelCustomers}</div><div class="cap">キャンセル客数（全キャンセルのみ）</div></div>
       </div>
       <table>
         <thead><tr><th>カテゴリー</th><th>点数</th><th>金額</th></tr></thead>
@@ -479,7 +482,7 @@ async function saveAllToSupabase() {
           quantity: d.qty,
           amount: d.amount,
           visitors: s.visitors,
-          customers: s.customers,
+          customers: s.cancelCustomers, // 全キャンセルのみカウント（一部キャンセルは0）
         });
       }
 
