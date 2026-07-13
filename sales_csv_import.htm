@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>売上登録CSV取込 - ゼロジャパン</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1d4ed8; --bg:#f4f6f9; --card:#ffffff;
+    --border:#dbe1e8; --text:#1f2937; --muted:#6b7280; --green:#16a34a; --red:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--blue-dark);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:16px;margin:0;}
+  header a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;}
+  main{max-width:1080px;margin:20px auto;padding:0 16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:18px;}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--blue-dark);}
+  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+  .btn{padding:9px 18px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:14px;cursor:pointer;font-weight:600;}
+  .btn:hover{background:var(--blue-dark);}
+  .btn:disabled{background:#9ca3af;cursor:not-allowed;}
+  .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+  .file-inp{padding:8px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:13px;}
+  .status{margin-top:10px;font-size:13px;white-space:pre-wrap;}
+  .status.ok{color:var(--green);}
+  .status.err{color:var(--red);}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  th,td{border:1px solid var(--border);padding:6px 8px;text-align:right;}
+  th{background:#eef2f7;text-align:center;white-space:nowrap;}
+  td.label{text-align:left;font-weight:600;background:#fafbfc;white-space:nowrap;}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+  .summary-grid .box{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+  .summary-grid .box .num{font-size:20px;font-weight:700;color:var(--blue-dark);}
+  .summary-grid .box .cap{font-size:11px;color:var(--muted);}
+  .store-block{margin-bottom:22px;}
+  .store-block h3{font-size:14px;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--blue);}
+  .muted{color:var(--muted);font-size:12px;}
+  .warn-box{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#9a3412;}
+  .warn-box strong{display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📥 売上登録CSV取込（WASABI SWITCH）</h1>
+  <a href="daily.html">← 日報に戻る</a>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>CSVファイル選択</h2>
+    <div class="row">
+      <input type="file" id="csvFile" class="file-inp" accept=".csv">
+      <button class="btn" type="button" id="btnParse">CSVを読み込む</button>
+    </div>
+    <p class="muted" style="margin-top:8px;">
+      対応形式：モール, 発送日, 商品数, 在庫店舗名, 販売価格, カテゴリー1（Shift_JIS）<br>
+      ※ 発送日ごとに、その日・その店舗・そのチャンネルの既存データを削除してから、CSVの内容で書き換えます（上書き方式）。同じ日を含むCSVを複数回取り込む場合は、最新のCSVが正となります。
+    </p>
+    <div id="parseStatus" class="status"></div>
+  </div>
+
+  <div class="card" id="warnCard" style="display:none;">
+    <div class="warn-box" id="warnBox"></div>
+  </div>
+
+  <div class="card" id="summaryCard" style="display:none;">
+    <h2>取込内容プレビュー</h2>
+    <div class="summary-grid">
+      <div class="box"><div class="num" id="sumLines">-</div><div class="cap">CSV行数</div></div>
+      <div class="box"><div class="num" id="sumStores">-</div><div class="cap">対象店舗数</div></div>
+      <div class="box"><div class="num" id="sumQty">-</div><div class="cap">商品数合計</div></div>
+      <div class="box"><div class="num" id="sumAmount">-</div><div class="cap">販売金額合計</div></div>
+    </div>
+    <div class="row">
+      <button class="btn" type="button" id="btnSaveAll">この内容で日報（daily_reports）を上書き反映</button>
+      <span class="muted" id="saveStatus"></span>
+    </div>
+  </div>
+
+  <div id="storeResults"></div>
+
+</main>
+
+<script>
+// ==========================================================
+// 設定
+// ==========================================================
+const SUPABASE_URL = 'https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+// モール（CSV「モール」列） → daily_reports.channel_id（販売先_対応表.xlsxより）
+const MALL_TO_CHANNEL_ID = {
+  'フューチャーショップ': 5,   // 本店
+  '楽天市場店': 6,             // 楽天国内
+  'ヤフーショッピング店': 8,   // YahooShop
+  '競りナビヤフオク': 9,       // ヤフオク
+  'au payマーケット': 10,      // Wowma!
+  'メルカリShops': 11,         // メルカリ
+  'eBay店': 12,                // ebay（免税）
+  'Luxwork': 13,               // LuxUness
+  'Amazon店': 14,              // Amazon
+  'ラクマ': 16,                // ラクマ
+  'Qoo10': 17,                 // Qoo10
+  'eLADY GLOBAZONE': 18,       // GLOBAZONE
+};
+
+// CSV「在庫店舗名」（わさび店舗名） → 店舗コード（販売先_対応表_わさび販売用_.xlsxより）
+const WASABI_STORE_TO_CODE = {
+  'WPららぽーと新三郷店': '396', 'WPイオンモール高崎店': '402', '商品グループ': '290',
+  'Web販売チーム': '14', 'イオンモールつくば店': '357', 'アリオ市原店': '361',
+  'WPIY立場店': '400', 'WP港北トレッサ横浜店': '391', 'WPココリア多摩センター店': '367',
+  'WPチェリオ鹿島店': '344', 'WPららぽーとTOKYO-BAY店': '406', 'WPイオンモール幕張新都心店': '373',
+  'WPSPアリオ柏店': '380', 'WPイオンモール水戸内原店': '372', 'WPアリオ亀有店': '398',
+  'WPアリオ北砂店': '383', 'WP蒲田店': '323', 'WP川越クレアモール': '295',
+  'WPアリオ橋本店': '381', 'WPワカバウォーク店': '302', 'WPイーアスつくば店': '368',
+  'WPイーアス高尾店': '375', 'WPイオンモール座間店': '377', 'WP久喜AR鷲宮店': '371',
+  'WPイオンモール大和店': '394', 'WPNEO所沢本店': '363', 'イオンモール羽生店': '366',
+  'WP昭島モリタウン店': '390', 'WPアリオ上尾店': '359', 'WPララガーデン川口店': '395',
+  'ＷＰイオン板橋ＳＣ店': '369', 'WPイトーヨーカドー木場店': '376', 'WPセレオ国分寺店': '393',
+  'WPイオンモール川口店': '397', 'WPアズ熊谷店': '399', 'WPアリオ川口店': '401',
+  'WPイオンモール春日部店': '386', 'WPセブンタウン常盤平店': '352', 'WPAMむさし村山店': '312',
+  '本社直販（WONDERPRICE）': '4', '特販催事': '370',
+};
+
+// CSV「カテゴリー1」 → Supabase product_categories.name
+// ※「市場仕入ブランド」「市場仕入時計」は対応先が未確定のため、判明次第ここに追加してください
+const CATEGORY_MAP = {
+  '金': '1.金',
+  'プラチナ': '2.プラチナ',
+  'コンビ': '3.コンビ',
+  'ジュエリー': '4.ジュエリー',
+  '時計': '5.時計',
+  '市場仕入時計': '5.時計',
+  'ブランド': '6.ブランド品',
+  '市場仕入ブランド': '6.ブランド品',
+  'テレカ・金券類': '7.テレカ・金券類（非課税）',
+  'お酒': '8.お酒',
+  'その他': '9.その他',
+  '切手・印紙': '10.切手・印紙',
+};
+
+let parsedRows = [];      // CSVの生パース結果
+let aggregated = null;    // 集計済みデータ
+
+// ==========================================================
+// CSVパース（Shift_JIS対応・簡易クォート対応）
+// ==========================================================
+function parseCsvText(text) {
+  const lines = text.split(/\r\n|\n|\r/).filter(l => l.length > 0);
+  const rows = lines.map(line => {
+    const cells = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        cells.push(cur); cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    cells.push(cur);
+    return cells;
+  });
+  return rows;
+}
+
+document.getElementById('btnParse').onclick = async () => {
+  const fileInput = document.getElementById('csvFile');
+  const statusEl = document.getElementById('parseStatus');
+  const file = fileInput.files[0];
+  if (!file) { statusEl.className = 'status err'; statusEl.textContent = 'ファイルを選択してください。'; return; }
+
+  try {
+    const buf = await file.arrayBuffer();
+    const text = new TextDecoder('shift_jis').decode(buf);
+    const rows = parseCsvText(text);
+    const header = rows[0];
+    const dataRows = rows.slice(1);
+
+    parsedRows = dataRows.map(r => ({
+      mall: r[0],
+      shipDate: r[1],
+      qty: Number(r[2]) || 0,
+      storeName: r[3],
+      amount: Number(r[4]) || 0,
+      category: r[5],
+    })).filter(r => r.mall);
+
+    aggregate();
+    statusEl.className = 'status ok';
+    statusEl.textContent = `✅ ${parsedRows.length}行を読み込みました。`;
+  } catch (e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '❌ 読み込みに失敗しました: ' + e.message;
+  }
+};
+
+// ==========================================================
+// 集計
+// ==========================================================
+function aggregate() {
+  const byStore = {}; // storeName -> { code, totalQty, totalAmount, byChannelCategory: {channelId: {categoryName: {qty, amount}}} }
+  const unmatchedMalls = new Set();
+  const unmatchedStores = new Set();
+  const unmatchedCategories = new Set();
+
+  for (const r of parsedRows) {
+    const channelId = MALL_TO_CHANNEL_ID[r.mall];
+    if (!channelId) { unmatchedMalls.add(r.mall); continue; }
+
+    const code = WASABI_STORE_TO_CODE[r.storeName];
+    if (!code) { unmatchedStores.add(r.storeName); continue; }
+
+    if (!byStore[r.storeName]) {
+      byStore[r.storeName] = { storeName: r.storeName, code, totalQty: 0, totalAmount: 0, channels: {} };
+    }
+    const s = byStore[r.storeName];
+
+    const date = (r.shipDate || '').slice(0, 10); // "2026-07-10 13:56:34" -> "2026-07-10"
+    if (!date) continue;
+
+    if (!s.channels[channelId]) s.channels[channelId] = {};
+    if (!s.channels[channelId][date]) s.channels[channelId][date] = {};
+    const catName = r.category || 'その他';
+    if (!s.channels[channelId][date][catName]) s.channels[channelId][date][catName] = { qty: 0, amount: 0 };
+    s.channels[channelId][date][catName].qty += r.qty;
+    s.channels[channelId][date][catName].amount += r.amount;
+
+    s.totalQty += r.qty;
+    s.totalAmount += r.amount;
+
+    if (!CATEGORY_MAP[catName]) unmatchedCategories.add(catName);
+  }
+
+  aggregated = { stores: Object.values(byStore), unmatchedMalls: [...unmatchedMalls], unmatchedStores: [...unmatchedStores], unmatchedCategories: [...unmatchedCategories] };
+  render();
+}
+
+// ==========================================================
+// 描画
+// ==========================================================
+function render() {
+  const warnCard = document.getElementById('warnCard');
+  const warnBox = document.getElementById('warnBox');
+  const warnLines = [];
+  if (aggregated.unmatchedMalls.length) warnLines.push('⚠ 未対応のモール（販売先対応表に追加してください）: ' + aggregated.unmatchedMalls.join('、'));
+  if (aggregated.unmatchedStores.length) warnLines.push('⚠ 未対応の店舗名（わさび店舗対応表に追加してください）: ' + aggregated.unmatchedStores.join('、'));
+  if (aggregated.unmatchedCategories.length) warnLines.push('⚠ 未対応のカテゴリー（product_categoriesとの対応が未確定）: ' + aggregated.unmatchedCategories.join('、') + ' ※このカテゴリーの行はプレビューに含まれますが保存時にスキップされます');
+  if (warnLines.length) {
+    warnBox.innerHTML = '<strong>取込前にご確認ください</strong>' + warnLines.join('<br>');
+    warnCard.style.display = 'block';
+  } else {
+    warnCard.style.display = 'none';
+  }
+
+  const totalQty = aggregated.stores.reduce((s, x) => s + x.totalQty, 0);
+  const totalAmount = aggregated.stores.reduce((s, x) => s + x.totalAmount, 0);
+  document.getElementById('sumLines').textContent = parsedRows.length.toLocaleString();
+  document.getElementById('sumStores').textContent = aggregated.stores.length.toLocaleString();
+  document.getElementById('sumQty').textContent = totalQty.toLocaleString();
+  document.getElementById('sumAmount').textContent = '¥' + totalAmount.toLocaleString();
+  document.getElementById('summaryCard').style.display = 'block';
+
+  const container = document.getElementById('storeResults');
+  container.innerHTML = '';
+  for (const s of aggregated.stores) {
+    const card = document.createElement('div');
+    card.className = 'card store-block';
+    let rowsHtml = '';
+    for (const [channelId, byDate] of Object.entries(s.channels)) {
+      for (const [date, cats] of Object.entries(byDate)) {
+        for (const [catName, d] of Object.entries(cats)) {
+          rowsHtml += `<tr><td class="label">${date} / channel_id=${channelId}</td><td>${catName}</td><td>${d.qty.toLocaleString()}点</td><td>¥${d.amount.toLocaleString()}</td></tr>`;
+        }
+      }
+    }
+    card.innerHTML = `
+      <h3>${s.storeName} <span class="muted">(コード: ${s.code})</span></h3>
+      <table>
+        <thead><tr><th>日付 / チャンネル</th><th>カテゴリー</th><th>商品数</th><th>金額</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    `;
+    container.appendChild(card);
+  }
+}
+
+// ==========================================================
+// Supabase保存（既存値に加算）
+// ==========================================================
+async function apiFetch(path, method = 'GET', body = null) {
+  const opts = { method, headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.headers['Prefer'] = 'return=minimal';
+    opts.body = JSON.stringify(body);
+  }
+  return await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+}
+
+document.getElementById('btnSaveAll').onclick = saveAllToSupabase;
+
+async function saveAllToSupabase() {
+  if (!aggregated) return;
+  const btn = document.getElementById('btnSaveAll');
+  const statusEl = document.getElementById('saveStatus');
+  btn.disabled = true;
+  statusEl.textContent = '保存中...';
+
+  try {
+    // 店舗マスタ（code -> id）とカテゴリーマスタ（name -> id）を取得
+    const [storesRes, catsRes] = await Promise.all([
+      apiFetch('stores?select=id,code'),
+      apiFetch('product_categories?select=id,name'),
+    ]);
+    const storeRows = await storesRes.json() || [];
+    const catRows = await catsRes.json() || [];
+    const codeToStoreId = {};
+    storeRows.forEach(s => { codeToStoreId[String(s.code)] = s.id; });
+    const catNameToId = {};
+    catRows.forEach(c => { catNameToId[c.name] = c.id; });
+
+    let savedGroups = 0;
+    let savedRows = 0;
+    const unresolvedStores = [];
+    const unresolvedCategories = new Set();
+
+    for (const s of aggregated.stores) {
+      const storeId = codeToStoreId[s.code];
+      if (!storeId) { unresolvedStores.push(`${s.storeName}(code:${s.code})`); continue; }
+
+      for (const [channelIdStr, byDate] of Object.entries(s.channels)) {
+        const channelId = Number(channelIdStr);
+        for (const [date, cats] of Object.entries(byDate)) {
+          // このCSVに含まれるカテゴリー行を作成
+          const rows = [];
+          for (const [catName, d] of Object.entries(cats)) {
+            const supabaseName = CATEGORY_MAP[catName];
+            const categoryId = supabaseName ? catNameToId[supabaseName] : null;
+            if (!categoryId) { unresolvedCategories.add(catName); continue; }
+            rows.push({
+              report_date: date,
+              store_id: storeId,
+              category_id: categoryId,
+              channel_id: channelId,
+              quantity: d.qty,
+              amount: d.amount,
+              visitors: 0,
+              customers: 0,
+            });
+          }
+
+          // 同一店舗・同日付・同チャンネルの既存データを全削除してから、CSVの内容で入れ直す（完全上書き）
+          const delRes = await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&channel_id=eq.${channelId}`, 'DELETE');
+          if (!delRes.ok) throw new Error(`${s.storeName} ${date}: 削除失敗 ` + (await delRes.text()));
+
+          if (rows.length > 0) {
+            const insRes = await apiFetch('daily_reports', 'POST', rows);
+            if (!insRes.ok) throw new Error(`${s.storeName} ${date}: 保存失敗 ` + (await insRes.text()));
+            savedRows += rows.length;
+          }
+          savedGroups += 1;
+        }
+      }
+    }
+
+    let msg = `✅ ${savedGroups}件の店舗・日付・チャンネルの組み合わせを書き換え、${savedRows}行を保存しました。`;
+    if (unresolvedStores.length) msg += `\n⚠ 店舗マスタに一致しない店舗（コード不一致）：${unresolvedStores.join('、')}`;
+    if (unresolvedCategories.size) msg += `\n⚠ カテゴリー未対応のためスキップ：${[...unresolvedCategories].join('、')}`;
+    statusEl.textContent = msg;
+  } catch (e) {
+    statusEl.textContent = '❌ 保存失敗: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
