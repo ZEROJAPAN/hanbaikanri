@@ -1,50 +1,35 @@
-bash
-
-cat /mnt/user-data/outputs/api/kintone.js
-出力
-
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
-  // CORSヘッダー
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
   };
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers });
+  const { searchParams } = new URL(req.url);
+  const date = searchParams.get('date');
+  const token = searchParams.get('token');
+  const domain = searchParams.get('domain');
+  const app = searchParams.get('app') || '6';
+
+  if (!date || !token || !domain) {
+    return new Response(JSON.stringify({ error: 'Missing parameters' }), { status: 400, headers });
   }
 
+  const f1 = '\u30c9\u30ed\u30c3\u30d7\u30c0\u30a6\u30f3_0';
+  const v1 = '\u6210\u7d04';
+  const v2 = '\u30ad\u30e3\u30f3\u30bb\u30eb';
+  const v3 = '\u8cb7\u53d6\u4e0d\u53ef';
+  const f2 = '\u53d7\u4ed8\u65e5\u4ed8';
+  const query = `${f1} in ("${v1}","${v2}","${v3}") and ${f2}="${date}"`;
+  const url = `https://${domain}/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
+
   try {
-    const { searchParams } = new URL(req.url);
-    const date = searchParams.get('date');
-    const token = searchParams.get('token');
-    const domain = searchParams.get('domain');
-    const app = searchParams.get('app') || '6';
-
-    if (!date || !token || !domain) {
-      return new Response(JSON.stringify({ error: 'Missing parameters' }), { status: 400, headers });
-    }
-
-    // Kintone APIを呼び出し
-    const query = `ドロップダウン_0 in ("成約","キャンセル","買取不可") and 受付日付="${date}"`;
-    const url = `https://${domain}/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
-
     const res = await fetch(url, {
       headers: { 'X-Cybozu-API-Token': token },
     });
-
-    if (!res.ok) {
-      const err = await res.text();
-      return new Response(JSON.stringify({ error: err }), { status: res.status, headers });
-    }
-
-    const data = await res.json();
-    return new Response(JSON.stringify(data), { status: 200, headers });
-
+    const data = await res.text();
+    return new Response(data, { status: res.status, headers });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
   }
