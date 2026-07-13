@@ -1,59 +1,382 @@
-const https = require('https');
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kintone買取データ連携</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1d4ed8; --bg:#f4f6f9; --card:#ffffff;
+    --border:#dbe1e8; --text:#1f2937; --muted:#6b7280; --green:#16a34a; --red:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--blue-dark);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:16px;margin:0;}
+  header a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;}
+  main{max-width:1080px;margin:20px auto;padding:0 16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:18px;}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--blue-dark);}
+  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:12px;color:var(--muted);}
+  .field input, .field select{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;min-width:160px;}
+  .btn{padding:9px 18px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:14px;cursor:pointer;font-weight:600;}
+  .btn:hover{background:var(--blue-dark);}
+  .btn:disabled{background:#9ca3af;cursor:not-allowed;}
+  .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+  .status{margin-top:10px;font-size:13px;}
+  .status.ok{color:var(--green);}
+  .status.err{color:var(--red);white-space:pre-wrap;}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  th,td{border:1px solid var(--border);padding:6px 8px;text-align:right;}
+  th{background:#eef2f7;text-align:center;white-space:nowrap;}
+  td.label{text-align:left;font-weight:600;background:#fafbfc;white-space:nowrap;}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+  .summary-grid .box{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+  .summary-grid .box .num{font-size:20px;font-weight:700;color:var(--blue-dark);}
+  .summary-grid .box .cap{font-size:11px;color:var(--muted);}
+  .store-block{margin-bottom:22px;}
+  .store-block h3{font-size:14px;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--blue);}
+  .muted{color:var(--muted);font-size:12px;}
+  .loading{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
 
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+<header>
+  <h1>🔗 Kintone買取データ連携</h1>
+  <a href="index.html">← トップに戻る</a>
+</header>
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+<main>
+
+  <div class="card">
+    <h2>取込対象日</h2>
+    <div class="row">
+      <div class="field">
+        <label>対象日付</label>
+        <input type="date" id="targetDate">
+      </div>
+      <div class="field">
+        <button class="btn secondary" type="button" id="btnYesterday">昨日にする</button>
+      </div>
+      <div class="field">
+        <button class="btn secondary" type="button" id="btnToday">今日にする</button>
+      </div>
+      <div class="field">
+        <button class="btn" type="button" id="btnFetch">
+          <span id="fetchSpinner" style="display:none" class="loading"></span>Kintoneから取込
+        </button>
+      </div>
+    </div>
+    <div id="fetchStatus" class="status"></div>
+  </div>
+
+  <div class="card" id="summaryCard" style="display:none;">
+    <h2>全店合計プレビュー</h2>
+    <div class="summary-grid">
+      <div class="box"><div class="num" id="sumRecords">-</div><div class="cap">Kintone取得件数</div></div>
+      <div class="box"><div class="num" id="sumVisitors">-</div><div class="cap">来客数（ステータス確定）</div></div>
+      <div class="box"><div class="num" id="sumCustomers">-</div><div class="cap">客数（成約）</div></div>
+      <div class="box"><div class="num" id="sumAmount">-</div><div class="cap">買取金額合計（成約・キャンセル除く）</div></div>
+    </div>
+    <div class="row">
+      <button class="btn" type="button" id="btnSaveAll">この内容をSupabaseに保存</button>
+      <span class="muted" id="saveStatus"></span>
+    </div>
+  </div>
+
+  <div id="storeResults"></div>
+
+</main>
+
+<script>
+// ==========================================================
+// 設定
+// ==========================================================
+const KINTONE_DOMAIN = 'zerojapan.cybozu.com';
+const KINTONE_TOKEN  = 'D4yGlm7RDzTqZzZAFfkrX24a2AfFs45M27EADh3K';
+const KINTONE_APP_ID = '6';
+const API_BASE = ''; // 同一オリジンの /api/kintone を使う
+
+const SUPABASE_URL = 'https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+// Kintone店舗名 → Supabase store_id 対応表（開発メモより）
+const STORE_MAP = {
+  'イオン板橋ショッピングセンター店': 1,
+  'セレオ国分寺店': 2,
+  'イオンモールむさし村山店': 3,
+  '昭島モリタウン店': 4,
+  '蒲田店': 5,
+  '港北トレッサ横浜店': 6,
+  'イトーヨーカドー立場店': 7,
+  'イオンモール座間店': 8,
+  'イオンモール大和店': 9,
+  'ococリア多摩センター店': 10,
+  '八王子イーアス高尾店': 11,
+  'アリオ橋本店': 12,
+  'イオンモール羽生店': 13,
+  'アズ熊谷店': 14,
+  '鶴ヶ島ワカバウォーク店': 15,
+  'NEO所沢本店': 16,
+  '川越クレアモール店': 35,
+  '久喜アリオ鷲宮店': 17,
+  'イオンモール高崎店': 18,
+  'アリオ上尾店': 19,
+  'ララガーデン川口店': 20,
+  'アリオ川口店': 21,
+  'イオンモール春日部店': 22,
+  'ららぽーと新三郷店': 23,
+  'イオンモール川口店': 24,
+  'チェリオ鹿島店': 25,
+  'イトーヨーカドー木場店': 36,
+  'イーアスつくば店': 26,
+  'イオンモール水戸内原店': 27,
+  'アリオ北砂店': 28,
+  'イオンモールつくば店': 30,
+  'アリオ市原店': 31,
+  '松戸セブンタウン常盤平店': 32,
+  'セブンパークアリオ柏店': 33,
+  'イオンモール幕張新都心店': 34,
+  'アリオ亀有店': 29,
+  'ららぽーとTOKYO-BAY店': 37,
+  '特販催事': 38,
+};
+
+// カテゴリー（ドロップダウン_3）の表示順
+const CATEGORY_ORDER = ['金','プラチナ','コンビ','ジュエリー','時計','ブランド品','テレカ・金券類','お酒','その他','切手・印紙'];
+
+// ==========================================================
+// 初期化
+// ==========================================================
+function todayStr(offsetDays = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+
+document.getElementById('targetDate').value = todayStr(-1); // デフォルト＝昨日
+document.getElementById('btnYesterday').onclick = () => { document.getElementById('targetDate').value = todayStr(-1); };
+document.getElementById('btnToday').onclick = () => { document.getElementById('targetDate').value = todayStr(0); };
+document.getElementById('btnFetch').onclick = runFetch;
+document.getElementById('btnSaveAll').onclick = saveAllToSupabase;
+
+let lastAggregated = null; // Supabase保存用に保持
+
+// ==========================================================
+// Kintone取得 → 集計
+// ==========================================================
+async function runFetch() {
+  const date = document.getElementById('targetDate').value;
+  const statusEl = document.getElementById('fetchStatus');
+  const spinner = document.getElementById('fetchSpinner');
+  const btn = document.getElementById('btnFetch');
+
+  if (!date) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '日付を選択してください。';
+    return;
   }
 
-  const { date, token, domain, app = '6' } = req.query;
-
-  if (!date || !token || !domain) {
-    return res.status(400).json({ error: 'Missing parameters' });
-  }
+  statusEl.className = 'status';
+  statusEl.textContent = '';
+  spinner.style.display = 'inline-block';
+  btn.disabled = true;
+  document.getElementById('summaryCard').style.display = 'none';
+  document.getElementById('storeResults').innerHTML = '';
 
   try {
-    const f1 = '\u30c9\u30ed\u30c3\u30d7\u30c0\u30a6\u30f3_0';
-    const v1 = '\u6210\u7d04';
-    const v2 = '\u30ad\u30e3\u30f3\u30bb\u30eb';
-    const v3 = '\u8cb7\u53d6\u4e0d\u53ef';
-    const f2 = '\u53d7\u4ed8\u65e5\u4ed8';
-    const query = `${f1} in ("${v1}","${v2}","${v3}") and ${f2}="${date}"`;
-    const path = `/k/v1/records.json?app=${app}&query=${encodeURIComponent(query)}&totalCount=true&limit=500`;
+    const url = `${API_BASE}/api/kintone?date=${encodeURIComponent(date)}&domain=${encodeURIComponent(KINTONE_DOMAIN)}&token=${encodeURIComponent(KINTONE_TOKEN)}&app=${encodeURIComponent(KINTONE_APP_ID)}`;
+    const res = await fetch(url);
+    const json = await res.json();
 
-    const data = await new Promise((resolve, reject) => {
-      const options = {
-        hostname: domain,
-        path: path,
-        method: 'GET',
-        headers: {
-          'X-Cybozu-API-Token': token,
-          'Content-Type': 'application/json',
-        },
-      };
-
-      const req2 = https.request(options, (res2) => {
-        let body = '';
-        res2.on('data', (chunk) => { body += chunk; });
-        res2.on('end', () => {
-          try { resolve({ status: res2.statusCode, data: JSON.parse(body) }); }
-          catch(e) { reject(new Error('JSON parse error: ' + body)); }
-        });
-      });
-      req2.on('error', reject);
-      req2.end();
-    });
-
-    if (data.status !== 200) {
-      return res.status(500).json({ error: data.data });
+    if (!res.ok || json.error) {
+      throw new Error(typeof json.error === 'string' ? json.error : JSON.stringify(json.error || json));
     }
 
-    return res.status(200).json(data.data);
+    const records = json.records || [];
+    const aggregated = aggregate(records, date);
+    lastAggregated = aggregated;
+    renderResults(aggregated, records.length);
 
+    statusEl.className = 'status ok';
+    statusEl.textContent = `✅ ${date} のデータを ${records.length} 件取得しました。`;
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    statusEl.className = 'status err';
+    statusEl.textContent = '❌ 取得に失敗しました: ' + e.message;
+  } finally {
+    spinner.style.display = 'none';
+    btn.disabled = false;
   }
-};
+}
+
+// 受付結果フィールドの値を取得（ドロップダウン_0）
+function getUketsukeKekka(record) {
+  return record['ドロップダウン_0'] && record['ドロップダウン_0'].value;
+}
+function getStatus(record) {
+  return record['ステータス'] && record['ステータス'].value;
+}
+function getStoreName(record) {
+  return record['ドロップダウン_4'] && record['ドロップダウン_4'].value;
+}
+
+// レコード配列 → 店舗別集計
+function aggregate(records, date) {
+  const byStore = {}; // storeName -> { visitors, customers, categories:{cat:{qty,amount}}, amount }
+
+  function ensureStore(name) {
+    if (!byStore[name]) {
+      byStore[name] = {
+        storeName: name,
+        storeId: STORE_MAP[name] || null,
+        visitors: 0,
+        customers: 0,
+        amount: 0,
+        categories: {},
+      };
+    }
+    return byStore[name];
+  }
+
+  for (const rec of records) {
+    const storeName = getStoreName(rec);
+    if (!storeName) continue;
+    const s = ensureStore(storeName);
+
+    const status = getStatus(rec);
+    const kekka = getUketsukeKekka(rec);
+    const isConfirmed = status === '確定';
+    const isSeiyaku = kekka === '成約';
+
+    // 来客数：ステータスが確定なら受付結果を問わずカウント
+    if (isConfirmed) s.visitors += 1;
+
+    // 客数：成約 かつ 確定のみカウント
+    if (isConfirmed && isSeiyaku) {
+      s.customers += 1;
+
+      // 明細（テーブル）を集計：キャンセル行は除外
+      const table = (rec['テーブル'] && rec['テーブル'].value) || [];
+      for (const row of table) {
+        const v = row.value;
+        const isCancelled = v['キャンセル'] && v['キャンセル'].value && v['キャンセル'].value.length > 0;
+        if (isCancelled) continue;
+
+        const cat = (v['ドロップダウン_3'] && v['ドロップダウン_3'].value) || 'その他';
+        const qty = Number((v['数量'] && v['数量'].value) || 0);
+        const amt = Number((v['合計_表示用'] && v['合計_表示用'].value) || 0);
+
+        if (!s.categories[cat]) s.categories[cat] = { qty: 0, amount: 0 };
+        s.categories[cat].qty += qty;
+        s.categories[cat].amount += amt;
+        s.amount += amt;
+      }
+    }
+  }
+
+  return { date, stores: Object.values(byStore).sort((a, b) => (a.storeId || 999) - (b.storeId || 999)) };
+}
+
+// ==========================================================
+// 描画
+// ==========================================================
+function renderResults(aggregated, recordCount) {
+  const stores = aggregated.stores;
+
+  let sumVisitors = 0, sumCustomers = 0, sumAmount = 0;
+  stores.forEach(s => { sumVisitors += s.visitors; sumCustomers += s.customers; sumAmount += s.amount; });
+
+  document.getElementById('sumRecords').textContent = recordCount.toLocaleString();
+  document.getElementById('sumVisitors').textContent = sumVisitors.toLocaleString();
+  document.getElementById('sumCustomers').textContent = sumCustomers.toLocaleString();
+  document.getElementById('sumAmount').textContent = '¥' + sumAmount.toLocaleString();
+  document.getElementById('summaryCard').style.display = 'block';
+
+  const container = document.getElementById('storeResults');
+  container.innerHTML = '';
+
+  if (stores.length === 0) {
+    container.innerHTML = '<div class="card"><p class="muted">この日付のデータはありませんでした。</p></div>';
+    return;
+  }
+
+  for (const s of stores) {
+    const card = document.createElement('div');
+    card.className = 'card store-block';
+
+    const cats = CATEGORY_ORDER.filter(c => s.categories[c]);
+    // 定義済み以外のカテゴリーも表示
+    Object.keys(s.categories).forEach(c => { if (!cats.includes(c)) cats.push(c); });
+
+    let rowsHtml = '';
+    for (const c of cats) {
+      const d = s.categories[c];
+      rowsHtml += `<tr><td class="label">${c}</td><td>${d.qty.toLocaleString()}点</td><td>¥${d.amount.toLocaleString()}</td></tr>`;
+    }
+    if (!rowsHtml) rowsHtml = '<tr><td colspan="3" class="muted" style="text-align:center;">成約データなし</td></tr>';
+
+    card.innerHTML = `
+      <h3>${s.storeName} ${s.storeId ? `<span class="muted">(store_id: ${s.storeId})</span>` : '<span class="muted" style="color:#dc2626;">⚠ 店舗対応表に未登録</span>'}</h3>
+      <div class="summary-grid" style="margin-bottom:8px;">
+        <div class="box"><div class="num">${s.visitors}</div><div class="cap">来客数</div></div>
+        <div class="box"><div class="num">${s.customers}</div><div class="cap">客数（成約）</div></div>
+        <div class="box"><div class="num">¥${s.amount.toLocaleString()}</div><div class="cap">買取金額合計</div></div>
+      </div>
+      <table>
+        <thead><tr><th>カテゴリー</th><th>点数</th><th>金額</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    `;
+    container.appendChild(card);
+  }
+}
+
+// ==========================================================
+// Supabase保存（daily_reportsのカラム構成が判明したら調整してください）
+// ==========================================================
+async function saveAllToSupabase() {
+  if (!lastAggregated) return;
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = '保存中...';
+
+  try {
+    const rows = lastAggregated.stores
+      .filter(s => s.storeId) // 未登録店舗は除外
+      .map(s => ({
+        store_id: s.storeId,
+        report_date: lastAggregated.date,
+        visitor_count: s.visitors,
+        customer_count: s.customers,
+        purchase_amount: s.amount,
+        category_summary: s.categories, // jsonb想定
+      }));
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_reports`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify(rows),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText);
+    }
+
+    statusEl.textContent = `✅ ${rows.length}件をSupabaseに保存しました。`;
+  } catch (e) {
+    statusEl.textContent = '❌ 保存失敗: ' + e.message;
+  }
+}
+</script>
+
+</body>
+</html>
