@@ -154,6 +154,20 @@ const STORE_MAP = {
 // カテゴリー（ドロップダウン_3）の表示順
 const CATEGORY_ORDER = ['金','プラチナ','コンビ','ジュエリー','時計','ブランド品','テレカ・金券類','お酒','その他','切手・印紙'];
 
+// Kintoneのカテゴリー名 → Supabase product_categories.name の実名称（番号接頭辞・非課税表記あり）
+const CATEGORY_NAME_MAP = {
+  '金': '1.金',
+  'プラチナ': '2.プラチナ',
+  'コンビ': '3.コンビ',
+  'ジュエリー': '4.ジュエリー',
+  '時計': '5.時計',
+  'ブランド品': '6.ブランド品',
+  'テレカ・金券類': '7.テレカ・金券類（非課税）',
+  'お酒': '8.お酒',
+  'その他': '9.その他',
+  '切手・印紙': '10.切手・印紙',
+};
+
 // 買取チャンネルID（daily_reports.channel_id）
 const CHANNEL_ID_BUY = 1;
 
@@ -382,8 +396,9 @@ async function saveAllToSupabase() {
 
       const rows = [];
       for (const [catName, d] of Object.entries(s.categories)) {
-        const categoryId = catMap[catName];
-        if (!categoryId) { unmatchedCategories.add(catName); continue; }
+        const supabaseName = CATEGORY_NAME_MAP[catName] || catName;
+        const categoryId = catMap[supabaseName];
+        if (!categoryId) { unmatchedCategories.add(catName + ' → ' + supabaseName); continue; }
         rows.push({
           report_date: date,
           store_id: s.storeId,
