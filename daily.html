@@ -537,6 +537,15 @@ function goExport(){
 location.href='nippo_export.html';
 }
 
+// Kintoneの丸数字プレフィックス（①②③…）をSupabase側の「1.」「2.」…形式に変換
+const CIRCLED_NUMS=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+function kintoneReasonToSupabaseName(kintoneValue){
+if(!kintoneValue)return kintoneValue;
+const idx=CIRCLED_NUMS.indexOf(kintoneValue.charAt(0));
+if(idx===-1)return kintoneValue; // 丸数字が付いていない場合はそのまま
+return `${idx+1}.${kintoneValue.slice(1)}`;
+}
+
 // ===== Kintone取込（来店動機別・購入明細へ反映） =====
 async function handleKintoneImport(){
 if(!currentStoreId){showMsg('店舗を選択してください。','error');return;}
@@ -606,8 +615,9 @@ vrList.forEach(r=>{reasonNameToId[r.name]=r.id;});
 const rows=[];
 const unmatchedReasons=[];
 Object.entries(byReason).forEach(([reasonName,d])=>{
-const vrId=reasonNameToId[reasonName];
-if(!vrId){unmatchedReasons.push(reasonName);return;}
+const supabaseName=kintoneReasonToSupabaseName(reasonName);
+const vrId=reasonNameToId[supabaseName];
+if(!vrId){unmatchedReasons.push(reasonName+' → '+supabaseName);return;}
 rows.push({
 report_date:date,
 store_id:currentStoreId,
