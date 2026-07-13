@@ -82,13 +82,14 @@
       <div class="box"><div class="num" id="sumVisitors">-</div><div class="cap">来客数（ステータス確定）</div></div>
       <div class="box"><div class="num" id="sumCustomers">-</div><div class="cap">客数（成約）</div></div>
       <div class="box"><div class="num" id="sumAmount">-</div><div class="cap">買取金額合計（成約・キャンセル除く）</div></div>
+      <div class="box"><div class="num" id="sumCancelAmount">-</div><div class="cap">キャンセル金額合計</div></div>
     </div>
     <div class="row">
       <button class="btn" type="button" id="btnSaveAll">この内容を日報（daily_reports）に反映</button>
       <span class="muted" id="saveStatus"></span>
     </div>
     <p class="muted" style="margin-top:8px;">
-      ※ 買取チャンネル（channel_id=1）として保存します。店売り等、他チャンネルのデータには影響しません。<br>
+      ※ 買取チャンネル（channel_id=1）・キャンセルチャンネル（channel_id=2）として保存します。店売り等、他チャンネルのデータには影響しません。<br>
       ※ 客数（visitors列）には「成約」件数を入れています。同じ日付・店舗で再実行すると上書きされます（重複しません）。
     </p>
   </div>
@@ -170,6 +171,7 @@ const CATEGORY_NAME_MAP = {
 
 // 買取チャンネルID（daily_reports.channel_id）
 const CHANNEL_ID_BUY = 1;
+const CHANNEL_ID_CANCEL = 2;
 
 // product_categories（Supabase）のキャッシュ： name -> id
 let PRODUCT_CATEGORY_MAP = null;
@@ -263,7 +265,7 @@ function getStoreName(record) {
 
 // レコード配列 → 店舗別集計
 function aggregate(records, date) {
-  const byStore = {}; // storeName -> { visitors, customers, categories:{cat:{qty,amount}}, amount }
+  const byStore = {}; // storeName -> { visitors, customers, categories:{cat:{qty,amount}}, amount, cancelCategories:{cat:{qty,amount}}, cancelAmount }
 
   function ensureStore(name) {
     if (!byStore[name]) {
@@ -274,6 +276,8 @@ function aggregate(records, date) {
         customers: 0,
         amount: 0,
         categories: {},
+        cancelAmount: 0,
+        cancelCategories: {},
       };
     }
     return byStore[name];
@@ -296,21 +300,44 @@ function aggregate(records, date) {
     if (isConfirmed && isSeiyaku) {
       s.customers += 1;
 
-      // 明細（テーブル）を集計：キャンセル行は除外
+      // 明細（テーブル）を集計：キャンセル行は除外し、キャンセル分は別集計へ
       const table = (rec['テーブル'] && rec['テーブル'].value) || [];
       for (const row of table) {
         const v = row.value;
         const isCancelled = v['キャンセル'] && v['キャンセル'].value && v['キャンセル'].value.length > 0;
-        if (isCancelled) continue;
-
         const cat = (v['ドロップダウン_3'] && v['ドロップダウン_3'].value) || 'その他';
         const qty = Number((v['数量'] && v['数量'].value) || 0);
-        const amt = Number((v['合計_表示用'] && v['合計_表示用'].value) || 0);
 
+        if (isCancelled) {
+          // 部分キャンセル：合計_表示用は0になっているため、キャンセル前の金額(合計)を使う
+          const cancelAmt = Number((v['合計'] && v['合計'].value) || 0);
+          if (!s.cancelCategories[cat]) s.cancelCategories[cat] = { qty: 0, amount: 0 };
+          s.cancelCategories[cat].qty += qty;
+          s.cancelCategories[cat].amount += cancelAmt;
+          s.cancelAmount += cancelAmt;
+          continue;
+        }
+
+        const amt = Number((v['合計_表示用'] && v['合計_表示用'].value) || 0);
         if (!s.categories[cat]) s.categories[cat] = { qty: 0, amount: 0 };
         s.categories[cat].qty += qty;
         s.categories[cat].amount += amt;
         s.amount += amt;
+      }
+    }
+
+    // 受付結果＝キャンセル（レコード全体がキャンセル）の明細も集計
+    if (isConfirmed && kekka === 'キャンセル') {
+      const table = (rec['テーブル'] && rec['テーブル'].value) || [];
+      for (const row of table) {
+        const v = row.value;
+        const cat = (v['ドロップダウン_3'] && v['ドロップダウン_3'].value) || 'その他';
+        const qty = Number((v['数量'] && v['数量'].value) || 0);
+        const cancelAmt = Number((v['合計'] && v['合計'].value) || 0);
+        if (!s.cancelCategories[cat]) s.cancelCategories[cat] = { qty: 0, amount: 0 };
+        s.cancelCategories[cat].qty += qty;
+        s.cancelCategories[cat].amount += cancelAmt;
+        s.cancelAmount += cancelAmt;
       }
     }
   }
@@ -324,13 +351,14 @@ function aggregate(records, date) {
 function renderResults(aggregated, recordCount) {
   const stores = aggregated.stores;
 
-  let sumVisitors = 0, sumCustomers = 0, sumAmount = 0;
-  stores.forEach(s => { sumVisitors += s.visitors; sumCustomers += s.customers; sumAmount += s.amount; });
+  let sumVisitors = 0, sumCustomers = 0, sumAmount = 0, sumCancelAmount = 0;
+  stores.forEach(s => { sumVisitors += s.visitors; sumCustomers += s.customers; sumAmount += s.amount; sumCancelAmount += s.cancelAmount; });
 
   document.getElementById('sumRecords').textContent = recordCount.toLocaleString();
   document.getElementById('sumVisitors').textContent = sumVisitors.toLocaleString();
   document.getElementById('sumCustomers').textContent = sumCustomers.toLocaleString();
   document.getElementById('sumAmount').textContent = '¥' + sumAmount.toLocaleString();
+  document.getElementById('sumCancelAmount').textContent = '¥' + sumCancelAmount.toLocaleString();
   document.getElementById('summaryCard').style.display = 'block';
 
   const container = document.getElementById('storeResults');
@@ -362,6 +390,7 @@ function renderResults(aggregated, recordCount) {
         <div class="box"><div class="num">${s.visitors}</div><div class="cap">来客数</div></div>
         <div class="box"><div class="num">${s.customers}</div><div class="cap">客数（成約）</div></div>
         <div class="box"><div class="num">¥${s.amount.toLocaleString()}</div><div class="cap">買取金額合計</div></div>
+        <div class="box"><div class="num">¥${s.cancelAmount.toLocaleString()}</div><div class="cap">キャンセル金額合計</div></div>
       </div>
       <table>
         <thead><tr><th>カテゴリー</th><th>点数</th><th>金額</th></tr></thead>
@@ -435,6 +464,47 @@ async function saveAllToSupabase() {
 
       savedStoreCount += 1;
       savedRowCount += rows.length;
+
+      // ===== キャンセル分（channel_id=2）を保存 =====
+      const cancelRows = [];
+      for (const [catName, d] of Object.entries(s.cancelCategories)) {
+        const supabaseName = CATEGORY_NAME_MAP[catName] || catName;
+        const categoryId = catMap[supabaseName];
+        if (!categoryId) { unmatchedCategories.add(catName + ' → ' + supabaseName); continue; }
+        cancelRows.push({
+          report_date: date,
+          store_id: s.storeId,
+          category_id: categoryId,
+          channel_id: CHANNEL_ID_CANCEL,
+          quantity: d.qty,
+          amount: d.amount,
+          visitors: s.visitors,
+          customers: s.customers,
+        });
+      }
+
+      if (cancelRows.length > 0) {
+        const delCancelUrl = `${SUPABASE_URL}/rest/v1/daily_reports?report_date=eq.${date}&store_id=eq.${s.storeId}&channel_id=eq.${CHANNEL_ID_CANCEL}`;
+        const delCancelRes = await fetch(delCancelUrl, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        });
+        if (!delCancelRes.ok) throw new Error(`${s.storeName}: キャンセル分削除失敗 ` + (await delCancelRes.text()));
+
+        const insCancelRes = await fetch(`${SUPABASE_URL}/rest/v1/daily_reports`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify(cancelRows),
+        });
+        if (!insCancelRes.ok) throw new Error(`${s.storeName}: キャンセル分保存失敗 ` + (await insCancelRes.text()));
+
+        savedRowCount += cancelRows.length;
+      }
     }
 
     let msg = `✅ ${date}分：${savedStoreCount}店舗・${savedRowCount}行を日報に反映しました。`;
