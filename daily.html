@@ -246,6 +246,7 @@ display:flex;gap:20px;flex-wrap:wrap;
 <div class="right-btns">
 <div class="right-btns-title">関連入力</div>
 <button type="button" class="side-btn side-btn-blue" onclick="location.href='purchase_detail.html?date='+getDate()+'&store='+getStoreId()">🛒 買取明細</button>
+<button type="button" class="side-btn side-btn-blue" id="kintone-import-btn" onclick="handleKintoneImport()">🔗 Kintone取込</button>
 <button type="button" class="side-btn side-btn-green" onclick="location.href='gold_recovery.html?date='+getDate()+'&store='+getStoreId()">💰 地金回収</button>
 <button type="button" class="side-btn side-btn-green" onclick="location.href='telecard_recovery.html?date='+getDate()+'&store='+getStoreId()">🎫 テレカ・金券回収</button>
 <button type="button" class="side-btn side-btn-green" onclick="location.href='stamp_recovery.html?date='+getDate()+'&store='+getStoreId()">📮 切手・印紙回収</button>
@@ -277,6 +278,25 @@ display:flex;gap:20px;flex-wrap:wrap;
 <script>
 const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+// ===== Kintone連携設定 =====
+const KINTONE_DOMAIN='zerojapan.cybozu.com';
+const KINTONE_TOKEN='D4yGlm7RDzTqZzZAFfkrX24a2AfFs45M27EADh3K';
+const KINTONE_APP_ID='6';
+// Kintone店舗名 → Supabase store_id（kintone_sync.htmlと同じ対応表）
+const KINTONE_STORE_MAP={
+'イオン板橋ショッピングセンター店':1,'セレオ国分寺店':2,'イオンモールむさし村山店':3,'昭島モリタウン店':4,
+'蒲田店':5,'港北トレッサ横浜店':6,'イトーヨーカドー立場店':7,'イオンモール座間店':8,'イオンモール大和店':9,
+'ococリア多摩センター店':10,'八王子イーアス高尾店':11,'アリオ橋本店':12,'イオンモール羽生店':13,'アズ熊谷店':14,
+'鶴ヶ島ワカバウォーク店':15,'NEO所沢本店':16,'川越クレアモール店':35,'久喜アリオ鷲宮店':17,'イオンモール高崎店':18,
+'アリオ上尾店':19,'ララガーデン川口店':20,'アリオ川口店':21,'イオンモール春日部店':22,'ららぽーと新三郷店':23,
+'イオンモール川口店':24,'チェリオ鹿島店':25,'イトーヨーカドー木場店':36,'イーアスつくば店':26,'イオンモール水戸内原店':27,
+'アリオ北砂店':28,'イオンモールつくば店':30,'アリオ市原店':31,'松戸セブンタウン常盤平店':32,'セブンパークアリオ柏店':33,
+'イオンモール幕張新都心店':34,'アリオ亀有店':29,'ららぽーとTOKYO-BAY店':37,'特販催事':38,
+};
+// 逆引き（Supabase store_id → Kintone店舗名）
+const STORE_ID_TO_KINTONE_NAME={};
+Object.entries(KINTONE_STORE_MAP).forEach(([name,id])=>{STORE_ID_TO_KINTONE_NAME[id]=name;});
 
 async function apiFetch(path,method='GET',body=null){
 const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
@@ -515,6 +535,114 @@ recalc();
 
 function goExport(){
 location.href='nippo_export.html';
+}
+
+// ===== Kintone取込（来店動機別・購入明細へ反映） =====
+async function handleKintoneImport(){
+if(!currentStoreId){showMsg('店舗を選択してください。','error');return;}
+const date=document.getElementById('rdate').value;
+if(!date){showMsg('日付を選択してください。','error');return;}
+const kintoneStoreName=STORE_ID_TO_KINTONE_NAME[currentStoreId];
+if(!kintoneStoreName){showMsg('この店舗はKintone店舗対応表に未登録です。','error');return;}
+
+const btn=document.getElementById('kintone-import-btn');
+btn.disabled=true;const origText=btn.textContent;btn.textContent='取込中...';
+
+try{
+// ① Kintoneから対象日（更新日時ベース）のデータを取得
+const url=`/api/kintone?date=${encodeURIComponent(date)}&domain=${encodeURIComponent(KINTONE_DOMAIN)}&token=${encodeURIComponent(KINTONE_TOKEN)}&app=${encodeURIComponent(KINTONE_APP_ID)}`;
+const res=await fetch(url);
+const json=await res.json();
+if(!res.ok||json.error){throw new Error(typeof json.error==='string'?json.error:JSON.stringify(json.error||json));}
+const allRecords=json.records||[];
+
+// ② 対象店舗・ステータス確定のみに絞り込み
+const records=allRecords.filter(rec=>{
+const store=rec['ドロップダウン_4']&&rec['ドロップダウン_4'].value;
+const status=rec['ステータス']&&rec['ステータス'].value;
+return store===kintoneStoreName&&status==='確定';
+});
+
+// ③ 来店動機別に集計
+// 客数：確定なら受付結果を問わずカウント／金額：成約のみ加算（キャンセル明細行は除く）
+const byReason={};
+let repeatCount=0; // 2回目以降（全体・来店動機を問わず）
+let noPurchaseCount=0; // 買取不可（全体）
+let cancelCount=0; // キャンセル（全体）
+
+records.forEach(rec=>{
+const reason=(rec['ドロップダウン_2']&&rec['ドロップダウン_2'].value)||'その他';
+const kekka=rec['ドロップダウン_0']&&rec['ドロップダウン_0'].value; // 受付結果
+const riraiKubun=rec['ドロップダウン_1']&&rec['ドロップダウン_1'].value; // 初めて/2回目以降
+
+if(!byReason[reason])byReason[reason]={visitors:0,amount:0};
+byReason[reason].visitors+=1;
+
+if(riraiKubun==='2回目以降')repeatCount+=1;
+if(kekka==='買取不可')noPurchaseCount+=1;
+if(kekka==='キャンセル')cancelCount+=1;
+
+if(kekka==='成約'){
+const table=(rec['テーブル']&&rec['テーブル'].value)||[];
+table.forEach(row=>{
+const v=row.value;
+const isCancelled=v['キャンセル']&&v['キャンセル'].value&&v['キャンセル'].value.length>0;
+if(isCancelled)return;
+const amt=Number((v['合計_表示用']&&v['合計_表示用'].value)||0);
+byReason[reason].amount+=amt;
+});
+}
+});
+
+const totalVisitors=records.length;
+const firstVisitTotal=Math.max(0,totalVisitors-repeatCount);
+
+// ④ 来店動機マスタを取得し、Kintoneの動機名 → visit_reason_id を対応付け
+const vrRes=await apiFetch('visit_reasons?select=id,name');
+const vrList=await vrRes.json()||[];
+const reasonNameToId={};
+vrList.forEach(r=>{reasonNameToId[r.name]=r.id;});
+
+const rows=[];
+const unmatchedReasons=[];
+Object.entries(byReason).forEach(([reasonName,d])=>{
+const vrId=reasonNameToId[reasonName];
+if(!vrId){unmatchedReasons.push(reasonName);return;}
+rows.push({
+report_date:date,
+store_id:currentStoreId,
+visit_reason_id:vrId,
+visitors:d.visitors,
+amount:d.amount,
+first_visit:firstVisitTotal,
+repeat_visit:repeatCount,
+no_purchase:noPurchaseCount,
+cancel_count:cancelCount,
+});
+});
+
+if(rows.length===0){
+showMsg(`⚠ ${date}：対象店舗のKintoneデータが0件、または来店動機が一致しませんでした。`,'error');
+btn.disabled=false;btn.textContent=origText;
+return;
+}
+
+// ⑤ purchase_detailsへ保存（同一店舗・日付の既存データは削除してから再登録）
+await apiFetch(`purchase_details?report_date=eq.${date}&store_id=eq.${currentStoreId}`,'DELETE');
+const insRes=await apiFetch('purchase_details','POST',rows);
+if(!insRes.ok){const err=await insRes.text();throw new Error(err);}
+
+let msg=`✅ ${date}：${kintoneStoreName} の買取明細を${rows.length}件反映しました（来店客数合計：${totalVisitors}人）。`;
+if(unmatchedReasons.length)msg+=` ⚠ 未一致の来店動機：${unmatchedReasons.join('、')}`;
+showMsg(msg,unmatchedReasons.length?'error':'success');
+
+btn.textContent='取込完了 ✓';
+setTimeout(()=>{btn.disabled=false;btn.textContent=origText;},3000);
+
+}catch(e){
+showMsg('❌ Kintone取込エラー：'+e.message,'error');
+btn.disabled=false;btn.textContent=origText;
+}
 }
 
 function handleLogout(){
