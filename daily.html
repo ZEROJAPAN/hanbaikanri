@@ -673,7 +673,7 @@ const isCancelled=v['キャンセル']&&v['キャンセル'].value&&v['キャン
 if(isCancelled)return;
 const metalName=v['表示用金種']&&v['表示用金種'].value;
 if(!metalName)return; // 表示用金種が空＝貴金属地金以外の明細行
-const weight=Number((v['地金重量']&&v['地金重量'].value)||0);
+const weight=Number((v['シリアル_g_']&&v['シリアル_g_'].value)||0); // 総重量
 weightByKintoneMetal[metalName]=(weightByKintoneMetal[metalName]||0)+weight;
 });
 });
