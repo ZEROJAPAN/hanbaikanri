@@ -8,18 +8,17 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;background:#90ee90;}
 .wrap{padding:6px;}
-
 /* トップバー */
 .topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  background:#1E2761;border-radius:8px;
-  padding:8px 14px;margin-bottom:8px;
+display:flex;align-items:center;justify-content:space-between;
+background:#1E2761;border-radius:8px;
+padding:8px 14px;margin-bottom:8px;
 }
 .topbar-left{display:flex;align-items:center;gap:12px;}
 .topbar-title{font-size:14px;font-weight:bold;color:#fff;}
 .back-btn{
-  padding:5px 14px;background:#fff;color:#1E2761;
-  border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;
+padding:5px 14px;background:#fff;color:#1E2761;
+border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;
 }
 .back-btn:hover{background:#EEF2FF;}
 .topbar-right{display:flex;align-items:center;gap:8px;}
@@ -28,26 +27,20 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:11px;back
 .logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
 .logout-btn:hover{background:#EEF2FF;}
 .user-info{font-size:10px;color:#9FE1CB;}
-
 /* メインエリア */
 .main-area{display:flex;gap:8px;align-items:flex-start;}
-
 /* テーブルラッパー */
 .tbl-outer{
-  flex:1;
-  background:#fff;border-radius:8px;padding:0 10px 10px 10px;
-  overflow:scroll;
-  max-height:calc(100vh - 200px);
-  scrollbar-width:auto;scrollbar-color:#888 #ddd;
-  -webkit-overflow-scrolling:touch;
+flex:1;
+background:#fff;border-radius:8px;padding:0 10px 10px 10px;
+overflow:scroll;
+max-height:calc(100vh - 200px);
+scrollbar-width:auto;scrollbar-color:#888 #ddd;
+-webkit-overflow-scrolling:touch;
 }
 .tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
 .tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
 .tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
-.tbl-outer::-webkit-scrollbar{height:14px;width:14px;}
-.tbl-outer::-webkit-scrollbar-track{background:#ddd;border-radius:4px;}
-.tbl-outer::-webkit-scrollbar-thumb{background:#888;border-radius:4px;}
-
 table{border-collapse:collapse;table-layout:fixed;width:3500px;}
 th.name-th{width:130px;position:sticky;left:0;top:0;z-index:4;background:#1E2761;color:#fff;border:1.5px solid #1E2761;}
 .td-qty{width:50px;border:2px solid #cc8800;padding:1px;background:#ffff00;}
@@ -61,93 +54,87 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
 .gray-amt{width:80px;border:1px solid #aaa;background:#c0c0c0;}
 .input-amt{width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;}
 .input-amt input{width:80px;border:none;background:#ffffff;font-size:10px;text-align:right;padding:1px 3px;outline:none;}
-
 /* 右サイドボタン */
 .right-btns{
-  display:flex;flex-direction:column;gap:6px;
-  min-width:110px;
-  background:#fff;border-radius:8px;padding:0 10px 10px 10px;
+display:flex;flex-direction:column;gap:6px;
+min-width:110px;
+background:#fff;border-radius:8px;padding:0 10px 10px 10px;
 }
 .right-btns-title{
-  font-size:10px;font-weight:bold;color:#64748B;
-  margin-bottom:4px;padding-bottom:4px;
-  border-bottom:1px solid #E2E8F0;
+font-size:10px;font-weight:bold;color:#64748B;
+margin-bottom:4px;padding-bottom:4px;
+border-bottom:1px solid #E2E8F0;
 }
 .side-btn{
-  padding:8px 6px;font-size:11px;font-weight:bold;
-  border:none;border-radius:6px;cursor:pointer;
-  text-align:center;width:100%;
-  transition:all 0.1s;
+padding:8px 6px;font-size:11px;font-weight:bold;
+border:none;border-radius:6px;cursor:pointer;
+text-align:center;width:100%;
+transition:all 0.1s;
 }
 .side-btn:active{transform:translateY(1px);}
 .side-btn-blue{
-  background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
-  color:#fff;
-  box-shadow:0 3px 0 #0F1640,0 4px 6px rgba(0,0,0,0.2);
+background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
+color:#fff;
+box-shadow:0 3px 0 #0F1640,0 4px 6px rgba(0,0,0,0.2);
 }
 .side-btn-blue:hover{background:linear-gradient(180deg,#3D6FCA 0%,#2D3E8F 100%);}
 .side-btn-blue:active{box-shadow:0 1px 0 #0F1640;}
 .side-btn-green{
-  background:linear-gradient(180deg,#0FAA7A 0%,#028090 100%);
-  color:#fff;
-  box-shadow:0 3px 0 #015060,0 4px 6px rgba(0,0,0,0.2);
+background:linear-gradient(180deg,#0FAA7A 0%,#028090 100%);
+color:#fff;
+box-shadow:0 3px 0 #015060,0 4px 6px rgba(0,0,0,0.2);
 }
 .side-btn-green:hover{background:linear-gradient(180deg,#1FBA8A 0%,#029090 100%);}
 .side-btn-green:active{box-shadow:0 1px 0 #015060;}
-
 /* 下部エリア */
 .bottom-area{
-  display:flex;align-items:center;gap:12px;
-  margin-top:8px;background:#fff;border-radius:8px;padding:10px 14px;
+display:flex;align-items:center;gap:12px;
+margin-top:8px;background:#fff;border-radius:8px;padding:10px 14px;
 }
 .visitor-box{display:flex;align-items:center;gap:8px;}
 .visitor-lbl{
-  background:linear-gradient(180deg,#DC2626 0%,#991B1B 100%);
-  color:#fff;font-weight:bold;padding:5px 10px;
-  font-size:11px;border-radius:5px;
-  box-shadow:0 3px 0 #7F1D1D;
+background:linear-gradient(180deg,#DC2626 0%,#991B1B 100%);
+color:#fff;font-weight:bold;padding:5px 10px;
+font-size:11px;border-radius:5px;
+box-shadow:0 3px 0 #7F1D1D;
 }
 .visitor-inp{width:72px;text-align:right;font-size:12px;border:2px solid #CBD5E1;padding:4px 6px;border-radius:4px;outline:none;}
 .visitor-inp:focus{border-color:#1E2761;}
-
 .export-link-btn{
-  padding:8px 18px;font-size:12px;font-weight:bold;
-  background:linear-gradient(180deg,#0FAA7A,#028090);
-  color:#fff;border:none;border-radius:6px;cursor:pointer;
-  box-shadow:0 3px 0 #015060;
+padding:8px 18px;font-size:12px;font-weight:bold;
+background:linear-gradient(180deg,#0FAA7A,#028090);
+color:#fff;border:none;border-radius:6px;cursor:pointer;
+box-shadow:0 3px 0 #015060;
 }
 .export-link-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
 .export-link-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #015060;}
 .reg-btn{
-  padding:8px 28px;font-size:13px;font-weight:bold;
-  background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
-  color:#fff;border:none;border-radius:6px;cursor:pointer;
-  box-shadow:0 4px 0 #0F1640,0 5px 8px rgba(0,0,0,0.2);
-  transition:all 0.1s;
+padding:8px 28px;font-size:13px;font-weight:bold;
+background:linear-gradient(180deg,#2D4FBA 0%,#1E2761 100%);
+color:#fff;border:none;border-radius:6px;cursor:pointer;
+box-shadow:0 4px 0 #0F1640,0 5px 8px rgba(0,0,0,0.2);
+transition:all 0.1s;
 }
 .reg-btn:hover{background:linear-gradient(180deg,#3D6FCA 0%,#2D3E8F 100%);}
 .reg-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0F1640;}
 .reg-btn.done{background:linear-gradient(180deg,#0FAA7A 0%,#028090 100%);box-shadow:0 4px 0 #015060;}
 .reg-btn:disabled{background:linear-gradient(180deg,#94A3B8 0%,#64748B 100%);box-shadow:none;cursor:not-allowed;}
-
 .clear-btn{
-  padding:8px 16px;font-size:11px;font-weight:bold;
-  background:linear-gradient(180deg,#FF6666 0%,#CC2222 100%);
-  color:#fff;border:none;border-radius:6px;cursor:pointer;
-  box-shadow:0 3px 0 #881111;
+padding:8px 16px;font-size:11px;font-weight:bold;
+background:linear-gradient(180deg,#FF6666 0%,#CC2222 100%);
+color:#fff;border:none;border-radius:6px;cursor:pointer;
+box-shadow:0 3px 0 #881111;
 }
 .clear-btn:hover{background:linear-gradient(180deg,#FF8888 0%,#DD3333 100%);}
 .clear-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #881111;}
-
 /* ステータスバー */
 .status-bar{
-  margin-top:6px;padding:5px 12px;
-  background:#1E2761;border-radius:6px;
-  font-size:10px;color:#CADCFC;
-  display:flex;gap:20px;flex-wrap:wrap;
+margin-top:6px;padding:5px 12px;
+background:#1E2761;border-radius:6px;
+font-size:10px;color:#CADCFC;
+display:flex;gap:20px;flex-wrap:wrap;
 }
 .status-bar span strong{color:#fff;}
-
 /* メッセージ */
 .msg{padding:6px 12px;border-radius:4px;margin-top:6px;font-size:11px;display:none;}
 .msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
@@ -156,140 +143,135 @@ th{border:1.5px solid #2D4FBA;padding:2px 3px;text-align:center;background:#1E27
 </head>
 <body>
 <div class="wrap">
-
 <!-- トップバー -->
 <div class="topbar">
-  <div class="topbar-left">
-    <button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
-    <div>
-      <div class="topbar-title">📋 日報入力</div>
-      <div class="user-info" id="user-info"></div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <select class="store-sel" id="store"></select>
-    <input type="date" class="date-input" id="rdate">
-    <button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
-  </div>
+<div class="topbar-left">
+<button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+<div>
+<div class="topbar-title">📋 日報入力</div>
+<div class="user-info" id="user-info"></div>
+</div>
+</div>
+<div class="topbar-right">
+<select class="store-sel" id="store"></select>
+<input type="date" class="date-input" id="rdate">
+<button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
 </div>
 
 <div class="msg" id="msg"></div>
 
 <!-- メインエリア -->
 <div class="main-area">
+<!-- テーブル -->
+<div class="tbl-outer">
+<table id="tbl-main">
+<colgroup>
+<col style="width:130px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+<col style="width:50px;"><col style="width:80px;">
+</colgroup>
+<thead>
+<tr>
+<th class="name-th" style="position:sticky;top:0;left:0;z-index:6;background:#1E2761;">商品名</th>
+<th colspan="2" class="buy-hdr" style="position:sticky;top:0;z-index:3;background:#2D4FBA;">買取</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">キャンセル</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">店売り</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">店売り（免税）</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">本店</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">楽天国内</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">楽天海外（免税）</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">YahooShop</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">ヤフオク</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">Wowma!</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">メルカリ</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">ebay（免税）</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">LuxUness</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">Amazon</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">サブスク</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">ラクマ</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">Qoo10</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">GLOBAZONE</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">オークション</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">WEB販売</th>
+<th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">その他販売</th>
+</tr>
+<tr>
+<th class="name-th" style="position:sticky;top:var(--hdr1-h,22px);left:0;z-index:6;background:#1E2761;"></th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+<th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
+</tr>
+</thead>
+<tbody id="tbl-body"></tbody>
+</table>
+</div>
 
-  <!-- テーブル -->
-  <div class="tbl-outer">
-    <table id="tbl-main">
-      <colgroup>
-        <col style="width:130px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-        <col style="width:50px;"><col style="width:80px;">
-      </colgroup>
-      <thead>
-        <tr>
-          <th class="name-th" style="position:sticky;top:0;left:0;z-index:6;background:#1E2761;">商品名</th>
-          <th colspan="2" class="buy-hdr" style="position:sticky;top:0;z-index:3;background:#2D4FBA;">買取</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">キャンセル</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">店売り</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">店売り（免税）</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">本店</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">楽天国内</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">楽天海外（免税）</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">YahooShop</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">ヤフオク</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">Wowma!</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">メルカリ</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">ebay（免税）</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">LuxUness</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">Amazon</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">サブスク</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">ラクマ</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">Qoo10</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">GLOBAZONE</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">オークション</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">WEB販売</th>
-          <th colspan="2" style="position:sticky;top:0;z-index:3;background:#1E2761;">その他販売</th>
-        </tr>
-        <tr>
-          <th class="name-th" style="position:sticky;top:var(--hdr1-h,22px);left:0;z-index:6;background:#1E2761;"></th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-          <th class="qty-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#cc8800;">件数</th><th class="amt-hdr" style="position:sticky;top:var(--hdr1-h,22px);z-index:3;background:#4455aa;">金額</th>
-        </tr>
-      </thead>
-      <tbody id="tbl-body"></tbody>
-    </table>
-  </div>
-
-  <!-- 右サイドボタン -->
-  <div class="right-btns">
-    <div class="right-btns-title">関連入力</div>
+<!-- 右サイドボタン -->
+<div class="right-btns">
+<div class="right-btns-title">関連入力</div>
 <button type="button" class="side-btn side-btn-blue" onclick="location.href='purchase_detail.html?date='+getDate()+'&store='+getStoreId()">🛒 買取明細</button>
-    <button type="button" class="side-btn side-btn-green" onclick="location.href='gold_recovery.html?date='+getDate()+'&store='+getStoreId()">💰 地金回収</button>
-    <button type="button" class="side-btn side-btn-green" onclick="location.href='telecard_recovery.html?date='+getDate()+'&store='+getStoreId()">🎫 テレカ・金券回収</button>
-    <button type="button" class="side-btn side-btn-green" onclick="location.href='stamp_recovery.html?date='+getDate()+'&store='+getStoreId()">📮 切手・印紙回収</button>
-    <button type="button" class="side-btn side-btn-blue" onclick="location.href='cash_register.html?date='+getDate()+'&store='+getStoreId()">🏦 金庫〜レジ</button>
-  </div>
+<button type="button" class="side-btn side-btn-green" onclick="location.href='gold_recovery.html?date='+getDate()+'&store='+getStoreId()">💰 地金回収</button>
+<button type="button" class="side-btn side-btn-green" onclick="location.href='telecard_recovery.html?date='+getDate()+'&store='+getStoreId()">🎫 テレカ・金券回収</button>
+<button type="button" class="side-btn side-btn-green" onclick="location.href='stamp_recovery.html?date='+getDate()+'&store='+getStoreId()">📮 切手・印紙回収</button>
+<button type="button" class="side-btn side-btn-blue" onclick="location.href='cash_register.html?date='+getDate()+'&store='+getStoreId()">🏦 金庫〜レジ</button>
+</div>
 </div>
 
 <!-- 下部：来店客数・登録 -->
 <div class="bottom-area">
-  <div class="visitor-box">
-    <div class="visitor-lbl">来店客数</div>
-    <input type="text" inputmode="numeric" class="visitor-inp" id="visitors" value="0">
-  </div>
-  <button type="button" class="reg-btn" id="reg-btn" onclick="handleSave()">登録</button>
-  <button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
-  <button type="button" class="export-link-btn" onclick="goExport()">📄 日報出力</button>
+<div class="visitor-box">
+<div class="visitor-lbl">来店客数</div>
+<input type="text" inputmode="numeric" class="visitor-inp" id="visitors" value="0">
+</div>
+<button type="button" class="reg-btn" id="reg-btn" onclick="handleSave()">登録</button>
+<button type="button" class="clear-btn" onclick="handleClear()">クリア</button>
+<button type="button" class="export-link-btn" onclick="goExport()">📄 日報出力</button>
 </div>
 
 <!-- ステータスバー -->
 <div class="status-bar">
-  <span id="st-store"><strong>店舗：</strong></span>
-  <span id="st-user"><strong>ユーザー：</strong></span>
-  <span id="st-date"><strong>日付：</strong></span>
-  <span id="st-sales"><strong>純売上合計：</strong>¥0</span>
-  <span id="st-tax"><strong>消費税：</strong>¥0</span>
+<span id="st-store"><strong>店舗：</strong></span>
+<span id="st-user"><strong>ユーザー：</strong></span>
+<span id="st-date"><strong>日付：</strong></span>
+<span id="st-sales"><strong>純売上合計：</strong>¥0</span>
+<span id="st-tax"><strong>消費税：</strong>¥0</span>
 </div>
-
 </div>
 
 <script>
@@ -297,362 +279,351 @@ const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
 
 async function apiFetch(path,method='GET',body=null){
-  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
-  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
-  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
 }
 
 // 商品カテゴリはDBから取得（仕入商品カテゴリーマスタと連動）
 let CATS=[];
 const COLS=[
-  {key:'buy',    chId:1,  taxfree:true },  // 買取は消費税なし
-  {key:'cancel', chId:2,  taxfree:true },  // キャンセルは消費税なし
-  {key:'shop',   chId:3,  taxfree:false},  // 店売り：消費税あり
-  {key:'free',   chId:4,  taxfree:true },  // 店売り（免税）
-  {key:'honten', chId:5,  taxfree:false},  // 本店：消費税あり
-  {key:'raku',   chId:6,  taxfree:false},  // 楽天国内：消費税あり
-  {key:'rakuEx', chId:7,  taxfree:true },  // 楽天海外（免税）
-  {key:'yahoo',  chId:8,  taxfree:false},  // YahooShop：消費税あり
-  {key:'yahuoku',chId:9,  taxfree:false},  // ヤフオク：消費税あり
-  {key:'wowma',  chId:10, taxfree:false},  // Wowma!：消費税あり
-  {key:'merukari',chId:11,taxfree:false},  // メルカリ：消費税あり
-  {key:'ebay',   chId:12, taxfree:true },  // ebay（免税）
-  {key:'lux',    chId:13, taxfree:false},  // LuxUness：消費税あり
-  {key:'amazon', chId:14, taxfree:false},  // Amazon：消費税あり
-  {key:'subscr', chId:15, taxfree:false},  // サブスク：消費税あり
-  {key:'rakuma', chId:16, taxfree:false},  // ラクマ：消費税あり
-  {key:'qoo10',  chId:17, taxfree:false},  // Qoo10：消費税あり
-  {key:'globa',  chId:18, taxfree:false},  // GLOBAZONE：消費税あり
-  {key:'auction',chId:19, taxfree:false},  // オークション：消費税あり
-  {key:'web',    chId:20, taxfree:false},  // WEB販売：消費税あり
-  {key:'other',  chId:21, taxfree:false},  // その他販売：消費税あり
+{key:'buy', chId:1, taxfree:true }, // 買取は消費税なし
+{key:'cancel', chId:2, taxfree:true }, // キャンセルは消費税なし
+{key:'shop', chId:3, taxfree:false}, // 店売り：消費税あり
+{key:'free', chId:4, taxfree:true }, // 店売り（免税）
+{key:'honten', chId:5, taxfree:false}, // 本店：消費税あり
+{key:'raku', chId:6, taxfree:false}, // 楽天国内：消費税あり
+{key:'rakuEx', chId:7, taxfree:true }, // 楽天海外（免税）
+{key:'yahoo', chId:8, taxfree:false}, // YahooShop：消費税あり
+{key:'yahuoku',chId:9, taxfree:false}, // ヤフオク：消費税あり
+{key:'wowma', chId:10, taxfree:false}, // Wowma!：消費税あり
+{key:'merukari',chId:11,taxfree:false}, // メルカリ：消費税あり
+{key:'ebay', chId:12, taxfree:true }, // ebay（免税）
+{key:'lux', chId:13, taxfree:false}, // LuxUness：消費税あり
+{key:'amazon', chId:14, taxfree:false}, // Amazon：消費税あり
+{key:'subscr', chId:15, taxfree:false}, // サブスク：消費税あり
+{key:'rakuma', chId:16, taxfree:false}, // ラクマ：消費税あり
+{key:'qoo10', chId:17, taxfree:false}, // Qoo10：消費税あり
+{key:'globa', chId:18, taxfree:false}, // GLOBAZONE：消費税あり
+{key:'auction',chId:19, taxfree:false}, // オークション：消費税あり
+{key:'web', chId:20, taxfree:false}, // WEB販売：消費税あり
+{key:'other', chId:21, taxfree:false}, // その他販売：消費税あり
 ];
 const SALE_KEYS=COLS.filter(c=>c.key!=='buy'&&c.key!=='cancel').map(c=>c.key);
-
 const data={};
-
-
-
+const customerData={}; // 客数（成約数）を channel_key ごとに保持
 let storeList=[];
 let currentStoreId=null;
 
 function getDate(){return document.getElementById('rdate').value;}
 function getStoreId(){return currentStoreId||'';}
-
 function fmt(n){return(n||0).toLocaleString('ja-JP');}
 function num(v){const n=parseInt((v||'').replace(/[^0-9\-]/g,''),10);return isNaN(n)?0:n;}
 function colSum(k,f){return CATS.reduce((s,c)=>s+num(data[c.id][k][f]),0);}
 
 function showMsg(text,type='success'){
-  const el=document.getElementById('msg');
-  el.textContent=text;el.className='msg '+type;el.style.display='block';
-  setTimeout(()=>{el.style.display='none';},4000);
+const el=document.getElementById('msg');
+el.textContent=text;el.className='msg '+type;el.style.display='block';
+setTimeout(()=>{el.style.display='none';},4000);
 }
 
 function updateCell(catId,colKey,field,val){
-  data[catId][colKey][field]=val.replace(/[^0-9\-]/g,'');
-  recalc();
+data[catId][colKey][field]=val.replace(/[^0-9\-]/g,'');
+recalc();
 }
 
 function recalc(){
-  COLS.forEach(col=>{
-    const sq=document.getElementById('sq_'+col.key);
-    const sa=document.getElementById('sa_'+col.key);
-    if(sq)sq.textContent=fmt(colSum(col.key,'q'));
-    if(sa)sa.textContent=fmt(colSum(col.key,'a'));
-  });
-  const pure=SALE_KEYS.reduce((s,k)=>s+colSum(k,'a'),0);
-  SALE_KEYS.forEach(k=>{const el=document.getElementById('pu_'+k);if(el)el.textContent=fmt(colSum(k,'a'));});
-  // 消費税（免税列以外すべて計算）
-  let taxShop=0;
-  COLS.filter(c=>!c.taxfree&&c.key!=='buy'&&c.key!=='cancel').forEach(col=>{
-    const tax=Math.floor(colSum(col.key,'a')*10/110);
-    const el=document.getElementById('tax_'+col.key);
-    if(el)el.textContent=fmt(tax);
-    if(col.key==='shop')taxShop=tax;
-  });
-  const eg=document.getElementById('genk');if(eg)eg.textContent=fmt(colSum('shop','a'));
-  document.getElementById('st-sales').innerHTML='<strong>純売上合計：</strong>¥'+fmt(pure);
-  document.getElementById('st-tax').innerHTML='<strong>消費税：</strong>¥'+fmt(taxShop);
-  recalcGenk();
+COLS.forEach(col=>{
+const sq=document.getElementById('sq_'+col.key);
+const sa=document.getElementById('sa_'+col.key);
+if(sq)sq.textContent=fmt(colSum(col.key,'q'));
+if(sa)sa.textContent=fmt(colSum(col.key,'a'));
+});
+const pure=SALE_KEYS.reduce((s,k)=>s+colSum(k,'a'),0);
+SALE_KEYS.forEach(k=>{const el=document.getElementById('pu_'+k);if(el)el.textContent=fmt(colSum(k,'a'));});
+// 消費税（免税列以外すべて計算）
+let taxShop=0;
+COLS.filter(c=>!c.taxfree&&c.key!=='buy'&&c.key!=='cancel').forEach(col=>{
+const tax=Math.floor(colSum(col.key,'a')*10/110);
+const el=document.getElementById('tax_'+col.key);
+if(el)el.textContent=fmt(tax);
+if(col.key==='shop')taxShop=tax;
+});
+const eg=document.getElementById('genk');if(eg)eg.textContent=fmt(colSum('shop','a'));
+document.getElementById('st-sales').innerHTML='<strong>純売上合計：</strong>¥'+fmt(pure);
+document.getElementById('st-tax').innerHTML='<strong>消費税：</strong>¥'+fmt(taxShop);
+recalcGenk();
 }
 
 // 現計自動計算（純売上 - クレジット計 - 掛計）
 function recalcGenk(key){
-  const keys=key?[key]:COLS.filter(c=>c.key!=='buy'&&c.key!=='cancel').map(c=>c.key);
-  keys.forEach(k=>{
-    const pure=colSum(k,'a');
-    const credit=num(document.getElementById('credit_'+k)?.value||'0');
-    const kake=num(document.getElementById('kakekei_'+k)?.value||'0');
-    const genk=pure-credit-kake;
-    const el=document.getElementById('genk_'+k);
-    if(el)el.textContent=fmt(genk);
-  });
+const keys=key?[key]:COLS.filter(c=>c.key!=='buy'&&c.key!=='cancel').map(c=>c.key);
+keys.forEach(k=>{
+const pure=colSum(k,'a');
+const credit=num(document.getElementById('credit_'+k)?.value||'0');
+const kake=num(document.getElementById('kakekei_'+k)?.value||'0');
+const genk=pure-credit-kake;
+const el=document.getElementById('genk_'+k);
+if(el)el.textContent=fmt(genk);
+});
 }
 
 function buildTable(){
-  const tbody=document.getElementById('tbl-body');
-  let h='';
-  CATS.forEach(c=>{
-    h+=`<tr><td class="cat-td" style="border:1.5px solid #c08080;padding:2px 5px;background:#d0f0f8;font-size:10px;white-space:nowrap;width:130px;position:sticky;left:0;z-index:2;">${c.name}</td>`;
-    COLS.forEach(col=>{
-      h+=`<td style="width:50px;border:2px solid #cc8800;padding:1px;background:#ffff00;"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_q" oninput="updateCell(${c.id},'${col.key}','q',this.value)" style="width:50px;border:none;background:#ffff88;font-size:10px;text-align:right;padding:1px 2px;outline:none;font-weight:bold;"></td>`;
-      h+=`<td style="width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_a" oninput="updateCell(${c.id},'${col.key}','a',this.value)" style="width:80px;border:none;background:#ffffff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
-    });
-    h+=`</tr>`;
-  });
-  // 計行
-  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">計</td>`;
-  COLS.forEach(col=>{h+=`<td style="width:50px;border:2px solid #cc8800;padding:2px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;" id="sq_${col.key}">0</td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="sa_${col.key}">0</td>`;});
-  h+=`</tr>`;
-  // 純売上行
-  h+=`<tr><td class="sum-label">純売上</td>`;
-  COLS.forEach(col=>{
-    if(col.key==='buy'||col.key==='cancel'){h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
-    else{h+=`<td class="gray-qty"></td><td class="sum-amt" id="pu_${col.key}">0</td>`;}
-  });
-  h+=`</tr>`;
-  // 消費税行（免税列以外はすべて表示）
-  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">消費税</td>`;
-  COLS.forEach(col=>{
-    if(col.taxfree||col.key==='buy'||col.key==='cancel'){
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
-    } else {
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="tax_${col.key}">0</td>`;
-    }
-  });
-  h+=`</tr>`;
-  // クレジット計行
-  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">クレジット計</td>`;
-  COLS.forEach(col=>{
-    if(col.key==='buy'||col.key==='cancel'){
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
-    } else {
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" id="credit_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
-    }
-  });
-  h+=`</tr>`;
-  // 掛計行
-  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">掛計</td>`;
-  COLS.forEach(col=>{
-    if(col.key==='buy'||col.key==='cancel'){
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
-    } else {
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" id="kakekei_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
-    }
-  });
-  h+=`</tr>`;
-  // 現計行
-  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">現計</td>`;
-  COLS.forEach(col=>{
-    if(col.key==='buy'||col.key==='cancel'){
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
-    } else {
-      h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="genk_${col.key}">0</td>`;
-    }
-  });
-  h+=`</tr>`;
-  // 客数行
-  h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">客数</td>`;
-  COLS.forEach(()=>{
-    h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" value="0" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
-  });
-  h+=`</tr>`;
-  tbody.innerHTML=h;
+const tbody=document.getElementById('tbl-body');
+let h='';
+CATS.forEach(c=>{
+h+=`<tr><td class="cat-td" style="border:1.5px solid #c08080;padding:2px 5px;background:#d0f0f8;font-size:10px;white-space:nowrap;width:130px;position:sticky;left:0;z-index:2;">${c.name}</td>`;
+COLS.forEach(col=>{
+h+=`<td style="width:50px;border:2px solid #cc8800;padding:1px;background:#ffff00;"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_q" oninput="updateCell(${c.id},'${col.key}','q',this.value)" style="width:50px;border:none;background:#ffff88;font-size:10px;text-align:right;padding:1px 2px;outline:none;font-weight:bold;"></td>`;
+h+=`<td style="width:80px;border:2px solid #8888bb;padding:1px;background:#ffffff;"><input type="text" inputmode="numeric" id="c${c.id}_${col.key}_a" oninput="updateCell(${c.id},'${col.key}','a',this.value)" style="width:80px;border:none;background:#ffffff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+});
+h+=`</tr>`;
+});
+// 計行
+h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">計</td>`;
+COLS.forEach(col=>{h+=`<td style="width:50px;border:2px solid #cc8800;padding:2px;text-align:right;font-size:10px;font-weight:bold;background:#ffff88;" id="sq_${col.key}">0</td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="sa_${col.key}">0</td>`;});
+h+=`</tr>`;
+// 純売上行
+h+=`<tr><td class="sum-label">純売上</td>`;
+COLS.forEach(col=>{
+if(col.key==='buy'||col.key==='cancel'){h+=`<td class="gray-qty"></td><td class="gray-amt"></td>`;}
+else{h+=`<td class="gray-qty"></td><td class="sum-amt" id="pu_${col.key}">0</td>`;}
+});
+h+=`</tr>`;
+// 消費税行（免税列以外はすべて表示）
+h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">消費税</td>`;
+COLS.forEach(col=>{
+if(col.taxfree||col.key==='buy'||col.key==='cancel'){
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
+} else {
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="tax_${col.key}">0</td>`;
+}
+});
+h+=`</tr>`;
+// クレジット計行
+h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">クレジット計</td>`;
+COLS.forEach(col=>{
+if(col.key==='buy'||col.key==='cancel'){
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
+} else {
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" id="credit_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+}
+});
+h+=`</tr>`;
+// 掛計行
+h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">掛計</td>`;
+COLS.forEach(col=>{
+if(col.key==='buy'||col.key==='cancel'){
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
+} else {
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" id="kakekei_${col.key}" oninput="recalcGenk('${col.key}')" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+}
+});
+h+=`</tr>`;
+// 現計行
+h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">現計</td>`;
+COLS.forEach(col=>{
+if(col.key==='buy'||col.key==='cancel'){
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:1px solid #aaa;background:#c0c0c0;"></td>`;
+} else {
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #4455aa;padding:2px 3px;text-align:right;font-size:10px;font-weight:bold;background:#EEF2FF;" id="genk_${col.key}">0</td>`;
+}
+});
+h+=`</tr>`;
+// 客数行（成約数：channel_keyごとに保存・読込されます）
+h+=`<tr><td style="border:1.5px solid #1E2761;padding:2px 4px;text-align:center;font-size:10px;font-weight:bold;background:#1E2761;color:#fff;position:sticky;left:0;z-index:2;width:130px;">客数</td>`;
+COLS.forEach(col=>{
+h+=`<td style="width:50px;border:1px solid #aaa;background:#c0c0c0;"></td><td style="width:80px;border:2px solid #8888bb;padding:1px;background:#fff;"><input type="text" inputmode="numeric" id="cust_${col.key}" value="0" oninput="customerData['${col.key}']=this.value" style="width:80px;border:none;background:#fff;font-size:10px;text-align:right;padding:1px 3px;outline:none;"></td>`;
+});
+h+=`</tr>`;
+tbody.innerHTML=h;
 }
 
 async function loadExistingData(){
-  const storeId=currentStoreId;
-  const date=document.getElementById('rdate').value;
-  if(!storeId||!date)return;
-  const res=await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&select=*`);
-  const rows=await res.json();
-  if(!rows||rows.length===0)return;
-  rows.forEach(row=>{
-    const cat=CATS.find(c=>c.id===row.category_id);
-    const col=COLS.find(c=>c.chId===row.channel_id);
-    if(!cat||!col)return;
-    data[cat.id][col.key].q=row.quantity>0?String(row.quantity):'';
-    data[cat.id][col.key].a=row.amount>0?String(row.amount):'';
-    const qEl=document.getElementById(`c${cat.id}_${col.key}_q`);
-    const aEl=document.getElementById(`c${cat.id}_${col.key}_a`);
-    if(qEl)qEl.value=row.quantity>0?row.quantity:'';
-    if(aEl)aEl.value=row.amount>0?row.amount:'';
-  });
-  const visitors=rows.find(r=>r.visitors>0);
-  if(visitors)document.getElementById('visitors').value=visitors.visitors;
-  recalc();
+const storeId=currentStoreId;
+const date=document.getElementById('rdate').value;
+if(!storeId||!date)return;
+const res=await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&select=*`);
+const rows=await res.json();
+if(!rows||rows.length===0)return;
+rows.forEach(row=>{
+const cat=CATS.find(c=>c.id===row.category_id);
+const col=COLS.find(c=>c.chId===row.channel_id);
+if(!cat||!col)return;
+data[cat.id][col.key].q=row.quantity>0?String(row.quantity):'';
+data[cat.id][col.key].a=row.amount>0?String(row.amount):'';
+customerData[col.key]=row.customers||0;
+const qEl=document.getElementById(`c${cat.id}_${col.key}_q`);
+const aEl=document.getElementById(`c${cat.id}_${col.key}_a`);
+if(qEl)qEl.value=row.quantity>0?row.quantity:'';
+if(aEl)aEl.value=row.amount>0?row.amount:'';
+});
+COLS.forEach(col=>{
+const el=document.getElementById('cust_'+col.key);
+if(el)el.value=customerData[col.key]||0;
+});
+const visitors=rows.find(r=>r.visitors>0);
+if(visitors)document.getElementById('visitors').value=visitors.visitors;
+recalc();
 }
 
 async function handleSave(){
-  if(!currentStoreId){showMsg('店舗を選択してください。','error');return;}
-  const date=document.getElementById('rdate').value;
-  if(!date){showMsg('日付を選択してください。','error');return;}
-  const btn=document.getElementById('reg-btn');
-  btn.disabled=true;btn.textContent='登録中...';
-  const visitors=parseInt(document.getElementById('visitors').value)||0;
-  const records=[];
-  CATS.forEach(cat=>{
-    COLS.forEach(col=>{
-      const q=num(data[cat.id][col.key].q);
-      const a=num(data[cat.id][col.key].a);
-      if(q===0&&a===0)return;
-      records.push({report_date:date,store_id:currentStoreId,user_id:null,category_id:cat.id,channel_id:col.chId,quantity:q,amount:a,visitors:visitors});
-    });
-  });
-  if(records.length===0){showMsg('入力データがありません。','error');btn.disabled=false;btn.textContent='登録';return;}
-  try{
-    await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${currentStoreId}`,'DELETE');
-    const insRes=await apiFetch('daily_reports','POST',records);
-    if(!insRes.ok){const err=await insRes.text();showMsg('登録エラー：'+err,'error');btn.disabled=false;btn.textContent='登録';return;}
-    btn.textContent='登録済み ✓';btn.classList.add('done');
-    showMsg(`✅ ${records.length}件のデータを登録しました。（${date}）`,'success');
-    setTimeout(()=>{btn.disabled=false;btn.textContent='登録';btn.classList.remove('done');},3000);
-  }catch(e){
-    showMsg('通信エラー：'+e.message,'error');btn.disabled=false;btn.textContent='登録';
-  }
+if(!currentStoreId){showMsg('店舗を選択してください。','error');return;}
+const date=document.getElementById('rdate').value;
+if(!date){showMsg('日付を選択してください。','error');return;}
+const btn=document.getElementById('reg-btn');
+btn.disabled=true;btn.textContent='登録中...';
+const visitors=parseInt(document.getElementById('visitors').value)||0;
+const records=[];
+CATS.forEach(cat=>{
+COLS.forEach(col=>{
+const q=num(data[cat.id][col.key].q);
+const a=num(data[cat.id][col.key].a);
+if(q===0&&a===0)return;
+records.push({report_date:date,store_id:currentStoreId,user_id:null,category_id:cat.id,channel_id:col.chId,quantity:q,amount:a,visitors:visitors,customers:parseInt(customerData[col.key])||0});
+});
+});
+if(records.length===0){showMsg('入力データがありません。','error');btn.disabled=false;btn.textContent='登録';return;}
+try{
+await apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${currentStoreId}`,'DELETE');
+const insRes=await apiFetch('daily_reports','POST',records);
+if(!insRes.ok){const err=await insRes.text();showMsg('登録エラー：'+err,'error');btn.disabled=false;btn.textContent='登録';return;}
+btn.textContent='登録済み ✓';btn.classList.add('done');
+showMsg(`✅ ${records.length}件のデータを登録しました。（${date}）`,'success');
+setTimeout(()=>{btn.disabled=false;btn.textContent='登録';btn.classList.remove('done');},3000);
+}catch(e){
+showMsg('通信エラー：'+e.message,'error');btn.disabled=false;btn.textContent='登録';
+}
 }
 
 function handleClear(){
-  if(!confirm('入力内容をクリアしますか？'))return;
-  CATS.forEach(c=>{COLS.forEach(col=>{
-    data[c.id][col.key]={q:'',a:''};
-    const eq=document.getElementById('c'+c.id+'_'+col.key+'_q');
-    const ea=document.getElementById('c'+c.id+'_'+col.key+'_a');
-    if(eq)eq.value='';if(ea)ea.value='';
-  });});
-  document.getElementById('visitors').value='0';
-  recalc();
+if(!confirm('入力内容をクリアしますか？'))return;
+CATS.forEach(c=>{COLS.forEach(col=>{
+data[c.id][col.key]={q:'',a:''};
+const eq=document.getElementById('c'+c.id+'_'+col.key+'_q');
+const ea=document.getElementById('c'+c.id+'_'+col.key+'_a');
+if(eq)eq.value='';if(ea)ea.value='';
+});});
+COLS.forEach(col=>{
+customerData[col.key]='';
+const el=document.getElementById('cust_'+col.key);
+if(el)el.value='0';
+});
+document.getElementById('visitors').value='0';
+recalc();
 }
 
 function goExport(){
-  location.href='nippo_export.html';
+location.href='nippo_export.html';
 }
 
 function handleLogout(){
-  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
 }
 
 async function loadStores(){
-  const res=await apiFetch('stores?is_active=eq.true&order=sort_order');
-  storeList=await res.json()||[];
-  const sel=document.getElementById('store');
-  sel.innerHTML='';
-  storeList.forEach(s=>{
-    const o=document.createElement('option');
-    o.value=s.id;o.textContent=s.name;sel.appendChild(o);
-  });
-  // store_idで直接照合
-  const savedStoreId=localStorage.getItem('store_id')||'';
-  const savedStoreName=localStorage.getItem('store')||'';
-
-  if(savedStoreId){
-    // セレクトのvalueに直接セット
-    sel.value=savedStoreId;
-    // セットできたか確認
-    if(sel.value===savedStoreId||sel.value===String(savedStoreId)){
-      currentStoreId=parseInt(savedStoreId);
-    } else {
-      // valueが一致しない場合はoptionを探す
-      for(let i=0;i<sel.options.length;i++){
-        if(String(sel.options[i].value)===String(savedStoreId)){
-          sel.selectedIndex=i;
-          currentStoreId=parseInt(savedStoreId);
-          break;
-        }
-      }
-    }
-  }
-
-  // store_idで見つからなければ店舗名で照合
-  if(!currentStoreId&&savedStoreName){
-    for(let i=0;i<sel.options.length;i++){
-      if(sel.options[i].text===savedStoreName){
-        sel.selectedIndex=i;
-        currentStoreId=parseInt(sel.options[i].value);
-        break;
-      }
-    }
-  }
-
-  // それでもなければ先頭を選択
-  if(!currentStoreId&&storeList.length>0){
-    currentStoreId=parseInt(storeList[0].id);
-    sel.value=storeList[0].id;
-  }
-
-  const selText=sel.options[sel.selectedIndex]?.text||'';
-  document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+selText;
+const res=await apiFetch('stores?is_active=eq.true&order=sort_order');
+storeList=await res.json()||[];
+const sel=document.getElementById('store');
+sel.innerHTML='';
+storeList.forEach(s=>{
+const o=document.createElement('option');
+o.value=s.id;o.textContent=s.name;sel.appendChild(o);
+});
+// store_idで直接照合
+const savedStoreId=localStorage.getItem('store_id')||'';
+const savedStoreName=localStorage.getItem('store')||'';
+if(savedStoreId){
+sel.value=savedStoreId;
+if(sel.value===savedStoreId||sel.value===String(savedStoreId)){
+currentStoreId=parseInt(savedStoreId);
+} else {
+for(let i=0;i<sel.options.length;i++){
+if(String(sel.options[i].value)===String(savedStoreId)){
+sel.selectedIndex=i;
+currentStoreId=parseInt(savedStoreId);
+break;
+}
+}
+}
+}
+// store_idで見つからなければ店舗名で照合
+if(!currentStoreId&&savedStoreName){
+for(let i=0;i<sel.options.length;i++){
+if(sel.options[i].text===savedStoreName){
+sel.selectedIndex=i;
+currentStoreId=parseInt(sel.options[i].value);
+break;
+}
+}
+}
+// それでもなければ先頭を選択
+if(!currentStoreId&&storeList.length>0){
+currentStoreId=parseInt(storeList[0].id);
+sel.value=storeList[0].id;
+}
+const selText=sel.options[sel.selectedIndex]?.text||'';
+document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+selText;
 }
 
 async function init(){
-  // 日付セット
-  const t=new Date();
-  const ds=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-  document.getElementById('rdate').value=ds;
-  document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+ds;
-
-  // ユーザー情報
-  const savedUser=localStorage.getItem('userid')||'';
-  const savedName=localStorage.getItem('user_name')||'';
-  const savedStoreNameInit=localStorage.getItem('store')||'';
-  document.getElementById('user-info').textContent='ログイン中：'+(savedName||savedUser)+'　店舗：'+savedStoreNameInit;
-  document.getElementById('st-user').innerHTML='<strong>ユーザー：</strong>'+(savedName||savedUser);
-
-  // ① 商品カテゴリをDBから取得
-  const catRes=await fetch(SUPABASE_URL+'/rest/v1/product_categories?is_active=eq.true&order=sort_order',{
-    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-  });
-  CATS=await catRes.json()||[];
-
-  // dataを初期化
-  CATS.forEach(c=>{
-    data[c.id]={};
-    COLS.forEach(col=>{data[c.id][col.key]={q:'',a:''};});
-  });
-
-  // ② テーブルを構築
-  buildTable();
-  recalc();
-
-  // ③ 店舗一覧を取得
-  await loadStores();
-
-  // ④ 既存データを読み込み
-  await loadExistingData();
-
-  // イベントリスナー
-  document.getElementById('rdate').addEventListener('change',async function(){
-    document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+this.value;
-    handleClear();
-    await loadExistingData();
-  });
-  document.getElementById('store').addEventListener('change',async function(){
-    currentStoreId=parseInt(this.value);
-    const txt=this.options[this.selectedIndex].text;
-    localStorage.setItem('store',txt);
-    localStorage.setItem('store_id',this.value);
-    document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+txt;
-    const savedNameChg=localStorage.getItem('user_name')||localStorage.getItem('userid')||'';
-    document.getElementById('user-info').textContent='ログイン中：'+savedNameChg+'　店舗：'+txt;
-    handleClear();
-    await loadExistingData();
-  });
-
-  // CSS変数で2行目のtopを設定
-  // CSS変数で2行目のtopを設定
-  function setHdrTop(){
-    const row1=document.querySelector('#tbl-main thead tr:first-child');
-    if(row1&&row1.offsetHeight>0){
-      const h=row1.offsetHeight;
-      document.getElementById('tbl-main').style.setProperty('--hdr1-h', h+'px');
-    } else {
-      setTimeout(setHdrTop,100);
-    }
-  }
-  setTimeout(setHdrTop,100);
+// 日付セット
+const t=new Date();
+const ds=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+document.getElementById('rdate').value=ds;
+document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+ds;
+// ユーザー情報
+const savedUser=localStorage.getItem('userid')||'';
+const savedName=localStorage.getItem('user_name')||'';
+const savedStoreNameInit=localStorage.getItem('store')||'';
+document.getElementById('user-info').textContent='ログイン中：'+(savedName||savedUser)+' 店舗：'+savedStoreNameInit;
+document.getElementById('st-user').innerHTML='<strong>ユーザー：</strong>'+(savedName||savedUser);
+// ① 商品カテゴリをDBから取得
+const catRes=await fetch(SUPABASE_URL+'/rest/v1/product_categories?is_active=eq.true&order=sort_order',{
+headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+});
+CATS=await catRes.json()||[];
+// dataを初期化
+CATS.forEach(c=>{
+data[c.id]={};
+COLS.forEach(col=>{data[c.id][col.key]={q:'',a:''};});
+});
+// ② テーブルを構築
+buildTable();
+recalc();
+// ③ 店舗一覧を取得
+await loadStores();
+// ④ 既存データを読み込み
+await loadExistingData();
+// イベントリスナー
+document.getElementById('rdate').addEventListener('change',async function(){
+document.getElementById('st-date').innerHTML='<strong>日付：</strong>'+this.value;
+handleClear();
+await loadExistingData();
+});
+document.getElementById('store').addEventListener('change',async function(){
+currentStoreId=parseInt(this.value);
+const txt=this.options[this.selectedIndex].text;
+localStorage.setItem('store',txt);
+localStorage.setItem('store_id',this.value);
+document.getElementById('st-store').innerHTML='<strong>店舗：</strong>'+txt;
+const savedNameChg=localStorage.getItem('user_name')||localStorage.getItem('userid')||'';
+document.getElementById('user-info').textContent='ログイン中：'+savedNameChg+' 店舗：'+txt;
+handleClear();
+await loadExistingData();
+});
+// CSS変数で2行目のtopを設定
+function setHdrTop(){
+const row1=document.querySelector('#tbl-main thead tr:first-child');
+if(row1&&row1.offsetHeight>0){
+const h=row1.offsetHeight;
+document.getElementById('tbl-main').style.setProperty('--hdr1-h', h+'px');
+} else {
+setTimeout(setHdrTop,100);
 }
-
+}
+setTimeout(setHdrTop,100);
+}
 init();
 </script>
 </body>
