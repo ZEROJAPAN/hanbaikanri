@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>店舗マスタ</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
@@ -50,89 +49,102 @@ tr:nth-child(even) td{background:#F8FAFC;}
 </head>
 <body>
 <div class="wrap">
+
 <div class="nav-row">
-  <button type="button" class="nbtn" onclick="location.href='index.html'">メニュー</button>
-  <button type="button" class="nbtn" onclick="location.href='daily.html'">日報入力</button>
-  <button type="button" class="nbtn logout" onclick="handleLogout()">🏠 ログアウト</button>
+<button type="button" class="nbtn" onclick="location.href='index.html'">メニュー</button>
+<button type="button" class="nbtn" onclick="location.href='daily.html'">日報入力</button>
+<button type="button" class="nbtn logout" onclick="handleLogout()">🏠 ログアウト</button>
 </div>
 <div class="nav-row">
-  <button type="button" class="nbtn master" onclick="location.href='dept_master.html'">部門マスタ</button>
-  <button type="button" class="nbtn master" onclick="location.href='area_master.html'">エリア／課マスタ</button>
-  <button type="button" class="nbtn master" onclick="location.href='group_master.html'">グループマスタ</button>
-  <button type="button" class="nbtn master" onclick="location.href='team_master.html'">チームマスタ</button>
-  <button type="button" class="nbtn master active">店舗マスタ</button>
-  <button type="button" class="nbtn master" onclick="location.href='user_master.html'">ユーザーマスタ</button>
-  <button type="button" class="nbtn master" onclick="location.href='rank_master.html'">職制・クラスタマスタ</button>
+<button type="button" class="nbtn master" onclick="location.href='dept_master.html'">部門マスタ</button>
+<button type="button" class="nbtn master" onclick="location.href='area_master.html'">エリア／課マスタ</button>
+<button type="button" class="nbtn master" onclick="location.href='group_master.html'">グループマスタ</button>
+<button type="button" class="nbtn master" onclick="location.href='team_master.html'">チームマスタ</button>
+<button type="button" class="nbtn master active">店舗マスタ</button>
+<button type="button" class="nbtn master" onclick="location.href='user_master.html'">ユーザーマスタ</button>
+<button type="button" class="nbtn master" onclick="location.href='rank_master.html'">職制・クラスタマスタ</button>
 </div>
 
 <div class="main">
-  <div class="page-title">🏪 店舗マスタ</div>
-  <div class="msg" id="msg"></div>
-  <button type="button" class="add-btn" onclick="openModal()">＋ 新規店舗追加</button>
-  <div class="tbl-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>店舗コード</th>
-          <th>店舗名</th>
-          <th>所属チーム</th>
-          <th>所属グループ</th>
-          <th>所属エリア／課</th>
-          <th>電話番号</th>
-          <th>住所</th>
-          <th>表示順</th>
-          <th>状態</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="list">
-        <tr><td colspan="10" style="text-align:center;padding:20px;color:#94A3B8;">読み込み中...</td></tr>
-      </tbody>
-    </table>
-  </div>
+<div class="page-title">🏪 店舗マスタ</div>
+<div class="msg" id="msg"></div>
+
+<button type="button" class="add-btn" onclick="openModal()">＋ 新規店舗追加</button>
+
+<div class="tbl-wrap">
+<table>
+<thead>
+<tr>
+<th>店舗コード</th>
+<th>店舗名</th>
+<th>所属チーム</th>
+<th>所属グループ</th>
+<th>所属エリア／課</th>
+<th>電話番号</th>
+<th>住所</th>
+<th>表示順</th>
+<th>状態</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="list">
+<tr><td colspan="10" style="text-align:center;padding:20px;color:#94A3B8;">読み込み中...</td></tr>
+</tbody>
+</table>
+</div>
 </div>
 
 <div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">店舗追加</div>
-    <input type="hidden" id="edit-id">
-    <div class="form-row">
-      <label>店舗コード<span class="required">*</span></label>
-      <input type="text" id="f-code" placeholder="例：S006" maxlength="20">
-    </div>
-    <div class="form-row">
-      <label>店舗名<span class="required">*</span></label>
-      <input type="text" id="f-name" placeholder="例：横浜店" maxlength="100">
-    </div>
-    <div class="form-row">
-      <label>所属チーム</label>
-      <select id="f-team">
-        <option value="">-- チームを選択（任意） --</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <label>電話番号</label>
-      <input type="text" id="f-tel" placeholder="例：03-1234-5678" maxlength="20">
-    </div>
-    <div class="form-row">
-      <label>住所</label>
-      <input type="text" id="f-address" placeholder="例：東京都新宿区..." maxlength="200">
-    </div>
-    <div class="form-row">
-      <label>表示順</label>
-      <input type="number" id="f-sort" placeholder="例：6" min="0">
-    </div>
-    <div class="modal-btns">
-      <button type="button" class="cancel-btn" onclick="closeModal()">キャンセル</button>
-      <button type="button" class="save-btn" onclick="saveStore()">保存</button>
-    </div>
-  </div>
+<div class="modal">
+<div class="modal-title" id="modal-title">店舗追加</div>
+<input type="hidden" id="edit-id">
+<div class="form-row">
+<label>店舗コード<span class="required">*</span></label>
+<input type="text" id="f-code" placeholder="例：S006" maxlength="20">
+</div>
+<div class="form-row">
+<label>店舗名<span class="required">*</span></label>
+<input type="text" id="f-name" placeholder="例：横浜店" maxlength="100">
+</div>
+<div class="form-row">
+<label>所属チーム</label>
+<select id="f-team">
+<option value="">-- チームを選択（任意） --</option>
+</select>
+</div>
+<div class="form-row">
+<label>電話番号</label>
+<input type="text" id="f-tel" placeholder="例：03-1234-5678" maxlength="20">
+</div>
+<div class="form-row">
+<label>住所</label>
+<input type="text" id="f-address" placeholder="例：東京都新宿区..." maxlength="200">
+</div>
+<div class="form-row">
+<label>表示順</label>
+<input type="number" id="f-sort" placeholder="例：6" min="0">
+</div>
+<div class="modal-btns">
+<button type="button" class="cancel-btn" onclick="closeModal()">キャンセル</button>
+<button type="button" class="save-btn" onclick="saveStore()">保存</button>
+</div>
+</div>
 </div>
 
 <script>
 const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+// 他画面と同じ「fetch直接呼び出し方式」に統一（SDK経由はブラウザ拡張機能に妨害されるため使用しない）
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  if(body){
+    opts.headers['Content-Type']='application/json';
+    opts.headers['Prefer']='return=minimal';
+    opts.body=JSON.stringify(body);
+  }
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
 
 function showMsg(text,type='success'){
   const el=document.getElementById('msg');
@@ -141,10 +153,11 @@ function showMsg(text,type='success'){
 }
 
 async function loadTeams(){
-  const {data}=await sb.from('teams').select('*,groups(name,areas(name))').eq('is_active',true).order('sort_order');
+  const res=await apiFetch('teams?is_active=eq.true&order=sort_order&select=*,groups(name,areas(name))');
+  const data=await res.json()||[];
   const sel=document.getElementById('f-team');
   sel.innerHTML='<option value="">-- チームを選択（任意） --</option>';
-  (data||[]).forEach(t=>{
+  data.forEach(t=>{
     const o=document.createElement('option');
     o.value=t.id;
     o.textContent=`${t.code}：${t.name}（${t.groups?.name||''}）`;
@@ -153,10 +166,11 @@ async function loadTeams(){
 }
 
 async function loadStores(){
-  const {data,error}=await sb.from('stores').select('*,teams(code,name,groups(name,areas(name)))').order('sort_order');
-  if(error){showMsg('読み込みエラー：'+error.message,'error');return;}
+  const res=await apiFetch('stores?order=sort_order&select=*,teams(code,name,groups(name,areas(name)))');
+  if(!res.ok){showMsg('読み込みエラー：'+(await res.text()),'error');return;}
+  const data=await res.json()||[];
   const tbody=document.getElementById('list');
-  if(!data||data.length===0){
+  if(data.length===0){
     tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:#94A3B8;">店舗データがありません</td></tr>';
     return;
   }
@@ -195,8 +209,11 @@ function openModal(){
 }
 
 async function openEdit(id){
-  const {data,error}=await sb.from('stores').select('*').eq('id',id).single();
-  if(error){showMsg('データ取得エラー','error');return;}
+  const res=await apiFetch(`stores?id=eq.${id}&select=*`);
+  if(!res.ok){showMsg('データ取得エラー','error');return;}
+  const rows=await res.json()||[];
+  const data=rows[0];
+  if(!data){showMsg('データ取得エラー','error');return;}
   document.getElementById('modal-title').textContent='店舗編集';
   document.getElementById('edit-id').value=data.id;
   document.getElementById('f-code').value=data.code;
@@ -222,16 +239,17 @@ async function saveStore(){
 
   if(!code||!name){alert('店舗コードと店舗名は必須です。');return;}
 
-  const payload={code,name,team_id,tel,address,sort_order:sort,updated_at:new Date()};
+  const payload={code,name,team_id,tel,address,sort_order:sort,updated_at:new Date().toISOString()};
 
-  let error;
+  let res;
   if(id){
-    ({error}=await sb.from('stores').update(payload).eq('id',id));
+    res=await apiFetch(`stores?id=eq.${id}`,'PATCH',payload);
   } else {
-    ({error}=await sb.from('stores').insert({...payload,is_active:true}));
+    res=await apiFetch('stores','POST',{...payload,is_active:true});
   }
 
-  if(error){showMsg('保存エラー：'+error.message,'error');return;}
+  if(!res.ok){showMsg('保存エラー：'+(await res.text()),'error');return;}
+
   closeModal();
   showMsg(id?'店舗情報を更新しました':'新しい店舗を追加しました');
   loadStores();
@@ -239,8 +257,8 @@ async function saveStore(){
 
 async function toggleActive(id,current){
   if(!confirm(current?'この店舗を無効化しますか？':'この店舗を有効化しますか？'))return;
-  const {error}=await sb.from('stores').update({is_active:!current}).eq('id',id);
-  if(error){showMsg('更新エラー：'+error.message,'error');return;}
+  const res=await apiFetch(`stores?id=eq.${id}`,'PATCH',{is_active:!current});
+  if(!res.ok){showMsg('更新エラー：'+(await res.text()),'error');return;}
   showMsg(current?'店舗を無効化しました':'店舗を有効化しました');
   loadStores();
 }
@@ -254,5 +272,6 @@ document.getElementById('modal').addEventListener('click',function(e){if(e.targe
 loadTeams();
 loadStores();
 </script>
+
 </body>
 </html>
