@@ -39,6 +39,7 @@
   .store-block{margin-bottom:22px;}
   .store-block h3{font-size:14px;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--blue);}
   .muted{color:var(--muted);font-size:12px;}
+  #saveStatus{white-space:pre-wrap;display:inline-block;vertical-align:top;}
   .loading{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px;}
   @keyframes spin{to{transform:rotate(360deg);}}
 </style>
@@ -83,9 +84,13 @@
       <div class="box"><div class="num" id="sumAmount">-</div><div class="cap">買取金額合計（成約・キャンセル除く）</div></div>
     </div>
     <div class="row">
-      <button class="btn" type="button" id="btnSaveAll">この内容をSupabaseに保存</button>
+      <button class="btn" type="button" id="btnSaveAll">この内容を日報（daily_reports）に反映</button>
       <span class="muted" id="saveStatus"></span>
     </div>
+    <p class="muted" style="margin-top:8px;">
+      ※ 買取チャンネル（channel_id=1）として保存します。店売り等、他チャンネルのデータには影響しません。<br>
+      ※ 客数（visitors列）には「成約」件数を入れています。同じ日付・店舗で再実行すると上書きされます（重複しません）。
+    </p>
   </div>
 
   <div id="storeResults"></div>
@@ -148,6 +153,24 @@ const STORE_MAP = {
 
 // カテゴリー（ドロップダウン_3）の表示順
 const CATEGORY_ORDER = ['金','プラチナ','コンビ','ジュエリー','時計','ブランド品','テレカ・金券類','お酒','その他','切手・印紙'];
+
+// 買取チャンネルID（daily_reports.channel_id）
+const CHANNEL_ID_BUY = 1;
+
+// product_categories（Supabase）のキャッシュ： name -> id
+let PRODUCT_CATEGORY_MAP = null;
+
+async function loadProductCategories() {
+  if (PRODUCT_CATEGORY_MAP) return PRODUCT_CATEGORY_MAP;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/product_categories?select=id,name`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+  });
+  const rows = await res.json();
+  const map = {};
+  (rows || []).forEach(r => { map[r.name] = r.id; });
+  PRODUCT_CATEGORY_MAP = map;
+  return map;
+}
 
 // ==========================================================
 // 初期化
@@ -341,39 +364,72 @@ function renderResults(aggregated, recordCount) {
 async function saveAllToSupabase() {
   if (!lastAggregated) return;
   const statusEl = document.getElementById('saveStatus');
+  const btn = document.getElementById('btnSaveAll');
+  btn.disabled = true;
   statusEl.textContent = '保存中...';
 
   try {
-    const rows = lastAggregated.stores
-      .filter(s => s.storeId) // 未登録店舗は除外
-      .map(s => ({
-        store_id: s.storeId,
-        report_date: lastAggregated.date,
-        visitor_count: s.visitors,
-        customer_count: s.customers,
-        purchase_amount: s.amount,
-        category_summary: s.categories, // jsonb想定
-      }));
+    const catMap = await loadProductCategories();
+    const date = lastAggregated.date;
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_reports`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates',
-      },
-      body: JSON.stringify(rows),
-    });
+    const unmatchedCategories = new Set();
+    const unmatchedStores = [];
+    let savedStoreCount = 0;
+    let savedRowCount = 0;
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText);
+    for (const s of lastAggregated.stores) {
+      if (!s.storeId) { unmatchedStores.push(s.storeName); continue; }
+
+      const rows = [];
+      for (const [catName, d] of Object.entries(s.categories)) {
+        const categoryId = catMap[catName];
+        if (!categoryId) { unmatchedCategories.add(catName); continue; }
+        rows.push({
+          report_date: date,
+          store_id: s.storeId,
+          category_id: categoryId,
+          channel_id: CHANNEL_ID_BUY,
+          quantity: d.qty,
+          amount: d.amount,
+          visitors: s.visitors,  // 来店客数＝ステータス確定の全件数（成約以外も含む）
+          customers: s.customers, // 客数＝成約のみの件数（daily.html側にcustomersカラム追加後に反映されます）
+        });
+      }
+
+      if (rows.length === 0) continue;
+
+      // 同一店舗・同日付・買取チャンネルの既存行を削除してから再挿入（重複防止・再実行しても安全）
+      const delUrl = `${SUPABASE_URL}/rest/v1/daily_reports?report_date=eq.${date}&store_id=eq.${s.storeId}&channel_id=eq.${CHANNEL_ID_BUY}`;
+      const delRes = await fetch(delUrl, {
+        method: 'DELETE',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      });
+      if (!delRes.ok) throw new Error(`${s.storeName}: 削除失敗 ` + (await delRes.text()));
+
+      const insRes = await fetch(`${SUPABASE_URL}/rest/v1/daily_reports`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(rows),
+      });
+      if (!insRes.ok) throw new Error(`${s.storeName}: 保存失敗 ` + (await insRes.text()));
+
+      savedStoreCount += 1;
+      savedRowCount += rows.length;
     }
 
-    statusEl.textContent = `✅ ${rows.length}件をSupabaseに保存しました。`;
+    let msg = `✅ ${date}分：${savedStoreCount}店舗・${savedRowCount}行を日報に反映しました。`;
+    if (unmatchedStores.length) msg += `\n⚠ 店舗対応表に未登録のため未保存：${unmatchedStores.join('、')}`;
+    if (unmatchedCategories.size) msg += `\n⚠ product_categoriesに一致しないカテゴリー名：${[...unmatchedCategories].join('、')}`;
+    statusEl.textContent = msg;
   } catch (e) {
     statusEl.textContent = '❌ 保存失敗: ' + e.message;
+  } finally {
+    btn.disabled = false;
   }
 }
 </script>
