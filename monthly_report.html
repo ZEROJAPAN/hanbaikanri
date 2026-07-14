@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>売上月次報告書 - ゼロジャパン</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.back-btn:hover{background:#EEF2FF;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.main{background:#fff;border-radius:8px;padding:16px;}
+.ctrl-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.date-input{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;}
+.date-input:focus{border-color:#1E2761;}
+select.tax-sel{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;}
+.reload-btn{padding:7px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#2D4FBA,#1E2761);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #0F1640;}
+.reload-btn:hover{background:linear-gradient(180deg,#3D6FCA,#2D3E8F);}
+.reload-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #0F1640;}
+.export-btn{padding:7px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #015060;}
+.export-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
+.export-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #015060;}
+.status{font-size:11px;color:#64748B;margin-left:8px;}
+.summary-bar{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;}
+.sum-card{background:#EEF2FF;border:1px solid #C7D2FE;border-radius:6px;padding:8px 14px;font-size:12px;}
+.sum-card-title{color:#475569;font-size:11px;}
+.sum-card-value{font-size:16px;font-weight:bold;color:#1E2761;}
+.tbl-wrap{overflow:auto;max-height:70vh;border:1px solid #E2E8F0;}
+table{border-collapse:collapse;font-size:11px;}
+th,td{border:1px solid #E2E8F0;padding:4px 6px;white-space:nowrap;}
+th{background:#1E2761;color:#fff;position:sticky;top:0;z-index:2;text-align:center;}
+td.rowlabel{position:sticky;left:0;background:#F8FAFC;font-weight:bold;color:#1E2761;z-index:1;text-align:left;}
+td.num{text-align:right;}
+tr.cattotal td{background:#FFF9C4;font-weight:bold;}
+tr.grandtotal td{background:#FFE0B2;font-weight:bold;}
+.muted{color:#64748B;font-size:11px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar">
+<div style="display:flex;align-items:center;gap:12px;">
+<button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+<div class="topbar-title">📈 売上月次報告書（日報データ集計）</div>
+</div>
+<button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
+<div class="main">
+<div class="ctrl-bar">
+<label class="muted">開始日</label>
+<input type="date" class="date-input" id="dateFrom">
+<label class="muted">終了日</label>
+<input type="date" class="date-input" id="dateTo">
+<select class="tax-sel" id="taxMode">
+<option value="incl">税込</option>
+<option value="excl">税抜</option>
+</select>
+<button type="button" class="reload-btn" id="btnLoad">🔄 集計する</button>
+<button type="button" class="export-btn" id="btnExport">📥 Excel出力</button>
+<span class="status" id="status"></span>
+</div>
+
+<div class="summary-bar" id="summaryBar"></div>
+
+<div class="tbl-wrap">
+<table id="reportTable">
+<thead><tr><th style="min-width:220px;">カテゴリー / チャンネル</th></tr></thead>
+<tbody><tr><td style="text-align:center;padding:20px;color:#94A3B8;">期間を指定して「集計する」を押してください</td></tr></tbody>
+</table>
+</div>
+
+<p class="muted" style="margin-top:10px;">
+※ このレポートは日報（daily_reports）データのみの集計です。業者仕入・店舗間移動・地金精練会社への売却など、本社側で計上する項目は含まれていません。<br>
+※ 税抜表示時：テレカ・金券類（非課税）と、チャンネル名に「免税」が付くもの（店売り（免税）・楽天海外（免税）・ebay（免税））は税込のまま据え置き、それ以外は金額を1.1で割って税抜換算しています。
+</p>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+const TAX_RATE=1.1;
+
+async function apiFetch(path){
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+  return await res.json();
+}
+
+function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
+function todayStr(){const d=new Date();return d.toISOString().slice(0,10);}
+function firstOfMonthStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;}
+
+document.getElementById('dateFrom').value=firstOfMonthStr();
+document.getElementById('dateTo').value=todayStr();
+
+let CATS=[], CHANNELS=[], STORES=[];
+let reportRows=[]; // {catName, chName, isTaxExempt, storeAmounts:{storeId:{qty,amount}}, total:{qty,amount}}
+let storeColumns=[]; // 実際に使う店舗リスト（表示順）
+
+async function loadMasters(){
+  [CATS, CHANNELS, STORES]=await Promise.all([
+    apiFetch('product_categories?order=sort_order&select=id,name,sort_order'),
+    apiFetch('channels?order=sort_order&select=id,name,sort_order'),
+    apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name,code'),
+  ]);
+}
+
+function isTaxExemptChannel(chName){
+  return chName.includes('免税');
+}
+function isTaxExemptCategory(catName){
+  return catName.includes('テレカ・金券');
+}
+
+document.getElementById('btnLoad').onclick=loadReport;
+document.getElementById('btnExport').onclick=exportExcel;
+
+async function loadReport(){
+  const from=document.getElementById('dateFrom').value;
+  const to=document.getElementById('dateTo').value;
+  const taxMode=document.getElementById('taxMode').value; // 'incl' or 'excl'
+  const statusEl=document.getElementById('status');
+  if(!from||!to){statusEl.textContent='開始日・終了日を指定してください。';return;}
+
+  statusEl.textContent='集計中...';
+  document.getElementById('btnLoad').disabled=true;
+
+  try{
+    if(CATS.length===0) await loadMasters();
+
+    // daily_reportsを期間指定で全件取得（ページング対応）
+    let all=[];
+    let offset=0;
+    const pageSize=1000;
+    while(true){
+      const res=await fetch(`${SUPABASE_URL}/rest/v1/daily_reports?report_date=gte.${from}&report_date=lte.${to}&select=store_id,category_id,channel_id,quantity,amount&order=id&limit=${pageSize}&offset=${offset}`,{
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+      });
+      const page=await res.json();
+      all=all.concat(page);
+      if(page.length<pageSize)break;
+      offset+=pageSize;
+    }
+
+    // 使われている店舗のみ列に出す（データがある店舗のみ、+ 全店舗も選べるようにSTORES順で固定）
+    storeColumns=STORES;
+
+    const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
+    const chMap={}; CHANNELS.forEach(c=>chMap[c.id]=c.name);
+
+    // key: catId-chId -> { storeId: {qty, amount} }
+    const grouped={};
+    for(const row of all){
+      const key=row.category_id+'-'+row.channel_id;
+      if(!grouped[key])grouped[key]={catId:row.category_id, chId:row.channel_id, stores:{}};
+      const g=grouped[key];
+      if(!g.stores[row.store_id])g.stores[row.store_id]={qty:0, amount:0};
+      g.stores[row.store_id].qty+=row.quantity||0;
+      g.stores[row.store_id].amount+=row.amount||0;
+    }
+
+    reportRows=Object.values(grouped).map(g=>{
+      const catName=catMap[g.catId]||'(不明カテゴリー)';
+      const chName=chMap[g.chId]||'(不明チャンネル)';
+      const exempt=isTaxExemptCategory(catName)||isTaxExemptChannel(chName);
+      return {catId:g.catId, chId:g.chId, catName, chName, exempt, stores:g.stores};
+    }).filter(r=>r.catName && r.chName);
+
+    // カテゴリー順・チャンネル順に並び替え
+    const catOrder={}; CATS.forEach((c,i)=>catOrder[c.id]=i);
+    const chOrder={}; CHANNELS.forEach((c,i)=>chOrder[c.id]=i);
+    reportRows.sort((a,b)=>(catOrder[a.catId]-catOrder[b.catId])||(chOrder[a.chId]-chOrder[b.chId]));
+
+    renderTable(taxMode);
+    statusEl.textContent=`✅ ${from} 〜 ${to} を集計しました（${all.length.toLocaleString()}行のdaily_reportsを読込）`;
+  }catch(e){
+    statusEl.textContent='❌ エラー: '+e.message;
+  }finally{
+    document.getElementById('btnLoad').disabled=false;
+  }
+}
+
+function taxAdjust(amount, exempt, taxMode){
+  if(taxMode==='incl'||exempt)return amount;
+  return amount/TAX_RATE;
+}
+
+function renderTable(taxMode){
+  const table=document.getElementById('reportTable');
+  let headHtml='<tr><th style="min-width:220px;">カテゴリー / チャンネル</th>';
+  storeColumns.forEach(s=>{headHtml+=`<th colspan="2">${s.name}</th>`;});
+  headHtml+='<th colspan="2" style="background:#028090;">合計</th></tr>';
+  headHtml+='<tr><th style="min-width:220px;"></th>';
+  storeColumns.forEach(()=>{headHtml+='<th>点数</th><th>金額</th>';});
+  headHtml+='<th>点数</th><th>金額</th></tr>';
+  table.querySelector('thead').innerHTML=headHtml;
+
+  let bodyHtml='';
+  let grandTotalQty=0, grandTotalAmount=0;
+  let currentCat=null;
+  let catSubtotalQty={}, catSubtotalAmount={};
+
+  function flushCategoryTotal(catName){
+    if(currentCat===null)return;
+    let rowQty=0, rowAmount=0;
+    bodyHtml+=`<tr class="cattotal"><td class="rowlabel">${currentCat} 合計</td>`;
+    storeColumns.forEach(s=>{
+      const q=catSubtotalQty[s.id]||0;
+      const a=catSubtotalAmount[s.id]||0;
+      rowQty+=q; rowAmount+=a;
+      bodyHtml+=`<td class="num">${fmt(q)}</td><td class="num">${fmt(a)}</td>`;
+    });
+    bodyHtml+=`<td class="num">${fmt(rowQty)}</td><td class="num">${fmt(rowAmount)}</td></tr>`;
+  }
+
+  for(const r of reportRows){
+    if(currentCat!==r.catName){
+      flushCategoryTotal();
+      currentCat=r.catName;
+      catSubtotalQty={}; catSubtotalAmount={};
+    }
+    let rowQty=0, rowAmount=0;
+    bodyHtml+=`<tr><td class="rowlabel">${r.catName} ${r.chName}</td>`;
+    storeColumns.forEach(s=>{
+      const d=r.stores[s.id]||{qty:0,amount:0};
+      const adjAmount=taxAdjust(d.amount, r.exempt, taxMode);
+      rowQty+=d.qty; rowAmount+=adjAmount;
+      catSubtotalQty[s.id]=(catSubtotalQty[s.id]||0)+d.qty;
+      catSubtotalAmount[s.id]=(catSubtotalAmount[s.id]||0)+adjAmount;
+      bodyHtml+=`<td class="num">${fmt(d.qty)}</td><td class="num">${fmt(adjAmount)}</td>`;
+    });
+    bodyHtml+=`<td class="num">${fmt(rowQty)}</td><td class="num">${fmt(rowAmount)}</td></tr>`;
+    grandTotalQty+=rowQty; grandTotalAmount+=rowAmount;
+  }
+  flushCategoryTotal();
+
+  bodyHtml+=`<tr class="grandtotal"><td class="rowlabel">総合計</td>`;
+  const grandByStoreQty={}, grandByStoreAmount={};
+  for(const r of reportRows){
+    storeColumns.forEach(s=>{
+      const d=r.stores[s.id]||{qty:0,amount:0};
+      const adjAmount=taxAdjust(d.amount, r.exempt, taxMode);
+      grandByStoreQty[s.id]=(grandByStoreQty[s.id]||0)+d.qty;
+      grandByStoreAmount[s.id]=(grandByStoreAmount[s.id]||0)+adjAmount;
+    });
+  }
+  storeColumns.forEach(s=>{
+    bodyHtml+=`<td class="num">${fmt(grandByStoreQty[s.id]||0)}</td><td class="num">${fmt(grandByStoreAmount[s.id]||0)}</td>`;
+  });
+  bodyHtml+=`<td class="num">${fmt(grandTotalQty)}</td><td class="num">${fmt(grandTotalAmount)}</td></tr>`;
+
+  table.querySelector('tbody').innerHTML=bodyHtml || '<tr><td style="text-align:center;padding:20px;color:#94A3B8;">この期間のデータはありません</td></tr>';
+
+  document.getElementById('summaryBar').innerHTML=`
+    <div class="sum-card"><div class="sum-card-title">対象カテゴリー×チャンネル行数</div><div class="sum-card-value">${reportRows.length}</div></div>
+    <div class="sum-card"><div class="sum-card-title">総点数</div><div class="sum-card-value">${fmt(grandTotalQty)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">総売上金額（${taxMode==='incl'?'税込':'税抜'}）</div><div class="sum-card-value">¥${fmt(grandTotalAmount)}</div></div>
+  `;
+}
+
+async function exportExcel(){
+  if(reportRows.length===0){alert('先に集計してください。');return;}
+  const from=document.getElementById('dateFrom').value;
+  const to=document.getElementById('dateTo').value;
+  const taxMode=document.getElementById('taxMode').value;
+
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('月報');
+
+  const thin={style:'thin',color:{argb:'FF000000'}};
+  const border={top:thin,bottom:thin,left:thin,right:thin};
+
+  const title=`売上月次報告書（${taxMode==='incl'?'税込':'税抜'}） ${from}〜${to}`;
+  ws.addRow([title]);
+  ws.getRow(1).font={bold:true,size:13};
+
+  const hdr1=['カテゴリー/チャンネル'];
+  storeColumns.forEach(s=>{hdr1.push(s.name,'');});
+  hdr1.push('合計','');
+  const hdr1row=ws.addRow(hdr1);
+
+  const hdr2=[''];
+  storeColumns.forEach(()=>{hdr2.push('点数','金額');});
+  hdr2.push('点数','金額');
+  const hdr2row=ws.addRow(hdr2);
+
+  [hdr1row, hdr2row].forEach(row=>{
+    row.eachCell(cell=>{
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
+      cell.font={color:{argb:'FFFFFFFF'},bold:true,size:10};
+      cell.alignment={horizontal:'center',vertical:'middle'};
+      cell.border=border;
+    });
+  });
+
+  // マージ（店舗名セル）
+  let col=2;
+  storeColumns.forEach(()=>{ws.mergeCells(2,col,2,col+1);col+=2;});
+  ws.mergeCells(2,col,2,col+1);
+
+  let currentCat=null;
+  let catSubtotalQty={}, catSubtotalAmount={};
+
+  function flushCategoryTotalExcel(catName){
+    if(currentCat===null)return;
+    const rowData=[currentCat+' 合計'];
+    let rowQty=0, rowAmount=0;
+    storeColumns.forEach(s=>{
+      const q=catSubtotalQty[s.id]||0, a=catSubtotalAmount[s.id]||0;
+      rowQty+=q; rowAmount+=a;
+      rowData.push(q, Math.round(a));
+    });
+    rowData.push(rowQty, Math.round(rowAmount));
+    const r=ws.addRow(rowData);
+    r.eachCell(cell=>{
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF9C4'}};
+      cell.font={bold:true,size:10};
+      cell.border=border;
+      if(typeof cell.value==='number')cell.numFmt='#,##0';
+    });
+  }
+
+  let grandTotalQty=0, grandTotalAmount=0;
+  const grandByStoreQty={}, grandByStoreAmount={};
+
+  for(const r of reportRows){
+    if(currentCat!==r.catName){
+      flushCategoryTotalExcel();
+      currentCat=r.catName;
+      catSubtotalQty={}; catSubtotalAmount={};
+    }
+    const rowData=[r.catName+' '+r.chName];
+    let rowQty=0, rowAmount=0;
+    storeColumns.forEach(s=>{
+      const d=r.stores[s.id]||{qty:0,amount:0};
+      const adjAmount=taxAdjust(d.amount, r.exempt, taxMode);
+      rowQty+=d.qty; rowAmount+=adjAmount;
+      catSubtotalQty[s.id]=(catSubtotalQty[s.id]||0)+d.qty;
+      catSubtotalAmount[s.id]=(catSubtotalAmount[s.id]||0)+adjAmount;
+      grandByStoreQty[s.id]=(grandByStoreQty[s.id]||0)+d.qty;
+      grandByStoreAmount[s.id]=(grandByStoreAmount[s.id]||0)+adjAmount;
+      rowData.push(d.qty, Math.round(adjAmount));
+    });
+    rowData.push(rowQty, Math.round(rowAmount));
+    grandTotalQty+=rowQty; grandTotalAmount+=rowAmount;
+    const dataRow=ws.addRow(rowData);
+    dataRow.eachCell(cell=>{
+      cell.border=border;
+      cell.font={size:9};
+      if(typeof cell.value==='number')cell.numFmt='#,##0';
+    });
+  }
+  flushCategoryTotalExcel();
+
+  const grandRowData=['総合計'];
+  storeColumns.forEach(s=>{grandRowData.push(grandByStoreQty[s.id]||0, Math.round(grandByStoreAmount[s.id]||0));});
+  grandRowData.push(grandTotalQty, Math.round(grandTotalAmount));
+  const grandRow=ws.addRow(grandRowData);
+  grandRow.eachCell(cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE0B2'}};
+    cell.font={bold:true,size:10};
+    cell.border=border;
+    if(typeof cell.value==='number')cell.numFmt='#,##0';
+  });
+
+  ws.getColumn(1).width=28;
+  for(let c=2;c<=storeColumns.length*2+3;c++)ws.getColumn(c).width=12;
+
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`売上月次報告書_${taxMode==='incl'?'税込':'税抜'}_${from}_${to}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+</script>
+</body>
+</html>
