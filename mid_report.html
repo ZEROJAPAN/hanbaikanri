@@ -104,6 +104,25 @@ function firstOfMonthStr(){const d=new Date();return `${d.getFullYear()}-${Strin
 document.getElementById('dateFrom').value=firstOfMonthStr();
 document.getElementById('dateTo').value=todayStr();
 
+// ===== EC売上セクション（列A順を完全固定） =====
+const EC_SECTIONS=[
+{cat:'4.ジュエリー', channels:['店売り','本店','楽天国内','YahooShop','ヤフオク','Wowma!','メルカリ','ebay(免税)','Amazon','サブスク','ラクマ','Qoo10','GLOBAZONE']},
+{cat:'5.時計', channels:['店売り','店売り(免税)','本店','楽天国内','YahooShop','ヤフオク','Wowma!','メルカリ','ebay(免税)','ラクマ','GLOBAZONE']},
+{cat:'6.ブランド品', channels:['店売り','店売り(免税)','本店','楽天国内','YahooShop','ヤフオク','Wowma!','メルカリ','ebay(免税)','LuxUness','ラクマ','Qoo10','GLOBAZONE']},
+{cat:'7.テレカ・金券類（非課税）', channels:['ヤフオク']},
+{cat:'8.お酒', channels:['ヤフオク']},
+{cat:'9.その他', channels:['楽天国内','ヤフオク','Qoo10','その他販売']},
+{cat:'サービス券値引き', channels:['店売り']},
+{cat:'返品 ジュエリー', channels:['楽天国内','YahooShop','Amazon']},
+{cat:'返品 時計', channels:['GLOBAZONE']},
+{cat:'返品 ブランド', channels:['楽天国内','ヤフオク','ebay(免税)','GLOBAZONE']},
+];
+const CHANNEL_LABEL_MAP={
+'店売り':'店売り','店売り(免税)':'店売り（免税）','本店':'本店','楽天国内':'楽天国内','YahooShop':'YahooShop',
+'ヤフオク':'ヤフオク','Wowma!':'Wowma!','メルカリ':'メルカリ','ebay(免税)':'ebay（免税）','Amazon':'Amazon',
+'サブスク':'サブスク','ラクマ':'ラクマ','Qoo10':'Qoo10','GLOBAZONE':'GLOBAZONE','LuxUness':'LuxUness','その他販売':'その他販売',
+};
+
 const ZERO_ROWS_A=['テレカ50度（非課税）','テレカ105度（非課税）','その他金券（非課税）','ニチマテ','松田産業','相田化学工業','松田産業精練','切手・印紙','質受取利息',
 '業者販売×金貨×蔵王','業者販売×市場×上田会×ダイヤ','業者販売×市場×ＮＪオークション×ダイヤ','業者販売×市場×アプレ×ジュエリー','業者販売×市場×名古屋レスオク×ジュエリー',
 '業者販売×市場×銀座ＪＢＡ×ジュエリー','業者販売×グランチャ×ジュエリー','業者販売×市場×ライブネットＪＢＡ×ジュエリー','業者販売×市場×エコリング×ジュエリー',
@@ -184,6 +203,18 @@ async function loadMasters(){
 
   cols.push({type:'grand_total',name:'総合計',storeIds:[...new Set(allStoreIds)]});
   ORG_COLUMNS=cols;
+
+  // 階層が実際に機能しているかの簡易診断
+  const hierarchyDiag={
+    departments: departments.length,
+    areas: areas.length,
+    groups: groups.length,
+    teams: teams.length,
+    storesWithTeam: stores.filter(s=>s.team_id).length,
+    storesTotal: stores.length,
+    subtotalColumns: cols.filter(c=>c.type!=='store'&&c.type!=='grand_total').length,
+  };
+  window.__hierarchyDiag=hierarchyDiag;
 }
 
 function isTaxExemptChannel(chName){return chName.includes('免税');}
@@ -213,7 +244,7 @@ async function loadReport(){
     const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
     const chMap={}; CHANNELS.forEach(c=>chMap[c.id]=c.name);
 
-    const ecGrouped={};
+    const ecGrouped={}; // "catName|chName" -> {storeId:{qty,amount}}
     const buyByCatStore={};
     const cancelAmountByStore={};
 
@@ -226,23 +257,16 @@ async function loadReport(){
       } else if(row.channel_id===CANCEL_CHID){
         cancelAmountByStore[row.store_id]=(cancelAmountByStore[row.store_id]||0)+(row.amount||0);
       } else {
-        const key=row.category_id+'-'+row.channel_id;
-        if(!ecGrouped[key])ecGrouped[key]={catId:row.category_id,chId:row.channel_id,stores:{}};
+        const catName=catMap[row.category_id]; const chName=chMap[row.channel_id];
+        if(!catName||!chName)continue;
+        const key=catName+'|'+chName;
+        if(!ecGrouped[key])ecGrouped[key]={catName,chName,exempt:isTaxExemptCategory(catName)||isTaxExemptChannel(chName),stores:{}};
         const g=ecGrouped[key];
         if(!g.stores[row.store_id])g.stores[row.store_id]={qty:0,amount:0};
         g.stores[row.store_id].qty+=row.quantity||0;
         g.stores[row.store_id].amount+=row.amount||0;
       }
     }
-
-    let ecRows=Object.values(ecGrouped).map(g=>{
-      const catName=catMap[g.catId]||'(不明カテゴリー)';
-      const chName=chMap[g.chId]||'(不明チャンネル)';
-      return {catId:g.catId, chId:g.chId, catName, chName, exempt:isTaxExemptCategory(catName)||isTaxExemptChannel(chName), stores:g.stores};
-    });
-    const catOrder={}; CATS.forEach((c,i)=>catOrder[c.id]=i);
-    const chOrder={}; CHANNELS.forEach((c,i)=>chOrder[c.id]=i);
-    ecRows.sort((a,b)=>(catOrder[a.catId]-catOrder[b.catId])||(chOrder[a.chId]-chOrder[b.chId]));
 
     const seenStoreDate=new Set();
     const firstVisitByStore={}, repeatVisitByStore={}, noPurchaseByStore={}, cancelCountByStore={};
@@ -261,10 +285,18 @@ async function loadReport(){
       visitorsByReasonStore[row.visit_reason_id][row.store_id]=(visitorsByReasonStore[row.visit_reason_id][row.store_id]||0)+(row.visitors||0);
     }
 
-    lastReportData={taxMode, ecRows, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, from, to};
+    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, from, to};
 
     renderTable();
-    statusEl.textContent=`✅ ${from}〜${to}：daily_reports ${dailyRows.length.toLocaleString()}行 / purchase_details ${purchaseRows.length.toLocaleString()}行 を集計しました`;
+    let msg=`✅ ${from}〜${to}：daily_reports ${dailyRows.length.toLocaleString()}行 / purchase_details ${purchaseRows.length.toLocaleString()}行 を集計しました`;
+    const hd=window.__hierarchyDiag;
+    if(hd){
+      msg+=`\n📊 組織階層：部門${hd.departments}件・エリア${hd.areas}件・グループ${hd.groups}件・チーム${hd.teams}件／店舗${hd.storesWithTeam}/${hd.storesTotal}件がチームに所属／小計列${hd.subtotalColumns}個`;
+      if(hd.subtotalColumns===0){
+        msg+=`\n⚠ 小計列が0個です。store_master.htmlで店舗にチームを割り当て、team_master.html等でチーム→グループ→エリア→部門の階層を登録してください。`;
+      }
+    }
+    statusEl.textContent=msg;
   }catch(e){
     statusEl.textContent='❌ エラー: '+e.message;
   }finally{
@@ -322,33 +354,30 @@ function renderTable(){
     return html;
   }
 
-  let currentCat=null;
-  let catAcc={};
   const ecTotalByStore={};
 
-  function flushCatTotal(){
-    if(currentCat===null)return;
-    bodyHtml+=ecCellRow(currentCat+' 合計', col=>sumForCols(catAcc, col), 'cattotal');
-  }
-
-  for(const r of d.ecRows){
-    if(currentCat!==r.catName){
-      flushCatTotal();
-      currentCat=r.catName;
-      catAcc={};
-    }
-    const rowData={};
-    Object.entries(r.stores).forEach(([sid,v])=>{
-      const adjAmount=taxAdjust(v.amount, r.exempt, taxMode);
-      rowData[sid]={qty:v.qty, amount:adjAmount};
-      if(!catAcc[sid])catAcc[sid]={qty:0,amount:0};
-      catAcc[sid].qty+=v.qty; catAcc[sid].amount+=adjAmount;
-      if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
-      ecTotalByStore[sid].qty+=v.qty; ecTotalByStore[sid].amount+=adjAmount;
+  EC_SECTIONS.forEach(section=>{
+    const catAcc={};
+    const exemptCat=isTaxExemptCategory(section.cat);
+    section.channels.forEach(chLabel=>{
+      const chName=CHANNEL_LABEL_MAP[chLabel]||chLabel;
+      const key=section.cat+'|'+chName;
+      const g=d.ecGrouped[key];
+      const storesRaw=g?g.stores:{};
+      const exempt=exemptCat||isTaxExemptChannel(chName);
+      const rowData={};
+      Object.entries(storesRaw).forEach(([sid,v])=>{
+        const adjAmount=taxAdjust(v.amount, exempt, taxMode);
+        rowData[sid]={qty:v.qty, amount:adjAmount};
+        if(!catAcc[sid])catAcc[sid]={qty:0,amount:0};
+        catAcc[sid].qty+=v.qty; catAcc[sid].amount+=adjAmount;
+        if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
+        ecTotalByStore[sid].qty+=v.qty; ecTotalByStore[sid].amount+=adjAmount;
+      });
+      bodyHtml+=ecCellRow(section.cat+' '+chLabel, col=>sumForCols(rowData, col));
     });
-    bodyHtml+=ecCellRow(r.catName+' '+r.chName, col=>sumForCols(rowData, col));
-  }
-  flushCatTotal();
+    bodyHtml+=ecCellRow(section.cat+' 合計', col=>sumForCols(catAcc, col), 'cattotal');
+  });
 
   ZERO_ROWS_A.forEach(label=>{bodyHtml+=zeroRow(label);});
 
