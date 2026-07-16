@@ -29,11 +29,27 @@ table{border-collapse:collapse;font-size:10.5px;}
 th,td{border:1px solid #E2E8F0;padding:3px 5px;white-space:nowrap;}
 th{background:#1E2761;color:#fff;position:sticky;top:0;z-index:3;text-align:center;}
 th.total-col{background:#028090;}
+th.col-team{background:#1E88E5;}
+th.col-group{background:#43A047;}
+th.col-area{background:#FB8C00;}
+th.col-dept{background:#8E24AA;}
+th.col-grand{background:#C62828;}
 td.rowlabel{position:sticky;left:0;background:#F8FAFC;font-weight:bold;color:#1E2761;z-index:1;text-align:left;min-width:260px;}
 td.num{text-align:right;}
 td.total-col{background:#EAF7F5;}
+td.col-team{background:#E3F2FD;}
+td.col-group{background:#E8F5E9;}
+td.col-area{background:#FFF3E0;}
+td.col-dept{background:#F3E5F5;}
+td.col-grand{background:#FFEBEE;font-weight:bold;}
 tr.cattotal td{background:#FFF9C4;font-weight:bold;}
+tr.cattotal td.col-team,tr.cattotal td.col-group{background:#FFF3B0;}
+tr.cattotal td.col-area,tr.cattotal td.col-dept{background:#FFEE9E;}
+tr.cattotal td.col-grand{background:#FFE082;}
 tr.sectiontotal td{background:#FFE0B2;font-weight:bold;}
+tr.sectiontotal td.col-team,tr.sectiontotal td.col-group{background:#FFD599;}
+tr.sectiontotal td.col-area,tr.sectiontotal td.col-dept{background:#FFC77D;}
+tr.sectiontotal td.col-grand{background:#FFB74D;}
 tr.zero-row td.rowlabel{color:#94A3B8;}
 .muted{color:#64748B;font-size:11px;}
 </style>
@@ -304,6 +320,15 @@ async function loadReport(){
   }
 }
 
+function colClass(col){
+  if(col.type==='team_total')return 'col-team';
+  if(col.type==='group_total')return 'col-group';
+  if(col.type==='area_total')return 'col-area';
+  if(col.type==='dept_total')return 'col-dept';
+  if(col.type==='grand_total')return 'col-grand';
+  return '';
+}
+
 function sumForCols(dataByStore, col){
   let qty=0, amount=0;
   col.storeIds.forEach(id=>{const d=dataByStore[id];if(d){qty+=d.qty||0;amount+=d.amount||0;}});
@@ -321,7 +346,7 @@ function renderTable(){
   const table=document.getElementById('reportTable');
 
   let headHtml='<tr><th style="min-width:260px;">カテゴリー / チャンネル</th>';
-  ORG_COLUMNS.forEach(c=>{headHtml+=`<th colspan="2" class="${c.type!=='store'?'total-col':''}">${c.name}</th>`;});
+  ORG_COLUMNS.forEach(c=>{headHtml+=`<th colspan="2" class="${c.type!=='store'?'total-col '+colClass(c):''}">${c.name}</th>`;});
   headHtml+='</tr><tr><th></th>';
   ORG_COLUMNS.forEach(()=>{headHtml+='<th>点数</th><th>金額</th>';});
   headHtml+='</tr>';
@@ -333,7 +358,7 @@ function renderTable(){
     let html=`<tr class="${extraClass}"><td class="rowlabel">${label}</td>`;
     ORG_COLUMNS.forEach(col=>{
       const {qty,amount}=dataByStoreFn(col);
-      html+=`<td class="num ${col.type!=='store'?'total-col':''}">${fmt(qty)}</td><td class="num ${col.type!=='store'?'total-col':''}">${fmt(amount)}</td>`;
+      html+=`<td class="num ${col.type!=='store'?'total-col '+colClass(col):''}">${fmt(qty)}</td><td class="num ${col.type!=='store'?'total-col '+colClass(col):''}">${fmt(amount)}</td>`;
     });
     html+='</tr>';
     return html;
@@ -342,14 +367,14 @@ function renderTable(){
     let html=`<tr class="${extraClass}"><td class="rowlabel">${label}</td>`;
     ORG_COLUMNS.forEach(col=>{
       const v=sumSimpleForCols(dataByStore, col);
-      html+=`<td class="num ${col.type!=='store'?'total-col':''}" colspan="2">${fmt(v)}</td>`;
+      html+=`<td class="num ${col.type!=='store'?'total-col '+colClass(col):''}" colspan="2">${fmt(v)}</td>`;
     });
     html+='</tr>';
     return html;
   }
   function zeroRow(label){
     let html=`<tr class="zero-row"><td class="rowlabel">${label}</td>`;
-    ORG_COLUMNS.forEach(()=>{html+=`<td class="num total-col" colspan="2">0</td>`;});
+    ORG_COLUMNS.forEach(c=>{html+=`<td class="num total-col ${colClass(c)}" colspan="2">0</td>`;});
     html+='</tr>';
     return html;
   }
