@@ -28,6 +28,7 @@ select.tax-sel{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;fon
 table{border-collapse:collapse;font-size:10.5px;}
 th,td{border:1px solid #E2E8F0;padding:3px 5px;white-space:nowrap;}
 th{background:#1E2761;color:#fff;position:sticky;top:0;z-index:3;text-align:center;}
+th.hdr-row2{top:var(--hdr1-h, 24px);z-index:2;}
 th.total-col{background:#028090;}
 th.col-team{background:#1E88E5;}
 th.col-group{background:#43A047;}
@@ -347,10 +348,16 @@ function renderTable(){
 
   let headHtml='<tr><th style="min-width:260px;">カテゴリー / チャンネル</th>';
   ORG_COLUMNS.forEach(c=>{headHtml+=`<th colspan="2" class="${c.type!=='store'?'total-col '+colClass(c):''}">${c.name}</th>`;});
-  headHtml+='</tr><tr><th></th>';
-  ORG_COLUMNS.forEach(()=>{headHtml+='<th>点数</th><th>金額</th>';});
+  headHtml+='</tr><tr><th class="hdr-row2"></th>';
+  ORG_COLUMNS.forEach(()=>{headHtml+='<th class="hdr-row2">点数</th><th class="hdr-row2">金額</th>';});
   headHtml+='</tr>';
   table.querySelector('thead').innerHTML=headHtml;
+
+  // 2段ヘッダーが重ならないよう、1段目の実測高さを CSS変数に反映
+  requestAnimationFrame(()=>{
+    const row1=table.querySelector('thead tr:first-child');
+    if(row1){table.style.setProperty('--hdr1-h', row1.offsetHeight+'px');}
+  });
 
   let bodyHtml='';
 
@@ -469,6 +476,13 @@ function renderTable(){
   `;
 }
 
+function rgbToArgb(rgbStr){
+  const m=rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if(!m)return null;
+  const hex=n=>Number(n).toString(16).padStart(2,'0').toUpperCase();
+  return 'FF'+hex(m[1])+hex(m[2])+hex(m[3]);
+}
+
 async function exportExcel(){
   if(!lastReportData){alert('先に集計してください。');return;}
   const wb=new ExcelJS.Workbook();
@@ -481,19 +495,37 @@ async function exportExcel(){
   rows.forEach((tr,ri)=>{
     const cells=tr.querySelectorAll('th,td');
     const rowData=[];
+    const cellMeta=[]; // {colspanStart, colspan, argb, isHeader}
+    let colIdx=1;
     cells.forEach(cell=>{
       const colspan=parseInt(cell.getAttribute('colspan')||'1');
       const text=cell.textContent.trim();
       const num=Number(text.replace(/[,%]/g,''));
-      rowData.push(!isNaN(num)&&text!==''&&cell.tagName==='TD'?num:text);
-      for(let i=1;i<colspan;i++)rowData.push('');
+      const isNumericCell=!isNaN(num)&&text!==''&&cell.tagName==='TD';
+      rowData.push(isNumericCell?num:text);
+      const bg=getComputedStyle(cell).backgroundColor;
+      const argb=rgbToArgb(bg);
+      cellMeta.push({col:colIdx, colspan, argb, isHeader:cell.tagName==='TH'});
+      for(let i=1;i<colspan;i++){rowData.push('');}
+      colIdx+=colspan;
     });
     const row=ws.addRow(rowData);
-    row.eachCell(cell=>{
+    row.eachCell((cell,colNumber)=>{
       cell.border=border;
-      cell.font={size:9,bold:ri<2};
-      if(ri<2){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};}
+      cell.font={size:9};
       if(typeof cell.value==='number')cell.numFmt='#,##0';
+    });
+    // 背景色とヘッダーの文字色・結合を適用
+    cellMeta.forEach(meta=>{
+      const cell=row.getCell(meta.col);
+      if(meta.argb)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:meta.argb}};
+      if(meta.isHeader){
+        cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};
+        cell.alignment={horizontal:'center',vertical:'middle'};
+      }
+      if(meta.colspan>1){
+        ws.mergeCells(ri+1, meta.col, ri+1, meta.col+meta.colspan-1);
+      }
     });
   });
   ws.getColumn(1).width=32;
