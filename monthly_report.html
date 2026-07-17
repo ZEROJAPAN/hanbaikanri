@@ -477,8 +477,10 @@ function renderTable(){
 }
 
 function rgbToArgb(rgbStr){
-  const m=rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  const m=rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
   if(!m)return null;
+  const alpha=m[4]!==undefined?parseFloat(m[4]):1;
+  if(alpha===0)return null; // 透明は塗りつぶさない
   const hex=n=>Number(n).toString(16).padStart(2,'0').toUpperCase();
   return 'FF'+hex(m[1])+hex(m[2])+hex(m[3]);
 }
