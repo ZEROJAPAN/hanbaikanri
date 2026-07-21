@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地金換金 レート入力 - ゼロジャパン</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.main{background:#fff;border-radius:8px;padding:16px;}
+.card{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:14px 18px;margin-bottom:16px;}
+.card h3{font-size:13px;color:#1E2761;margin-bottom:10px;}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;color:#475569;font-weight:bold;}
+.field input{padding:7px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:13px;width:140px;text-align:right;outline:none;}
+.field input:focus{border-color:#1E2761;}
+.date-input{padding:7px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:13px;outline:none;}
+.save-btn{padding:9px 24px;font-size:13px;font-weight:bold;background:linear-gradient(180deg,#2D4FBA,#1E2761);color:#fff;border:none;border-radius:6px;cursor:pointer;box-shadow:0 3px 0 #0F1640;}
+.save-btn:hover{background:linear-gradient(180deg,#3D6FCA,#2D3E8F);}
+.load-btn{padding:9px 20px;font-size:13px;font-weight:bold;background:#fff;color:#1E2761;border:1.5px solid #1E2761;border-radius:6px;cursor:pointer;}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+th,td{border:1px solid #E2E8F0;padding:6px 8px;}
+th{background:#1E2761;color:#fff;text-align:center;}
+td.name{font-weight:bold;color:#1E2761;}
+td.num{text-align:right;}
+td.manual input{width:100px;text-align:right;border:1.5px solid #F59E0B;border-radius:4px;padding:4px 6px;background:#FFFBEB;outline:none;}
+tr.section-hdr td{background:#EEF2FF;font-weight:bold;color:#1E2761;}
+.status{font-size:11px;color:#64748B;margin-left:8px;white-space:pre-wrap;}
+.muted{color:#64748B;font-size:11px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar">
+<div style="display:flex;align-items:center;gap:12px;">
+<button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+<div class="topbar-title">💹 地金換金 レート入力</div>
+</div>
+<button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
+<div class="main">
+
+<div class="card">
+<h3>対象日・基準相場</h3>
+<div class="row">
+<div class="field"><label>日付</label><input type="date" class="date-input" id="recordDate"></div>
+<div class="field"><label>Ｋ24（円/g）</label><input type="number" id="rateK24" step="1"></div>
+<div class="field"><label>PT1000（円/g）</label><input type="number" id="ratePT1000" step="1"></div>
+<div class="field"><label>PD1000（円/g）</label><input type="number" id="ratePD1000" step="1"></div>
+<div class="field"><label>SV（円/g）</label><input type="number" id="rateSV" step="1"></div>
+<div class="field"><label>店舗計上割合</label><input type="number" id="markup" step="0.01" value="1.06"></div>
+<button type="button" class="load-btn" id="btnLoadDate">この日の登録済みレートを読込</button>
+<button type="button" class="save-btn" id="btnCalc">計算する</button>
+</div>
+<p class="muted" style="margin-top:8px;">Ｋ24・PT1000・PD1000・SVの4つの相場と店舗計上割合を入力すると、以下の全金種の当日レートが自動計算されます。「その他金種①〜④」「PT850未満」「合金」は自動計算できないため直接入力してください。</p>
+</div>
+
+<div class="card">
+<h3>金種別 当日レート</h3>
+<div class="row" style="margin-bottom:10px;">
+<button type="button" class="save-btn" id="btnSaveRates">この内容を保存</button>
+<span class="status" id="status"></span>
+</div>
+<table id="rateTable">
+<thead><tr><th style="text-align:left;">金種</th><th>業者地金売却金額（相場ベース）</th><th>当日レート</th></tr></thead>
+<tbody id="rateBody"></tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+document.getElementById('recordDate').value=todayStr();
+
+// ===== 金種定義（Excel「地金換金 レート計算表」の計算式を再現） =====
+// type: 'gold'（K24ベース）/ 'gold_pd'（K24ベース＋PD補正、PT900・PT850用）/ 'combi'（H経由せず直接計算・マークアップなし）/ 'silver'（SVベース）/ 'manual'（手入力）
+const METAL_DEFS=[
+  {section:'金', name:'Kインゴット', ratio:1,     type:'gold'},
+  {section:'金', name:'K24',        ratio:0.992, type:'gold'},
+  {section:'金', name:'K22',        ratio:0.909, type:'gold'},
+  {section:'金', name:'K21.6',      ratio:0.892, type:'gold'},
+  {section:'金', name:'K20',        ratio:0.83,  type:'gold'},
+  {section:'金', name:'K18',        ratio:0.75,  type:'gold'},
+  {section:'金', name:'K14',        ratio:0.577, type:'gold'},
+  {section:'金', name:'K10',        ratio:0.407, type:'gold'},
+  {section:'金', name:'K9',         ratio:0.367, type:'gold'},
+  {section:'金', name:'K18WG',      ratio:0.75,  type:'gold'},
+  {section:'金', name:'K14WG',      ratio:0.577, type:'gold'},
+  {section:'金', name:'K10WG',      ratio:0.407, type:'gold'},
+  {section:'金', name:'K9WG',       ratio:0.367, type:'gold'},
+  {section:'金', name:'その他金種①', ratio:null,  type:'manual'},
+  {section:'金', name:'その他金種②', ratio:null,  type:'manual'},
+  {section:'プラチナ', name:'PTインゴット', ratio:1,     type:'gold'},
+  {section:'プラチナ', name:'PT1000',      ratio:0.992, type:'gold'},
+  {section:'プラチナ', name:'PT950',       ratio:0.944, type:'gold'},
+  {section:'プラチナ', name:'PT900',       ratio:0.9,   type:'gold_pd'},
+  {section:'プラチナ', name:'PT850',       ratio:0.85,  type:'gold_pd'},
+  {section:'プラチナ', name:'PT850未満',    ratio:null,  type:'manual'},
+  {section:'プラチナ', name:'その他金種③', ratio:null,  type:'manual'},
+  {section:'プラチナ', name:'その他金種④', ratio:null,  type:'manual'},
+  {section:'コンビ', name:'コンビ', ratio:0.577, type:'combi'},
+  {section:'銀',   name:'銀',   ratio:0.5, type:'silver'},
+  {section:'合金', name:'合金', ratio:null, type:'manual'},
+];
+const PD_RATIO=0.08; // PD(プラチナ用) — PT900/PT850のパラジウム補正比率
+
+let PMT_NAME_TO_ID={};
+
+async function loadMetalTypes(){
+  const rows=await (await apiFetch('precious_metal_types?select=id,name')).json()||[];
+  PMT_NAME_TO_ID={};
+  rows.forEach(r=>{PMT_NAME_TO_ID[r.name]=r.id;});
+}
+
+function buildTable(){
+  const tbody=document.getElementById('rateBody');
+  let h='';
+  let currentSection=null;
+  METAL_DEFS.forEach(m=>{
+    if(currentSection!==m.section){
+      currentSection=m.section;
+      h+=`<tr class="section-hdr"><td colspan="3">${m.section}</td></tr>`;
+    }
+    if(m.type==='manual'){
+      h+=`<tr data-name="${m.name}"><td class="name">${m.name}</td><td class="num muted">手入力</td><td class="manual"><input type="number" id="manual_${m.name}" step="1" value="0"></td></tr>`;
+    } else {
+      h+=`<tr data-name="${m.name}"><td class="name">${m.name}</td><td class="num" id="base_${m.name}">-</td><td class="num" id="rate_${m.name}" style="font-weight:bold;">-</td></tr>`;
+    }
+  });
+  tbody.innerHTML=h;
+}
+buildTable();
+
+document.getElementById('btnCalc').onclick=calcRates;
+document.getElementById('btnSaveRates').onclick=saveRates;
+document.getElementById('btnLoadDate').onclick=loadRatesForDate;
+
+function calcRates(){
+  const k24=Number(document.getElementById('rateK24').value)||0;
+  const pd1000=Number(document.getElementById('ratePD1000').value)||0;
+  const sv=Number(document.getElementById('rateSV').value)||0;
+  const markup=Number(document.getElementById('markup').value)||1;
+
+  METAL_DEFS.forEach(m=>{
+    if(m.type==='manual')return;
+    let base, rate;
+    if(m.type==='gold'){
+      base=Math.round(k24*m.ratio);
+      rate=Math.ceil(base*markup);
+    } else if(m.type==='gold_pd'){
+      base=Math.round(k24*m.ratio + pd1000*PD_RATIO);
+      rate=Math.ceil(base*markup);
+    } else if(m.type==='silver'){
+      base=Math.round(sv*m.ratio);
+      rate=Math.ceil(base*markup);
+    } else if(m.type==='combi'){
+      base=null; // コンビはH経由しない特殊仕様（Excel通り）
+      rate=Math.ceil(k24*m.ratio); // markupなし・K24ベースのみ（Excel通り）
+    }
+    const baseEl=document.getElementById('base_'+m.name);
+    const rateEl=document.getElementById('rate_'+m.name);
+    if(baseEl)baseEl.textContent=base===null?'（マークアップ・相場計算なし）':base.toLocaleString();
+    if(rateEl)rateEl.textContent=rate.toLocaleString();
+  });
+}
+
+async function saveRates(){
+  const date=document.getElementById('recordDate').value;
+  const statusEl=document.getElementById('status');
+  if(!date){statusEl.textContent='日付を指定してください。';return;}
+  statusEl.textContent='保存中...';
+
+  try{
+    if(Object.keys(PMT_NAME_TO_ID).length===0)await loadMetalTypes();
+
+    const rows=[];
+    const unmatched=[];
+    METAL_DEFS.forEach(m=>{
+      let rate, base=null;
+      if(m.type==='manual'){
+        rate=Number(document.getElementById('manual_'+m.name).value)||0;
+      } else {
+        const rateEl=document.getElementById('rate_'+m.name);
+        const baseEl=document.getElementById('base_'+m.name);
+        rate=rateEl&&rateEl.textContent!=='-'?Number(rateEl.textContent.replace(/,/g,'')):0;
+        base=baseEl&&!isNaN(Number(baseEl.textContent.replace(/,/g,'')))?Number(baseEl.textContent.replace(/,/g,'')):null;
+      }
+      const metalTypeId=PMT_NAME_TO_ID[m.name];
+      if(!metalTypeId){unmatched.push(m.name);return;}
+      rows.push({record_date:date, metal_type_id:metalTypeId, base_amount:base, rate, updated_at:new Date().toISOString()});
+    });
+
+    if(rows.length===0){statusEl.textContent='先に「計算する」を押してください。';return;}
+
+    await apiFetch(`precious_metal_rates?record_date=eq.${date}`,'DELETE');
+    const res=await apiFetch('precious_metal_rates','POST',rows);
+    if(!res.ok){statusEl.textContent='❌ 保存失敗: '+(await res.text());return;}
+
+    let msg=`✅ ${date}分：${rows.length}件のレートを保存しました。`;
+    if(unmatched.length)msg+=`\n⚠ precious_metal_typesに一致しない金種名：${unmatched.join('、')}`;
+    statusEl.textContent=msg;
+  }catch(e){
+    statusEl.textContent='❌ エラー: '+e.message;
+  }
+}
+
+async function loadRatesForDate(){
+  const date=document.getElementById('recordDate').value;
+  const statusEl=document.getElementById('status');
+  if(!date){statusEl.textContent='日付を指定してください。';return;}
+  if(Object.keys(PMT_NAME_TO_ID).length===0)await loadMetalTypes();
+  const idToName={}; Object.entries(PMT_NAME_TO_ID).forEach(([n,id])=>{idToName[id]=n;});
+
+  const rows=await (await apiFetch(`precious_metal_rates?record_date=eq.${date}&select=metal_type_id,base_amount,rate`)).json()||[];
+  if(rows.length===0){statusEl.textContent='この日付の登録済みレートはありません。';return;}
+
+  rows.forEach(r=>{
+    const name=idToName[r.metal_type_id];
+    if(!name)return;
+    const def=METAL_DEFS.find(m=>m.name===name);
+    if(!def)return;
+    if(def.type==='manual'){
+      const el=document.getElementById('manual_'+name);
+      if(el)el.value=r.rate;
+    } else {
+      const baseEl=document.getElementById('base_'+name);
+      const rateEl=document.getElementById('rate_'+name);
+      if(baseEl)baseEl.textContent=r.base_amount!==null?Number(r.base_amount).toLocaleString():'（マークアップ・相場計算なし）';
+      if(rateEl)rateEl.textContent=Number(r.rate).toLocaleString();
+    }
+  });
+  statusEl.textContent=`✅ ${date}分の登録済みレートを読み込みました。`;
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+</script>
+</body>
+</html>
