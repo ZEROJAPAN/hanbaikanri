@@ -240,6 +240,9 @@ function taxAdjust(amount, exempt, taxMode){return (taxMode==='incl'||exempt)?am
 
 document.getElementById('btnLoad').onclick=loadReport;
 document.getElementById('btnExport').onclick=exportExcel;
+document.getElementById('taxMode').addEventListener('change', ()=>{
+  if(lastReportData) renderTable(); // 再取得せず、既存データのまま税込⇄税抜を即時切替
+});
 
 async function loadReport(){
   const from=document.getElementById('dateFrom').value;
@@ -343,7 +346,7 @@ function sumSimpleForCols(dataByStore, col){
 
 function renderTable(){
   const d=lastReportData;
-  const taxMode=d.taxMode;
+  const taxMode=document.getElementById('taxMode').value; // 常に現在の選択値を参照（再取得不要で即時反映）
   const table=document.getElementById('reportTable');
 
   let headHtml='<tr><th style="min-width:260px;">カテゴリー / チャンネル</th>';
@@ -419,12 +422,16 @@ function renderTable(){
   const buyTotalByStore={};
   BUY_CATEGORY_IDS.forEach(catId=>{
     const catName=(CATS.find(c=>c.id===catId)||{}).name||`カテゴリーID${catId}`;
-    const dataByStore=d.buyByCatStore[catId]||{};
-    Object.entries(dataByStore).forEach(([sid,v])=>{
+    const exempt=isTaxExemptCategory(catName);
+    const rawByStore=d.buyByCatStore[catId]||{};
+    const adjByStore={};
+    Object.entries(rawByStore).forEach(([sid,v])=>{
+      const adjAmount=taxAdjust(v.amount, exempt, taxMode);
+      adjByStore[sid]={qty:v.qty, amount:adjAmount};
       if(!buyTotalByStore[sid])buyTotalByStore[sid]={qty:0,amount:0};
-      buyTotalByStore[sid].qty+=v.qty; buyTotalByStore[sid].amount+=v.amount;
+      buyTotalByStore[sid].qty+=v.qty; buyTotalByStore[sid].amount+=adjAmount;
     });
-    bodyHtml+=ecCellRow(catName, col=>sumForCols(dataByStore, col));
+    bodyHtml+=ecCellRow(catName, col=>sumForCols(adjByStore, col));
   });
 
   ZERO_ROWS_B.forEach(label=>{bodyHtml+=zeroRow(label);});
