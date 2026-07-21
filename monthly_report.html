@@ -264,16 +264,16 @@ async function loadReport(){
     const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
     const chMap={}; CHANNELS.forEach(c=>chMap[c.id]=c.name);
 
-    const ecGrouped={}; // "catName|chName" -> {storeId:{qty,amount}}
-    const buyByCatStore={};
+    const ecGrouped={}; // "catName|chName" -> {storeId:{qty, amounts:[各日の税込金額,...]}}
+    const buyByCatStore={}; // catId -> {storeId:{qty, amounts:[...]}}
     const cancelAmountByStore={};
 
     for(const row of dailyRows){
       if(row.channel_id===BUY_CHID){
         if(!buyByCatStore[row.category_id])buyByCatStore[row.category_id]={};
-        if(!buyByCatStore[row.category_id][row.store_id])buyByCatStore[row.category_id][row.store_id]={qty:0,amount:0};
+        if(!buyByCatStore[row.category_id][row.store_id])buyByCatStore[row.category_id][row.store_id]={qty:0,amounts:[]};
         buyByCatStore[row.category_id][row.store_id].qty+=row.quantity||0;
-        buyByCatStore[row.category_id][row.store_id].amount+=row.amount||0;
+        buyByCatStore[row.category_id][row.store_id].amounts.push(row.amount||0);
       } else if(row.channel_id===CANCEL_CHID){
         cancelAmountByStore[row.store_id]=(cancelAmountByStore[row.store_id]||0)+(row.amount||0);
       } else {
@@ -282,9 +282,9 @@ async function loadReport(){
         const key=catName+'|'+chName;
         if(!ecGrouped[key])ecGrouped[key]={catName,chName,exempt:isTaxExemptCategory(catName)||isTaxExemptChannel(chName),stores:{}};
         const g=ecGrouped[key];
-        if(!g.stores[row.store_id])g.stores[row.store_id]={qty:0,amount:0};
+        if(!g.stores[row.store_id])g.stores[row.store_id]={qty:0,amounts:[]};
         g.stores[row.store_id].qty+=row.quantity||0;
-        g.stores[row.store_id].amount+=row.amount||0;
+        g.stores[row.store_id].amounts.push(row.amount||0);
       }
     }
 
@@ -391,6 +391,10 @@ function renderTable(){
 
   const ecTotalByStore={};
 
+  function roundedSumOfAmounts(amounts, exempt, taxMode){
+    return amounts.reduce((s,a)=>s+Math.round(taxAdjust(a, exempt, taxMode)), 0);
+  }
+
   EC_SECTIONS.forEach(section=>{
     const catAcc={};
     const exemptCat=isTaxExemptCategory(section.cat);
@@ -402,7 +406,7 @@ function renderTable(){
       const exempt=exemptCat||isTaxExemptChannel(chName);
       const rowData={};
       Object.entries(storesRaw).forEach(([sid,v])=>{
-        const adjAmount=taxAdjust(v.amount, exempt, taxMode);
+        const adjAmount=roundedSumOfAmounts(v.amounts, exempt, taxMode); // 日ごとに税抜換算→四捨五入してから合計
         rowData[sid]={qty:v.qty, amount:adjAmount};
         if(!catAcc[sid])catAcc[sid]={qty:0,amount:0};
         catAcc[sid].qty+=v.qty; catAcc[sid].amount+=adjAmount;
@@ -426,7 +430,7 @@ function renderTable(){
     const rawByStore=d.buyByCatStore[catId]||{};
     const adjByStore={};
     Object.entries(rawByStore).forEach(([sid,v])=>{
-      const adjAmount=taxAdjust(v.amount, exempt, taxMode);
+      const adjAmount=roundedSumOfAmounts(v.amounts, exempt, taxMode);
       adjByStore[sid]={qty:v.qty, amount:adjAmount};
       if(!buyTotalByStore[sid])buyTotalByStore[sid]={qty:0,amount:0};
       buyTotalByStore[sid].qty+=v.qty; buyTotalByStore[sid].amount+=adjAmount;
