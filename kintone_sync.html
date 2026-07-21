@@ -92,6 +92,13 @@
       ※ 買取チャンネル（channel_id=1）・キャンセルチャンネル（channel_id=2）として保存します。店売り等、他チャンネルのデータには影響しません。<br>
       ※ 客数（visitors列）には「成約」件数を入れています。同じ日付・店舗で再実行すると上書きされます（重複しません）。
     </p>
+    <div class="row" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <button class="btn secondary" type="button" id="btnImportAllDetails">🛒 全店一括：買取明細・地金回収・テレカ金券回収を反映</button>
+      <span class="muted" id="importAllStatus"></span>
+    </div>
+    <p class="muted" style="margin-top:8px;">
+      ※ 店舗別（daily.html）の「Kintone取込」ボタンと同じ内容を、全店舗まとめて一度に反映します。
+    </p>
   </div>
 
   <div id="storeResults"></div>
@@ -176,6 +183,33 @@ const CHANNEL_ID_CANCEL = 2;
 // product_categories（Supabase）のキャッシュ： name -> id
 let PRODUCT_CATEGORY_MAP = null;
 
+// ===== 全店一括：買取明細・地金回収・テレカ金券回収 用の変換表（daily.htmlと同じ） =====
+const CIRCLED_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+function kintoneReasonToSupabaseName(kintoneValue) {
+  if (!kintoneValue) return kintoneValue;
+  const idx = CIRCLED_NUMS.indexOf(kintoneValue.charAt(0));
+  if (idx === -1) return kintoneValue;
+  return `${idx + 1}.${kintoneValue.slice(1)}`;
+}
+const KINTONE_GIFTCARD_TO_SUPABASE_NAME = {
+  'テレカ50': 'テレカ50度（非課税）', 'テレカ105': 'テレカ105度（非課税）', 'テレカ　その他度数': 'テレカその他度数',
+  '500': '￥500（金券、商品券）', '1000': '￥1000（金券、商品券）', '2000': '￥2000（金券、商品券）',
+  '3000': '￥3000（金券、商品券）', '5000': '￥5000（金券、商品券）', '10000': '￥10000（金券、商品券）',
+  'ビール券　600円未満': 'ビール600円未満', 'ビール券　600円以上': 'ビール600円以上', 'その他': 'その他金券',
+};
+const KINTONE_METAL_TO_SUPABASE_NAME = {
+  'ＰＴ1000IC':'PTインゴット','Ｋ24IC':'Kインゴット','Ｋ20WG':'その他金種①','Ｋ20':'K20',
+  'K9WG':'K9WG','K10WG':'K10WG','K12WG':'その他金種①','K14WG':'K14WG','K15WG':'その他金種①','K18WG':'K18WG',
+  'K20WG':'その他金種①','K22WG':'その他金種①','K24WG':'その他金種①',
+  'Ｋ9WG':'K9WG','Ｋ10WG':'K10WG','Ｋ14WG':'K14WG','Ｋ18WG':'K18WG',
+  'Ｋ21.6WG':'その他金種①','Ｋ22WG':'その他金種①','Ｋ24WG':'その他金種①',
+  'SV':'銀','コンビ②':'コンビ','コンビ①':'コンビ','コンビ':'コンビ',
+  'PT750':'その他金種③','PT800':'その他金種③','PT850':'PT850','PT900':'PT900','PT950':'PT950','PT1000':'PT1000',
+  'K9':'K9','K10':'K10','K12':'その他金種②','K14':'K14','K15':'その他金種②','K18':'K18','K20':'その他金種②','K22':'K22','K24':'K24',
+  'ＰＴ850':'PT850','ＰＴ900':'PT900','ＰＴ950':'PT950','ＰＴインゴット':'PTインゴット','ＰＴ1000':'PT1000',
+  'Ｋ9':'K9','Ｋ10':'K10','Ｋ14':'K14','Ｋ18':'K18','Ｋ21.6':'K21.6','Ｋ22':'K22','Ｋ24':'K24',
+};
+
 async function loadProductCategories() {
   if (PRODUCT_CATEGORY_MAP) return PRODUCT_CATEGORY_MAP;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/product_categories?select=id,name`, {
@@ -204,6 +238,7 @@ document.getElementById('btnFetch').onclick = runFetch;
 document.getElementById('btnSaveAll').onclick = saveAllToSupabase;
 
 let lastAggregated = null; // Supabase保存用に保持
+let lastRawRecords = [];   // 全店一括の買取明細・地金回収・テレカ金券回収で再利用
 
 // ==========================================================
 // Kintone取得 → 集計
@@ -237,6 +272,7 @@ async function runFetch() {
     }
 
     const records = json.records || [];
+    lastRawRecords = records;
     const aggregated = aggregate(records, date);
     lastAggregated = aggregated;
     renderResults(aggregated, records.length);
@@ -518,6 +554,195 @@ async function saveAllToSupabase() {
     statusEl.textContent = msg;
   } catch (e) {
     statusEl.textContent = '❌ 保存失敗: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ==========================================================
+// 全店一括：買取明細（来店動機別）・地金回収・テレカ金券回収
+// daily.htmlの店舗別「Kintone取込」と同じロジックを、全店舗ぶんまとめて実行する
+// ==========================================================
+document.getElementById('btnImportAllDetails').onclick = importAllStoresDetails;
+
+async function importAllStoresDetails() {
+  const date = document.getElementById('targetDate').value;
+  const statusEl = document.getElementById('importAllStatus');
+  const btn = document.getElementById('btnImportAllDetails');
+  if (!date) { statusEl.textContent = '日付を選択してください。'; return; }
+  if (!lastRawRecords || lastRawRecords.length === 0) { statusEl.textContent = '先に「Kintoneから取込」を実行してください。'; return; }
+
+  btn.disabled = true;
+  statusEl.textContent = '全店処理中...（店舗数が多いため少し時間がかかります）';
+
+  try {
+    // マスタを一括取得
+    const [vrList, metalTypes, cardTypes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/visit_reasons?select=id,name`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/precious_metal_types?is_active=eq.true&order=sort_order&select=id,name`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/gift_card_types?is_active=eq.true&order=sort_order&select=id,name`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+    ]);
+    const reasonNameToId = {}; vrList.forEach(r => { reasonNameToId[r.name] = r.id; });
+    const metalNameToId = {}; metalTypes.forEach(m => { metalNameToId[m.name] = m.id; });
+    const cardNameToId = {}; cardTypes.forEach(c => { cardNameToId[c.name] = c.id; });
+
+    // 全店舗ぶんの前日繰越（gold_recovery / telecard_recovery）を一括取得
+    const [allGoldCarry, allCardCarry] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/gold_recovery?record_date=lt.${date}&order=record_date.desc&limit=5000&select=store_id,metal_type_id,record_date,next_carry_over`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/telecard_recovery?record_date=lt.${date}&order=record_date.desc&limit=5000&select=store_id,gift_card_type_id,record_date,next_carry_over`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+    ]);
+    const goldCarryByStoreMetal = {}; // "storeId-metalId" -> next_carry_over（最新日のもの）
+    (allGoldCarry || []).forEach(row => {
+      const key = row.store_id + '-' + row.metal_type_id;
+      if (goldCarryByStoreMetal[key] === undefined) goldCarryByStoreMetal[key] = row.next_carry_over || 0;
+    });
+    const cardCarryByStoreCard = {};
+    (allCardCarry || []).forEach(row => {
+      const key = row.store_id + '-' + row.gift_card_type_id;
+      if (cardCarryByStoreCard[key] === undefined) cardCarryByStoreCard[key] = row.next_carry_over || 0;
+    });
+
+    let storeSuccessCount = 0;
+    const storeErrors = [];
+    const allUnmatchedReasons = new Set();
+    const allUnmatchedMetals = new Set();
+    const allUnmatchedCards = new Set();
+
+    for (const [kintoneStoreName, supabaseStoreId] of Object.entries(STORE_MAP)) {
+      const records = lastRawRecords.filter(rec => {
+        const store = rec['ドロップダウン_4'] && rec['ドロップダウン_4'].value;
+        const status = rec['ステータス'] && rec['ステータス'].value;
+        return store === kintoneStoreName && status === '確定';
+      });
+      if (records.length === 0) continue; // この店舗はこの日データなし
+
+      try {
+        // ---- 買取明細（来店動機別） ----
+        const byReason = {};
+        let repeatCount = 0, noPurchaseCount = 0, cancelCount = 0;
+        records.forEach(rec => {
+          const reason = (rec['ドロップダウン_2'] && rec['ドロップダウン_2'].value) || 'その他';
+          const kekka = rec['ドロップダウン_0'] && rec['ドロップダウン_0'].value;
+          const riraiKubun = rec['ドロップダウン_1'] && rec['ドロップダウン_1'].value;
+          if (!byReason[reason]) byReason[reason] = { visitors: 0, amount: 0 };
+          byReason[reason].visitors += 1;
+          if (riraiKubun === '2回目以降') repeatCount += 1;
+          if (kekka === '買取不可') noPurchaseCount += 1;
+          if (kekka === 'キャンセル') cancelCount += 1;
+          if (kekka === '成約') {
+            const table = (rec['テーブル'] && rec['テーブル'].value) || [];
+            table.forEach(row => {
+              const v = row.value;
+              const isCancelled = v['キャンセル'] && v['キャンセル'].value && v['キャンセル'].value.length > 0;
+              if (isCancelled) return;
+              const amt = Number((v['合計_表示用'] && v['合計_表示用'].value) || 0);
+              byReason[reason].amount += amt;
+            });
+          }
+        });
+        const totalVisitors = records.length;
+        const firstVisitTotal = Math.max(0, totalVisitors - repeatCount);
+
+        const pdRows = [];
+        Object.entries(byReason).forEach(([reasonName, d]) => {
+          const supabaseName = kintoneReasonToSupabaseName(reasonName);
+          const vrId = reasonNameToId[supabaseName];
+          if (!vrId) { allUnmatchedReasons.add(reasonName + ' → ' + supabaseName); return; }
+          pdRows.push({
+            report_date: date, store_id: supabaseStoreId, visit_reason_id: vrId,
+            visitors: d.visitors, amount: d.amount,
+            first_visit: firstVisitTotal, repeat_visit: repeatCount,
+            no_purchase: noPurchaseCount, cancel_count: cancelCount,
+          });
+        });
+        if (pdRows.length > 0) {
+          await fetch(`${SUPABASE_URL}/rest/v1/purchase_details?report_date=eq.${date}&store_id=eq.${supabaseStoreId}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+          const pdRes = await fetch(`${SUPABASE_URL}/rest/v1/purchase_details`, { method: 'POST', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(pdRows) });
+          if (!pdRes.ok) throw new Error('買取明細保存失敗: ' + await pdRes.text());
+        }
+
+        // ---- 地金回収 ----
+        const seiyakuRecords = records.filter(rec => (rec['ドロップダウン_0'] && rec['ドロップダウン_0'].value) === '成約');
+        const weightByKintoneMetal = {};
+        seiyakuRecords.forEach(rec => {
+          const table = (rec['テーブル'] && rec['テーブル'].value) || [];
+          table.forEach(row => {
+            const v = row.value;
+            const isCancelled = v['キャンセル'] && v['キャンセル'].value && v['キャンセル'].value.length > 0;
+            if (isCancelled) return;
+            const metalName = v['表示用金種'] && v['表示用金種'].value;
+            if (!metalName) return;
+            const weight = Number((v['シリアル_g_'] && v['シリアル_g_'].value) || 0);
+            weightByKintoneMetal[metalName] = (weightByKintoneMetal[metalName] || 0) + weight;
+          });
+        });
+        if (Object.keys(weightByKintoneMetal).length > 0) {
+          const weightByMetalId = {};
+          Object.entries(weightByKintoneMetal).forEach(([kName, w]) => {
+            const supName = KINTONE_METAL_TO_SUPABASE_NAME[kName];
+            const mid = supName ? metalNameToId[supName] : null;
+            if (!mid) { allUnmatchedMetals.add(kName); return; }
+            weightByMetalId[mid] = (weightByMetalId[mid] || 0) + w;
+          });
+          const goldRows = metalTypes.map(m => {
+            const carry = goldCarryByStoreMetal[supabaseStoreId + '-' + m.id] || 0;
+            const today = weightByMetalId[m.id] || 0;
+            const crush = carry + today;
+            const recovery = carry + today;
+            return { store_id: supabaseStoreId, metal_type_id: m.id, record_date: date, carry_over: carry, today_weight: today, product_weight: 0, crush_weight: crush, return_weight: 0, recovery_weight: recovery, next_carry_over: recovery, is_recovered: false };
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/gold_recovery?store_id=eq.${supabaseStoreId}&record_date=eq.${date}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+          const grRes = await fetch(`${SUPABASE_URL}/rest/v1/gold_recovery`, { method: 'POST', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(goldRows) });
+          if (!grRes.ok) throw new Error('地金回収保存失敗: ' + await grRes.text());
+        }
+
+        // ---- テレカ・金券回収 ----
+        const countByKintoneCard = {};
+        seiyakuRecords.forEach(rec => {
+          const table = (rec['テーブル'] && rec['テーブル'].value) || [];
+          table.forEach(row => {
+            const v = row.value;
+            const isCancelled = v['キャンセル'] && v['キャンセル'].value && v['キャンセル'].value.length > 0;
+            if (isCancelled) return;
+            const cardName = v['ドロップダウン_5'] && v['ドロップダウン_5'].value;
+            if (!cardName) return;
+            const qty = Number((v['数量'] && v['数量'].value) || 0);
+            countByKintoneCard[cardName] = (countByKintoneCard[cardName] || 0) + qty;
+          });
+        });
+        if (Object.keys(countByKintoneCard).length > 0) {
+          const countByCardId = {};
+          Object.entries(countByKintoneCard).forEach(([kName, q]) => {
+            const supName = KINTONE_GIFTCARD_TO_SUPABASE_NAME[kName];
+            const cid = supName ? cardNameToId[supName] : null;
+            if (!cid) { allUnmatchedCards.add(kName); return; }
+            countByCardId[cid] = (countByCardId[cid] || 0) + q;
+          });
+          const telecardRows = cardTypes.map(c => {
+            const carry = cardCarryByStoreCard[supabaseStoreId + '-' + c.id] || 0;
+            const today = countByCardId[c.id] || 0;
+            const next = carry + today;
+            return { store_id: supabaseStoreId, gift_card_type_id: c.id, record_date: date, carry_over: carry, today_purchase: today, recovery_count: 0, shop_sales: 0, next_carry_over: next, is_recovered: false };
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/telecard_recovery?store_id=eq.${supabaseStoreId}&record_date=eq.${date}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+          const tcRes = await fetch(`${SUPABASE_URL}/rest/v1/telecard_recovery`, { method: 'POST', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(telecardRows) });
+          if (!tcRes.ok) throw new Error('テレカ金券回収保存失敗: ' + await tcRes.text());
+        }
+
+        storeSuccessCount += 1;
+      } catch (e) {
+        storeErrors.push(kintoneStoreName + ': ' + e.message);
+      }
+    }
+
+    let msg2 = `✅ ${date}分：${storeSuccessCount}店舗の買取明細・地金回収・テレカ金券回収を反映しました。`;
+    if (storeErrors.length) msg2 += `\n❌ 失敗した店舗：${storeErrors.join('、')}`;
+    if (allUnmatchedReasons.size) msg2 += `\n⚠ 未一致の来店動機：${[...allUnmatchedReasons].join('、')}`;
+    if (allUnmatchedMetals.size) msg2 += `\n⚠ 未一致の金種：${[...allUnmatchedMetals].join('、')}`;
+    if (allUnmatchedCards.size) msg2 += `\n⚠ 未一致のテレカ・金券種別：${[...allUnmatchedCards].join('、')}`;
+    statusEl.textContent = msg2;
+  } catch (e) {
+    statusEl.textContent = '❌ エラー: ' + e.message;
   } finally {
     btn.disabled = false;
   }
