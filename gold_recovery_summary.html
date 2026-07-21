@@ -3,73 +3,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>地金換金 店舗別回収集計 - ゼロジャパン</title>
+<title>地金換金 全店計上 - ゼロジャパン</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
-.wrap{padding:6px;}
-.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
-.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
-.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
-.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
-.main{background:#fff;border-radius:8px;padding:16px;}
-.ctrl-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
-.date-input,select.store-sel{padding:7px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:13px;outline:none;}
-.reload-btn{padding:8px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#2D4FBA,#1E2761);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #0F1640;}
-.save-btn{padding:8px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #015060;}
-.export-btn{padding:8px 18px;font-size:12px;font-weight:bold;background:#fff;color:#1E2761;border:1.5px solid #1E2761;border-radius:5px;cursor:pointer;}
-.status{font-size:11px;color:#64748B;margin-left:8px;white-space:pre-wrap;}
-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;}
-th,td{border:1px solid #E2E8F0;padding:6px 8px;}
-th{background:#1E2761;color:#fff;text-align:center;}
-td.name{font-weight:bold;color:#1E2761;}
-td.num{text-align:right;}
-td.editable input{width:100px;text-align:right;border:1.5px solid #F59E0B;border-radius:4px;padding:4px 6px;background:#FFFBEB;outline:none;}
-tr.section-hdr td{background:#EEF2FF;font-weight:bold;color:#1E2761;}
-tr.section-total td{background:#FFF9C4;font-weight:bold;}
-.summary-bar{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;}
-.sum-card{background:#EEF2FF;border:1px solid #C7D2FE;border-radius:6px;padding:8px 14px;font-size:12px;}
-.sum-card-title{color:#475569;font-size:11px;}
-.sum-card-value{font-size:16px;font-weight:bold;color:#1E2761;}
-.muted{color:#64748B;font-size:11px;}
+:root{
+  --blue:#2563eb; --blue-dark:#1d4ed8; --bg:#f4f6f9; --card:#ffffff;
+  --border:#dbe1e8; --text:#1f2937; --muted:#6b7280; --green:#16a34a; --red:#dc2626;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:var(--text);}
+header{background:#1E2761;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:16px;margin:0;}
+header a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;}
+main{max-width:1100px;margin:20px auto;padding:0 16px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:18px;}
+.card h2{font-size:15px;margin:0 0 12px;color:var(--blue-dark);}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+.btn{padding:9px 18px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:14px;cursor:pointer;font-weight:600;}
+.btn:hover{background:var(--blue-dark);}
+.btn:disabled{background:#9ca3af;cursor:not-allowed;}
+.btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+.btn.confirm{background:linear-gradient(180deg,#0FAA7A,#028090);box-shadow:0 3px 0 #015060;}
+.date-input{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;}
+.status{margin-top:10px;font-size:13px;white-space:pre-wrap;}
+.status.ok{color:var(--green);}
+.status.err{color:var(--red);}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px;}
+.summary-grid .box{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.summary-grid .box .num{font-size:20px;font-weight:700;color:var(--blue-dark);}
+.summary-grid .box .cap{font-size:11px;color:var(--muted);}
+.store-block{margin-bottom:18px;}
+.store-block h3{font-size:14px;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--blue);display:flex;justify-content:space-between;align-items:center;}
+.store-block h3 .store-amount{font-size:13px;color:var(--blue-dark);}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+th,td{border:1px solid var(--border);padding:5px 8px;text-align:right;}
+th{background:#eef2f7;text-align:center;white-space:nowrap;}
+td.label{text-align:left;font-weight:600;background:#fafbfc;white-space:nowrap;}
+td.editable input{width:90px;text-align:right;border:1.5px solid #F59E0B;border-radius:4px;padding:3px 5px;background:#FFFBEB;outline:none;}
+.muted{color:var(--muted);font-size:12px;}
+.warn-box{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#9a3412;}
 </style>
 </head>
 <body>
-<div class="wrap">
-<div class="topbar">
-<div style="display:flex;align-items:center;gap:12px;">
-<button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
-<div class="topbar-title">💹 地金換金 店舗別回収集計</div>
-</div>
-<button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
-</div>
 
-<div class="main">
-<div class="ctrl-bar">
-<label class="muted">回収日</label>
-<input type="date" class="date-input" id="recordDate">
-<label class="muted">店舗</label>
-<select class="store-sel" id="storeSel"></select>
-<button type="button" class="reload-btn" id="btnLoad">🔄 読込</button>
-<button type="button" class="save-btn" id="btnSave">💾 保存</button>
-<button type="button" class="export-btn" id="btnExportAll">📋 全店 回収チェック表出力</button>
-<span class="status" id="status"></span>
-</div>
+<header>
+  <h1>💰 地金換金 全店計上</h1>
+  <a href="index.html">← メニューに戻る</a>
+</header>
 
-<div class="summary-bar" id="summaryBar"></div>
+<main>
 
-<table id="tbl">
-<thead><tr><th style="text-align:left;">金種</th><th>当日レート</th><th>店舗回収g数</th><th>現物g数（修正後）</th><th>売上金額</th></tr></thead>
-<tbody id="tblBody"></tbody>
-</table>
+  <div class="card">
+    <h2>計上日</h2>
+    <div class="row">
+      <input type="date" class="date-input" id="settleDate">
+      <button class="btn secondary" type="button" id="btnLoad">未計上データを読込</button>
+      <button class="btn secondary" type="button" id="btnExport">📋 未計上チェック表 Excel出力</button>
+    </div>
+    <p class="muted" style="margin-top:8px;">
+      各店舗の回収日にかかわらず、まだ計上されていない（settled_at未設定の）回収グラム数をすべて集計し、この計上日のレートを適用します。
+    </p>
+    <div id="status" class="status"></div>
+  </div>
 
-<p class="muted" style="margin-top:10px;">
-※ 店舗回収g数は`gold_recovery`（地金回収）の回収日データから自動反映されます。「現物g数（修正後）」は自動反映値がデフォルトで入っており、実際の計量と異なる場合のみ上書きしてください。<br>
-※ 当日レートは「地金換金 レート入力」画面で、この回収日と同じ日付で登録したものを使用します。未登録の場合はレートが入りません。
-</p>
-</div>
-</div>
+  <div class="card" id="warnCard" style="display:none;"><div class="warn-box" id="warnBox"></div></div>
+
+  <div class="card" id="summaryCard" style="display:none;">
+    <h2>全店合計プレビュー</h2>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="row">
+      <button class="btn confirm" type="button" id="btnConfirm">✅ 全店計上を確定する</button>
+      <span class="muted" id="confirmStatus"></span>
+    </div>
+    <p class="muted" style="margin-top:8px;">
+      ※ 確定すると、対象となった回収データはすべて「計上済み」としてマークされ、次回の計上では対象外になります（取り消しはできません。実行前に内容をよくご確認ください）。
+    </p>
+  </div>
+
+  <div id="storeResults"></div>
+
+</main>
 
 <script>
 const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
@@ -80,242 +93,231 @@ async function apiFetch(path,method='GET',body=null){
   if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
   return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
 }
+async function apiFetchAll(pathBase){
+  let all=[],offset=0;const pageSize=1000;
+  while(true){
+    const sep=pathBase.includes('?')?'&':'?';
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${pathBase}${sep}limit=${pageSize}&offset=${offset}`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    const page=await res.json();
+    if(!Array.isArray(page))throw new Error(JSON.stringify(page));
+    all=all.concat(page);
+    if(page.length<pageSize)break;
+    offset+=pageSize;
+  }
+  return all;
+}
 function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
 function todayStr(){return new Date().toISOString().slice(0,10);}
-document.getElementById('recordDate').value=todayStr();
+document.getElementById('settleDate').value=todayStr();
 
-// 集計表の行構成（Excel「店舗別　回収集計　計上」列Aの並びを再現）
-const ROW_DEFS=[
-  {section:'金', rows:['Kインゴット','K24','K22','K21.6','K20','K18','K14','K10','K9','K18WG','K14WG','K10WG','K9WG','その他金種①','その他金種②']},
-  {section:'金 合計', key:'gold_total', total:true},
-  {section:'プラチナ', rows:['PTインゴット','PT1000','PT950','PT900','PT850','PT850未満']},
-  {section:'プラチナ 合計', key:'pt_total_1', total:true},
-  {section:'プラチナ（その他）', rows:['その他金種③','その他金種④']},
-  {section:'プラチナ 合計', key:'pt_total_2', total:true},
-  {section:'コンビ', rows:['コンビ']},
-  {section:'コンビ 合計', key:'combi_total', total:true},
-  {section:'銀', rows:['銀']},
-  {section:'銀 合計', key:'silver_total', total:true},
-  {section:'合金', rows:['合金']},
-  {section:'合金 合計', key:'alloy_total', total:true},
-];
-
-let STORES=[], PMT=[], PMT_NAME_TO_ID={}, PMT_ID_TO_NAME={};
+let STORES=[], PMT_ID_TO_NAME={}, PMT_NAME_TO_ID={};
+let pendingRowIds=[];
+let aggregated=null;
 
 async function loadMasters(){
-  STORES=await (await apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name')).json()||[];
-  PMT=await (await apiFetch('precious_metal_types?select=id,name')).json()||[];
-  PMT_NAME_TO_ID={}; PMT_ID_TO_NAME={};
-  PMT.forEach(p=>{PMT_NAME_TO_ID[p.name]=p.id; PMT_ID_TO_NAME[p.id]=p.name;});
-
-  const sel=document.getElementById('storeSel');
-  sel.innerHTML='';
-  STORES.forEach(s=>{const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; sel.appendChild(o);});
+  STORES=await apiFetchAll('stores?is_active=eq.true&order=sort_order&select=id,name');
+  const pmt=await apiFetchAll('precious_metal_types?select=id,name');
+  pmt.forEach(p=>{PMT_ID_TO_NAME[p.id]=p.name; PMT_NAME_TO_ID[p.name]=p.id;});
 }
 
-function buildTable(){
-  const tbody=document.getElementById('tblBody');
-  let h='';
-  ROW_DEFS.forEach(sec=>{
-    if(sec.total){
-      h+=`<tr class="section-total" data-total="${sec.key}"><td class="name">${sec.section}</td><td class="num"></td><td class="num" id="tot_${sec.key}_e">0</td><td class="num" id="tot_${sec.key}_f">0</td><td class="num" id="tot_${sec.key}_g">0</td></tr>`;
-      return;
-    }
-    h+=`<tr class="section-hdr"><td colspan="5">${sec.section}</td></tr>`;
-    sec.rows.forEach(name=>{
-      h+=`<tr data-name="${name}">
-        <td class="name">${name}</td>
-        <td class="num" id="rate_${name}">0</td>
-        <td class="num" id="e_${name}">0</td>
-        <td class="editable"><input type="number" id="f_${name}" step="0.1" value="0" oninput="recalcRow('${name}')"></td>
-        <td class="num" id="g_${name}">0</td>
-      </tr>`;
-    });
-  });
-  tbody.innerHTML=h;
-}
+document.getElementById('btnLoad').onclick=loadPending;
+document.getElementById('btnConfirm').onclick=confirmSettlement;
+document.getElementById('btnExport').onclick=exportChecklist;
 
-function getSectionForRow(name){
-  for(const sec of ROW_DEFS){ if(!sec.total && sec.rows.includes(name))return sec; }
-  return null;
-}
-// 行→対応する合計セクション名（Excelの「金 合計」「プラチナ 合計」等）
-function totalKeyForRow(name){
-  const idx=ROW_DEFS.findIndex(sec=>!sec.total && sec.rows && sec.rows.includes(name));
-  if(idx===-1)return null;
-  // 次のtotal行を探す
-  for(let i=idx;i<ROW_DEFS.length;i++){ if(ROW_DEFS[i].total)return ROW_DEFS[i].section; }
-  return null;
-}
-
-let ratesByName={}; // name -> rate
-let collectedByName={}; // name -> gold_recovery回収g数（自動反映値）
-
-document.getElementById('btnLoad').onclick=loadData;
-document.getElementById('btnSave').onclick=saveData;
-document.getElementById('btnExportAll').onclick=exportChecklist;
-
-async function loadData(){
-  const date=document.getElementById('recordDate').value;
-  const storeId=document.getElementById('storeSel').value;
+async function loadPending(){
+  const date=document.getElementById('settleDate').value;
   const statusEl=document.getElementById('status');
-  if(!date||!storeId){statusEl.textContent='回収日・店舗を指定してください。';return;}
-  statusEl.textContent='読込中...';
-
-  if(STORES.length===0)await loadMasters();
-  if(document.getElementById('tblBody').children.length===0)buildTable();
-
-  // レート取得
-  const rateRows=await (await apiFetch(`precious_metal_rates?record_date=eq.${date}&select=metal_type_id,rate`)).json()||[];
-  ratesByName={};
-  rateRows.forEach(r=>{const name=PMT_ID_TO_NAME[r.metal_type_id]; if(name)ratesByName[name]=r.rate;});
-
-  // gold_recoveryから店舗回収g数（recovery_weight）を自動反映
-  const grRows=await (await apiFetch(`gold_recovery?record_date=eq.${date}&store_id=eq.${storeId}&select=metal_type_id,recovery_weight`)).json()||[];
-  collectedByName={};
-  grRows.forEach(r=>{const name=PMT_ID_TO_NAME[r.metal_type_id]; if(name)collectedByName[name]=(collectedByName[name]||0)+(r.recovery_weight||0);});
-
-  // 既存の修正入力（settlement）があれば読込
-  const settleRows=await (await apiFetch(`gold_recovery_settlement?record_date=eq.${date}&store_id=eq.${storeId}&select=metal_type_id,adjusted_weight`)).json()||[];
-  const adjustedByName={};
-  settleRows.forEach(r=>{const name=PMT_ID_TO_NAME[r.metal_type_id]; if(name)adjustedByName[name]=r.adjusted_weight;});
-
-  // 画面に反映
-  ROW_DEFS.forEach(sec=>{
-    if(sec.total)return;
-    sec.rows.forEach(name=>{
-      const rateEl=document.getElementById('rate_'+name);
-      const eEl=document.getElementById('e_'+name);
-      const fEl=document.getElementById('f_'+name);
-      if(rateEl)rateEl.textContent=fmt(ratesByName[name]||0);
-      const collected=collectedByName[name]||0;
-      if(eEl)eEl.textContent=collected.toFixed(1);
-      if(fEl)fEl.value=(adjustedByName[name]!==undefined?adjustedByName[name]:collected).toFixed(1);
-    });
-  });
-
-  recalcAll();
-  statusEl.textContent=`✅ ${date} / ${STORES.find(s=>String(s.id)===String(storeId))?.name||''} を読み込みました。`;
-}
-
-function recalcRow(name){
-  const rate=ratesByName[name]||0;
-  const f=Number(document.getElementById('f_'+name).value)||0;
-  const g=Math.round(f*rate);
-  document.getElementById('g_'+name).textContent=fmt(g);
-  recalcTotals();
-}
-
-function recalcAll(){
-  ROW_DEFS.forEach(sec=>{
-    if(sec.total)return;
-    sec.rows.forEach(name=>recalcRow(name));
-  });
-}
-
-function recalcTotals(){
-  ROW_DEFS.filter(s=>s.total).forEach(totalSec=>{
-    // このtotalSecより前にあり、まだ他のtotalに割り当てられていない直近のrowsセクション群を集計
-  });
-  // 簡易実装：各total行は「直前のrows型セクション」のみ合計
-  let pendingRows=[];
-  let grandE=0, grandF=0, grandG=0;
-  ROW_DEFS.forEach(sec=>{
-    if(!sec.total){pendingRows=sec.rows; return;}
-    let sumE=0,sumF=0,sumG=0;
-    pendingRows.forEach(name=>{
-      sumE+=Number(document.getElementById('e_'+name).textContent.replace(/,/g,''))||0;
-      sumF+=Number(document.getElementById('f_'+name).value)||0;
-      sumG+=Number(document.getElementById('g_'+name).textContent.replace(/,/g,''))||0;
-    });
-    const eTot=document.getElementById('tot_'+sec.key+'_e');
-    const fTot=document.getElementById('tot_'+sec.key+'_f');
-    const gTot=document.getElementById('tot_'+sec.key+'_g');
-    if(eTot)eTot.textContent=sumE.toFixed(1);
-    if(fTot)fTot.textContent=sumF.toFixed(1);
-    if(gTot)gTot.textContent=fmt(sumG);
-    grandG+=sumG;
-    pendingRows=[];
-  });
-
-  document.getElementById('summaryBar').innerHTML=`
-    <div class="sum-card"><div class="sum-card-title">売上金額 合計</div><div class="sum-card-value">¥${fmt(grandG)}</div></div>
-  `;
-}
-
-async function saveData(){
-  const date=document.getElementById('recordDate').value;
-  const storeId=document.getElementById('storeSel').value;
-  const statusEl=document.getElementById('status');
-  if(!date||!storeId){statusEl.textContent='回収日・店舗を指定してください。';return;}
-  statusEl.textContent='保存中...';
+  if(!date){statusEl.textContent='計上日を指定してください。';return;}
+  statusEl.className='status'; statusEl.textContent='読込中...';
+  document.getElementById('summaryCard').style.display='none';
+  document.getElementById('warnCard').style.display='none';
+  document.getElementById('storeResults').innerHTML='';
 
   try{
-    const rows=[];
-    const allNames=ROW_DEFS.filter(s=>!s.total).flatMap(s=>s.rows);
-    allNames.forEach(name=>{
-      const metalTypeId=PMT_NAME_TO_ID[name];
-      if(!metalTypeId)return;
-      const collected=collectedByName[name]||0;
-      const adjusted=Number(document.getElementById('f_'+name).value)||0;
-      const rate=ratesByName[name]||0;
-      const amount=Math.round(adjusted*rate);
-      if(collected===0&&adjusted===0)return; // 変化なしの行は保存不要
-      rows.push({record_date:date, store_id:Number(storeId), metal_type_id:metalTypeId, collected_weight:collected, adjusted_weight:adjusted, rate, amount, updated_at:new Date().toISOString()});
+    if(STORES.length===0) await loadMasters();
+
+    const pendingRows=await apiFetchAll(`gold_recovery?settled_at=is.null&record_date=lte.${date}&recovery_weight=gt.0&select=id,store_id,metal_type_id,recovery_weight`);
+    pendingRowIds=pendingRows.map(r=>r.id);
+
+    const rateRows=await apiFetch(`precious_metal_rates?record_date=eq.${date}&select=metal_type_id,rate`).then(r=>r.json());
+    const rateByMetalId={};
+    (rateRows||[]).forEach(r=>{rateByMetalId[r.metal_type_id]=r.rate;});
+
+    const byStore={};
+    pendingRows.forEach(r=>{
+      if(!byStore[r.store_id])byStore[r.store_id]={};
+      byStore[r.store_id][r.metal_type_id]=(byStore[r.store_id][r.metal_type_id]||0)+(r.recovery_weight||0);
     });
 
-    await apiFetch(`gold_recovery_settlement?record_date=eq.${date}&store_id=eq.${storeId}`,'DELETE');
-    if(rows.length>0){
-      const res=await apiFetch('gold_recovery_settlement','POST',rows);
-      if(!res.ok){statusEl.textContent='❌ 保存失敗: '+(await res.text());return;}
+    const storeList=Object.entries(byStore).map(([storeId,metals])=>{
+      const storeName=(STORES.find(s=>String(s.id)===String(storeId))||{}).name||`店舗ID${storeId}`;
+      const metalList=Object.entries(metals).map(([metalTypeId,qty])=>({
+        metalTypeId:Number(metalTypeId),
+        name:PMT_ID_TO_NAME[metalTypeId]||`金種ID${metalTypeId}`,
+        qty,
+        rate:rateByMetalId[metalTypeId]||0,
+      })).sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+      return {storeId:Number(storeId), storeName, metals:metalList};
+    }).sort((a,b)=>a.storeName.localeCompare(b.storeName,'ja'));
+
+    aggregated={date, stores:storeList};
+
+    const missingRateNames=new Set();
+    storeList.forEach(s=>s.metals.forEach(m=>{if(!m.rate)missingRateNames.add(m.name);}));
+    const warnCard=document.getElementById('warnCard');
+    if(missingRateNames.size>0){
+      document.getElementById('warnBox').innerHTML='<strong>⚠ この計上日のレートが未登録の金種があります（金額0で計算されます）</strong>'+[...missingRateNames].join('、');
+      warnCard.style.display='block';
     }
-    statusEl.textContent=`✅ ${rows.length}件を保存しました。`;
+
+    renderStores();
+    statusEl.className='status ok';
+    statusEl.textContent=`✅ 未計上データ ${pendingRows.length.toLocaleString()}行 / ${storeList.length}店舗分を読み込みました。`;
   }catch(e){
+    statusEl.className='status err';
     statusEl.textContent='❌ エラー: '+e.message;
   }
 }
 
-// 「回収チェック表出力」：全店・全金種のうち回収実績がある行だけをフラットな一覧でExcel出力
+function renderStores(){
+  const container=document.getElementById('storeResults');
+  container.innerHTML='';
+  let grandQty=0, grandAmount=0;
+
+  aggregated.stores.forEach(s=>{
+    const card=document.createElement('div');
+    card.className='card store-block';
+    let rowsHtml='';
+    let storeAmount=0;
+    s.metals.forEach(m=>{
+      const amount=Math.round(m.qty*m.rate);
+      storeAmount+=amount;
+      rowsHtml+=`<tr data-store="${s.storeId}" data-metal="${m.metalTypeId}">
+        <td class="label">${m.name}</td>
+        <td>${fmt(m.rate)}</td>
+        <td>${m.qty.toFixed(1)}g</td>
+        <td class="editable"><input type="number" step="0.1" value="${m.qty.toFixed(1)}" class="adj-input" oninput="recalcStore(${s.storeId})"></td>
+        <td class="amt-cell">¥${fmt(amount)}</td>
+      </tr>`;
+    });
+    grandQty+=s.metals.reduce((sum,m)=>sum+m.qty,0);
+    grandAmount+=storeAmount;
+
+    card.innerHTML=`
+      <h3>${s.storeName} <span class="store-amount" id="storeAmt_${s.storeId}">¥${fmt(storeAmount)}</span></h3>
+      <table>
+        <thead><tr><th>金種</th><th>当日レート</th><th>未計上g数</th><th>現物g数（修正後）</th><th>金額</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    `;
+    container.appendChild(card);
+  });
+
+  document.getElementById('summaryGrid').innerHTML=`
+    <div class="box"><div class="num">${aggregated.stores.length}</div><div class="cap">対象店舗数</div></div>
+    <div class="box"><div class="num">${grandQty.toFixed(1)}g</div><div class="cap">未計上g数合計</div></div>
+    <div class="box"><div class="num">¥${fmt(grandAmount)}</div><div class="cap">計上金額合計</div></div>
+  `;
+  document.getElementById('summaryCard').style.display='block';
+}
+
+function recalcStore(storeId){
+  const s=aggregated.stores.find(x=>x.storeId===storeId);
+  let storeAmount=0;
+  document.querySelectorAll(`tr[data-store="${storeId}"]`).forEach(tr=>{
+    const metalId=Number(tr.getAttribute('data-metal'));
+    const m=s.metals.find(x=>x.metalTypeId===metalId);
+    const adj=Number(tr.querySelector('.adj-input').value)||0;
+    const amount=Math.round(adj*m.rate);
+    tr.querySelector('.amt-cell').textContent='¥'+fmt(amount);
+    storeAmount+=amount;
+  });
+  document.getElementById('storeAmt_'+storeId).textContent='¥'+fmt(storeAmount);
+
+  let grandAmount=0;
+  aggregated.stores.forEach(st=>{
+    const el=document.getElementById('storeAmt_'+st.storeId);
+    if(el)grandAmount+=Number(el.textContent.replace(/[¥,]/g,''));
+  });
+  const grandBox=document.querySelectorAll('#summaryGrid .box .num')[2];
+  if(grandBox)grandBox.textContent='¥'+fmt(grandAmount);
+}
+
+async function confirmSettlement(){
+  if(!aggregated||aggregated.stores.length===0){alert('先に未計上データを読み込んでください。');return;}
+  if(!confirm('全店計上を確定します。対象の回収データはすべて計上済みとしてマークされ、元に戻せません。よろしいですか？'))return;
+
+  const btn=document.getElementById('btnConfirm');
+  const statusEl=document.getElementById('confirmStatus');
+  btn.disabled=true;
+  statusEl.textContent='確定中...';
+
+  try{
+    const date=aggregated.date;
+    const settleRows=[];
+    aggregated.stores.forEach(s=>{
+      document.querySelectorAll(`tr[data-store="${s.storeId}"]`).forEach(tr=>{
+        const metalId=Number(tr.getAttribute('data-metal'));
+        const m=s.metals.find(x=>x.metalTypeId===metalId);
+        const adj=Number(tr.querySelector('.adj-input').value)||0;
+        const amount=Math.round(adj*m.rate);
+        settleRows.push({
+          settlement_date:date, store_id:s.storeId, metal_type_id:metalId,
+          collected_weight:m.qty, adjusted_weight:adj, rate:m.rate, amount,
+        });
+      });
+    });
+
+    const insRes=await apiFetch('gold_recovery_settlement','POST',settleRows);
+    if(!insRes.ok)throw new Error('計上データ保存失敗: '+(await insRes.text()));
+
+    const nowIso=new Date().toISOString();
+    const CHUNK=200;
+    for(let i=0;i<pendingRowIds.length;i+=CHUNK){
+      const chunk=pendingRowIds.slice(i,i+CHUNK);
+      const idList=chunk.join(',');
+      const res=await apiFetch(`gold_recovery?id=in.(${idList})`,'PATCH',{settled_at:nowIso});
+      if(!res.ok)throw new Error('計上済みマーク失敗: '+(await res.text()));
+    }
+
+    statusEl.textContent=`✅ ${settleRows.length}件を計上確定しました（対象行 ${pendingRowIds.length}件を計上済みにマークしました）。`;
+    document.getElementById('storeResults').innerHTML='';
+    document.getElementById('summaryCard').style.display='none';
+    aggregated=null; pendingRowIds=[];
+  }catch(e){
+    statusEl.textContent='❌ エラー: '+e.message;
+  }finally{
+    btn.disabled=false;
+  }
+}
+
 async function exportChecklist(){
-  const date=document.getElementById('recordDate').value;
-  const statusEl=document.getElementById('status');
-  if(!date){statusEl.textContent='回収日を指定してください。';return;}
-  statusEl.textContent='出力準備中...';
-
-  if(STORES.length===0)await loadMasters();
-
-  const grRows=await (await apiFetch(`gold_recovery?record_date=eq.${date}&select=store_id,metal_type_id,recovery_weight`)).json()||[];
-  const storeNameById={}; STORES.forEach(s=>{storeNameById[s.id]=s.name;});
+  const date=document.getElementById('settleDate').value;
+  if(!date){alert('計上日を指定してください。');return;}
+  if(!aggregated){await loadPending();}
+  if(!aggregated||aggregated.stores.length===0){alert('未計上データがありません。');return;}
 
   const wb=new ExcelJS.Workbook();
-  const ws=wb.addWorksheet('回収チェック表');
-  ws.addRow([`地金 ${date} 回収`]);
-  const hdr=ws.addRow(['店舗名','金種','回収重量']);
+  const ws=wb.addWorksheet('未計上チェック表');
+  ws.addRow([`地金 〜${date} 未計上分`]);
+  const hdr=ws.addRow(['店舗名','金種','未計上g数','当日レート','金額']);
   hdr.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};});
 
-  let count=0;
-  grRows.filter(r=>(r.recovery_weight||0)>0).forEach(r=>{
-    const storeName=storeNameById[r.store_id]||`店舗ID${r.store_id}`;
-    const metalName=PMT_ID_TO_NAME[r.metal_type_id]||`金種ID${r.metal_type_id}`;
-    ws.addRow([storeName, metalName, r.recovery_weight]);
-    count++;
+  aggregated.stores.forEach(s=>{
+    s.metals.forEach(m=>{
+      ws.addRow([s.storeName, m.name, m.qty, m.rate, Math.round(m.qty*m.rate)]);
+    });
   });
-  ws.getColumn(1).width=28; ws.getColumn(2).width=16; ws.getColumn(3).width=12;
+  ws.getColumn(1).width=28; ws.getColumn(2).width=16; ws.getColumn(3).width=12; ws.getColumn(4).width=12; ws.getColumn(5).width=14;
 
   const buf=await wb.xlsx.writeBuffer();
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download=`地金回収チェック表_${date}.xlsx`; a.click();
+  a.href=url; a.download=`地金換金_未計上チェック表_${date}.xlsx`; a.click();
   URL.revokeObjectURL(url);
-  statusEl.textContent=`✅ ${count}件を出力しました。`;
 }
-
-function handleLogout(){
-  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
-}
-
-loadMasters().then(buildTable);
 </script>
+
 </body>
 </html>
