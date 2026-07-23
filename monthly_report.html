@@ -164,6 +164,8 @@ const BUY_CATEGORY_IDS=[1,2,3,4,5,6,7,9,10];
 let CATS=[],CHANNELS=[],BUY_CHID=null,CANCEL_CHID=null,VISIT_REASONS=[];
 let ORG_COLUMNS=[];
 let lastReportData=null;
+let STORES_RAW=[];
+let PRODUCT_REGEN_STORE_ID=null; // 「商品再生課」store_id
 
 async function loadMasters(){
   [CATS, CHANNELS, VISIT_REASONS]=await Promise.all([
@@ -177,12 +179,15 @@ async function loadMasters(){
   CANCEL_CHID=cancelCh?cancelCh.id:2;
 
   const [stores, teams, groups, areas, departments]=await Promise.all([
-    apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name,sort_order,team_id'),
+    apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name,sort_order,team_id,code'),
     apiFetch('teams?is_active=eq.true&order=sort_order&select=id,name,sort_order,group_id'),
     apiFetch('groups?is_active=eq.true&order=sort_order&select=id,name,sort_order,area_id'),
     apiFetch('areas?is_active=eq.true&order=sort_order&select=id,name,sort_order,department_id'),
     apiFetch('departments?is_active=eq.true&order=sort_order&select=id,name,sort_order'),
   ]);
+  STORES_RAW=stores;
+  const productRegenStore=stores.find(s=>String(s.code)==='290');
+  PRODUCT_REGEN_STORE_ID=productRegenStore?productRegenStore.id:null;
 
   const cols=[];
   const allStoreIds=[];
@@ -256,9 +261,10 @@ async function loadReport(){
   try{
     if(CATS.length===0) await loadMasters();
 
-    const [dailyRows, purchaseRows]=await Promise.all([
+    const [dailyRows, purchaseRows, goldSettlementRows]=await Promise.all([
       apiFetchAll(`daily_reports?report_date=gte.${from}&report_date=lte.${to}&select=store_id,category_id,channel_id,quantity,amount&order=id`),
       apiFetchAll(`purchase_details?report_date=gte.${from}&report_date=lte.${to}&select=store_id,report_date,visit_reason_id,visitors,amount,first_visit,repeat_visit,no_purchase,cancel_count&order=id`),
+      apiFetchAll(`gold_recovery_settlement?settlement_date=gte.${from}&settlement_date=lte.${to}&select=store_id,amount&order=id`),
     ]);
 
     const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
@@ -305,7 +311,20 @@ async function loadReport(){
       visitorsByReasonStore[row.visit_reason_id][row.store_id]=(visitorsByReasonStore[row.visit_reason_id][row.store_id]||0)+(row.visitors||0);
     }
 
-    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, from, to};
+    // 貴金属　売上（gold_recovery_settlement）：店舗ごとに日別金額配列を保持、商品再生課はマイナス合計
+    const preciousMetalAmountsByStore={};
+    goldSettlementRows.forEach(row=>{
+      if(!preciousMetalAmountsByStore[row.store_id])preciousMetalAmountsByStore[row.store_id]=[];
+      preciousMetalAmountsByStore[row.store_id].push(row.amount||0);
+    });
+    if(PRODUCT_REGEN_STORE_ID){
+      const totalAllStores=goldSettlementRows.reduce((s,r)=>s+(r.amount||0),0);
+      // 商品再生課自身の実績（通常は無いはずだが、念のため既存分に追加する形にする）
+      if(!preciousMetalAmountsByStore[PRODUCT_REGEN_STORE_ID])preciousMetalAmountsByStore[PRODUCT_REGEN_STORE_ID]=[];
+      preciousMetalAmountsByStore[PRODUCT_REGEN_STORE_ID].push(-totalAllStores);
+    }
+
+    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, preciousMetalAmountsByStore, from, to};
 
     renderTable();
     let msg=`✅ ${from}〜${to}：daily_reports ${dailyRows.length.toLocaleString()}行 / purchase_details ${purchaseRows.length.toLocaleString()}行 を集計しました`;
@@ -418,7 +437,21 @@ function renderTable(){
     bodyHtml+=ecCellRow(section.cat+' 合計', col=>sumForCols(catAcc, col), 'cattotal');
   });
 
-  ZERO_ROWS_A.forEach(label=>{bodyHtml+=zeroRow(label);});
+  ZERO_ROWS_A.forEach(label=>{
+    if(label==='貴金属　売上'){
+      const rowData={};
+      Object.keys(d.preciousMetalAmountsByStore).forEach(sid=>{
+        const arr=d.preciousMetalAmountsByStore[sid];
+        const amount=roundedSumOfAmounts(arr, false, taxMode); // 課税対象（テレカ金券・免税ではない）
+        rowData[sid]={qty:0, amount};
+        if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
+        ecTotalByStore[sid].amount+=amount; // 総売上・総合計に反映（商品再生課のマイナス分で相殺される）
+      });
+      bodyHtml+=ecCellRow(label, col=>sumForCols(rowData, col));
+    } else {
+      bodyHtml+=zeroRow(label);
+    }
+  });
 
   bodyHtml+=ecCellRow('総売上', col=>sumForCols(ecTotalByStore, col), 'sectiontotal');
   bodyHtml+=ecCellRow('客数・売上合計', col=>sumForCols(ecTotalByStore, col), 'sectiontotal');
