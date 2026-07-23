@@ -719,6 +719,25 @@ coData.forEach(row=>{
 if(carryOverData[row.metal_type_id]===undefined)carryOverData[row.metal_type_id]=row.next_carry_over||0;
 });
 
+// ① この日がこの店舗の回収日かどうか（全店共通＋店舗個別）
+const [rc1Res,rc2Res]=await Promise.all([
+apiFetch(`recovery_calendar?recover_date=eq.${date}&store_id=is.null`),
+apiFetch(`recovery_calendar?recover_date=eq.${date}&store_id=eq.${currentStoreId}`),
+]);
+const rc1=await rc1Res.json()||[];
+const rc2=await rc2Res.json()||[];
+const isRecoveryDay=(rc1.length+rc2.length)>0;
+
+// ② 既にこの店舗・この日で「回収しないで登録」（is_recovered=false）が手動登録済みかどうか
+let manualNotRecovered=false;
+if(isRecoveryDay){
+const existingRes=await apiFetch(`gold_recovery?store_id=eq.${currentStoreId}&record_date=eq.${date}&is_recovered=eq.false&limit=1&select=id`);
+const existingRows=await existingRes.json()||[];
+manualNotRecovered=existingRows.length>0;
+}
+// 回収日かつ、まだ「回収しないで登録」が選ばれていなければ、自動で回収する扱い（累計を0にリセット）
+const willAutoRecover=isRecoveryDay&&!manualNotRecovered;
+
 // 金種ごとに1行ずつ作成（既存gold_recovery.htmlの保存ロジックと同じ計算式）
 const goldRows=metalTypes.map(m=>{
 const carry=carryOverData[m.id]||0;
@@ -726,6 +745,7 @@ const today=weightByMetalId[m.id]||0;
 const product=0,ret=0;
 const crush=carry-product+today;
 const recovery=carry+today-product+ret;
+const nextCarry=willAutoRecover?0:recovery;
 return{
 store_id:currentStoreId,
 metal_type_id:m.id,
@@ -736,8 +756,8 @@ product_weight:product,
 crush_weight:crush,
 return_weight:ret,
 recovery_weight:recovery,
-next_carry_over:recovery,
-is_recovered:false,
+next_carry_over:nextCarry,
+is_recovered:willAutoRecover,
 };
 });
 
@@ -747,6 +767,7 @@ if(!goldInsRes.ok){const err=await goldInsRes.text();throw new Error(err);}
 
 const totalWeight=Object.values(weightByMetalId).reduce((s,w)=>s+w,0);
 msg+=`\n✅ 地金回収：本日重量合計${totalWeight.toFixed(2)}gを反映しました。`;
+if(isRecoveryDay)msg+=willAutoRecover?'（回収日のため累計をリセットしました）':'（回収しないで登録が選択済みのため累計を維持）';
 if(unmatchedMetals.length){msg+=` ⚠ 未一致の金種：${unmatchedMetals.join('、')}`;hasWarning=true;}
 }catch(e){
 msg+=`\n❌ 地金回収の反映に失敗：${e.message}`;
