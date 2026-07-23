@@ -88,6 +88,7 @@ async function apiFetch(path,method='GET',body=null){
 }
 function todayStr(){return new Date().toISOString().slice(0,10);}
 document.getElementById('recordDate').value=todayStr();
+document.getElementById('recordDate').addEventListener('change', loadRatesForDate);
 
 // ===== 金種定義（Excel「地金換金 レート計算表」の計算式を再現） =====
 // type: 'gold'（K24ベース）/ 'gold_pd'（K24ベース＋PD補正、PT900・PT850用）/ 'combi'（H経由せず直接計算・マークアップなし）/ 'silver'（SVベース）/ 'manual'（手入力）
@@ -252,6 +253,13 @@ async function loadRatesForDate(){
 function handleLogout(){
   if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
 }
+
+// ページを開いた時、この日付で保存済みのレートがあれば自動で読み込む
+(async function initAutoLoad(){
+  await loadMetalTypes();
+  await loadRatesForDate();
+})();
+
 </script>
 </body>
 </html>
