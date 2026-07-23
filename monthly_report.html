@@ -140,7 +140,7 @@ const CHANNEL_LABEL_MAP={
 'サブスク':'サブスク','ラクマ':'ラクマ','Qoo10':'Qoo10','GLOBAZONE':'GLOBAZONE','LuxUness':'LuxUness','その他販売':'その他販売',
 };
 
-const ZERO_ROWS_A=['テレカ50度（非課税）','テレカ105度（非課税）','その他金券（非課税）','ニチマテ','松田産業','相田化学工業','松田産業精練','切手・印紙','質受取利息',
+const ZERO_ROWS_A=['テレカ50度（非課税）','テレカ105度（非課税）','その他金券（非課税）','貴金属　売上','切手・印紙　売上','テレカ・金券類　売上','ニチマテ　業者販売','松田産業　業者販売','相田化学工業　業者販売','松田産業精練　業者販売',
 '業者販売×金貨×蔵王','業者販売×市場×上田会×ダイヤ','業者販売×市場×ＮＪオークション×ダイヤ','業者販売×市場×アプレ×ジュエリー','業者販売×市場×名古屋レスオク×ジュエリー',
 '業者販売×市場×銀座ＪＢＡ×ジュエリー','業者販売×グランチャ×ジュエリー','業者販売×市場×ライブネットＪＢＡ×ジュエリー','業者販売×市場×エコリング×ジュエリー',
 '業者販売×市場×ＮＪオークション・上田会×ジュエリー','業者販売×ＢｔｏＢ×ジュエリー','業者販売×ダイバーシティオークション×ジュエリー','業者販売×市場×名古屋レスオク×時計',
@@ -421,7 +421,7 @@ function renderTable(){
   ZERO_ROWS_A.forEach(label=>{bodyHtml+=zeroRow(label);});
 
   bodyHtml+=ecCellRow('総売上', col=>sumForCols(ecTotalByStore, col), 'sectiontotal');
-  bodyHtml+=ecCellRow('客数・売上合計（EC分）', col=>sumForCols(ecTotalByStore, col), 'sectiontotal');
+  bodyHtml+=ecCellRow('客数・売上合計', col=>sumForCols(ecTotalByStore, col), 'sectiontotal');
 
   const buyTotalByStore={};
   BUY_CATEGORY_IDS.forEach(catId=>{
@@ -440,7 +440,7 @@ function renderTable(){
 
   ZERO_ROWS_B.forEach(label=>{bodyHtml+=zeroRow(label);});
 
-  bodyHtml+=ecCellRow('仕入合計', col=>sumForCols(buyTotalByStore, col), 'sectiontotal');
+  bodyHtml+=ecCellRow('仕入れ合計', col=>sumForCols(buyTotalByStore, col), 'sectiontotal');
 
   const lastCol=ORG_COLUMNS[ORG_COLUMNS.length-1];
   const ecTotalGrand=sumForCols(ecTotalByStore, lastCol);
