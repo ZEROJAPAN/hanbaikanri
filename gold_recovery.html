@@ -214,8 +214,9 @@ const today=numVal('today_'+id);
 const prod=numVal('prod_'+id);
 const ret=numVal('ret_'+id);
 const crush=carry-prod+today;
-const recovery=carry+today-prod+ret;
-const next=recovery;
+const accumulated=carry+today-prod+ret; // 翌日繰越に積み上がる累計値
+const recoveryDisplay=isRecoveryDay?accumulated:0; // 回収日以外は「回収分」を0表示
+const next=accumulated;
 
 const carryEl=document.getElementById('carry_'+id);
 const crushEl=document.getElementById('crush_'+id);
@@ -223,7 +224,7 @@ const recEl=document.getElementById('rec_'+id);
 const nextEl=document.getElementById('next_'+id);
 if(carryEl)carryEl.textContent=fmtNum(carry);
 if(crushEl)crushEl.textContent=fmtNum(crush);
-if(recEl)recEl.textContent=fmtNum(recovery);
+if(recEl)recEl.textContent=fmtNum(recoveryDisplay);
 if(nextEl)nextEl.textContent=fmtNum(next);
 }
 
@@ -282,6 +283,7 @@ const crush=carry-prod+today;
 const ret=numVal('ret_'+m.id);
 const recovery=carry+today-prod+ret;
 const nextCarry=isRecover?0:recovery;
+const savedRecoveryWeight=isRecover?recovery:0; // 実際に「回収する」を押した時だけ非ゼロで記録
 records.push({
 store_id:parseInt(storeId),
 metal_type_id:m.id,
@@ -291,7 +293,7 @@ today_weight:today,
 product_weight:prod,
 crush_weight:crush,
 return_weight:ret,
-recovery_weight:recovery,
+recovery_weight:savedRecoveryWeight,
 next_carry_over:nextCarry,
 is_recovered:isRecover,
 manual_choice:true,
