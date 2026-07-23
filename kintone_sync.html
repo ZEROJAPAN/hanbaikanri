@@ -602,6 +602,15 @@ async function importAllStoresDetails() {
       if (cardCarryByStoreCard[key] === undefined) cardCarryByStoreCard[key] = row.next_carry_over || 0;
     });
 
+    // この日の回収カレンダー（全店共通＋店舗個別）と、既に「回収しないで登録」済みの店舗を一括取得
+    const [rcRows, manualNotRecoveredRows] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/recovery_calendar?recover_date=eq.${date}&select=store_id`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/gold_recovery?record_date=eq.${date}&is_recovered=eq.false&select=store_id`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+    ]);
+    const commonRecoveryDay = (rcRows || []).some(r => r.store_id === null);
+    const storeSpecificRecoveryDaySet = new Set((rcRows || []).filter(r => r.store_id !== null).map(r => r.store_id));
+    const manualNotRecoveredSet = new Set((manualNotRecoveredRows || []).map(r => r.store_id));
+
     let storeSuccessCount = 0;
     const storeErrors = [];
     const allUnmatchedReasons = new Set();
@@ -689,7 +698,10 @@ async function importAllStoresDetails() {
             const today = weightByMetalId[m.id] || 0;
             const crush = carry + today;
             const recovery = carry + today;
-            return { store_id: supabaseStoreId, metal_type_id: m.id, record_date: date, carry_over: carry, today_weight: today, product_weight: 0, crush_weight: crush, return_weight: 0, recovery_weight: recovery, next_carry_over: recovery, is_recovered: false };
+            const isRecoveryDay = commonRecoveryDay || storeSpecificRecoveryDaySet.has(supabaseStoreId);
+            const willAutoRecover = isRecoveryDay && !manualNotRecoveredSet.has(supabaseStoreId);
+            const nextCarry = willAutoRecover ? 0 : recovery;
+            return { store_id: supabaseStoreId, metal_type_id: m.id, record_date: date, carry_over: carry, today_weight: today, product_weight: 0, crush_weight: crush, return_weight: 0, recovery_weight: recovery, next_carry_over: nextCarry, is_recovered: willAutoRecover };
           });
           await fetch(`${SUPABASE_URL}/rest/v1/gold_recovery?store_id=eq.${supabaseStoreId}&record_date=eq.${date}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
           const grRes = await fetch(`${SUPABASE_URL}/rest/v1/gold_recovery`, { method: 'POST', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(goldRows) });
