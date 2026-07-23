@@ -132,6 +132,10 @@ async function loadPending(){
   document.getElementById('summaryCard').style.display='none';
   document.getElementById('warnCard').style.display='none';
   document.getElementById('storeResults').innerHTML='';
+  const confirmBtn=document.getElementById('btnConfirm');
+  confirmBtn.disabled=false;
+  confirmBtn.textContent='✅ 全店計上を確定する';
+  document.getElementById('confirmStatus').textContent='';
 
   try{
     if(STORES.length===0) await loadMasters();
@@ -280,14 +284,16 @@ async function confirmSettlement(){
       if(!res.ok)throw new Error('計上済みマーク失敗: '+(await res.text()));
     }
 
-    statusEl.textContent=`✅ ${settleRows.length}件を計上確定しました（対象行 ${pendingRowIds.length}件を計上済みにマークしました）。`;
-    document.getElementById('storeResults').innerHTML='';
-    document.getElementById('summaryCard').style.display='none';
-    aggregated=null; pendingRowIds=[];
+    statusEl.textContent=`✅ ${settleRows.length}件を計上確定しました（対象行 ${pendingRowIds.length}件を計上済みにマークしました）。この内容は記録として画面に残ります。`;
+    // 二重計上防止のため、入力欄と確定ボタンを無効化（表示はそのまま残す）
+    document.querySelectorAll('.adj-input').forEach(el=>{el.disabled=true;});
+    btn.disabled=true;
+    btn.textContent='計上済み ✓';
+    pendingRowIds=[];
   }catch(e){
     statusEl.textContent='❌ エラー: '+e.message;
-  }finally{
     btn.disabled=false;
+  }finally{
   }
 }
 
