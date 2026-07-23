@@ -731,7 +731,7 @@ const isRecoveryDay=(rc1.length+rc2.length)>0;
 // ② 既にこの店舗・この日で「回収しないで登録」（is_recovered=false）が手動登録済みかどうか
 let manualNotRecovered=false;
 if(isRecoveryDay){
-const existingRes=await apiFetch(`gold_recovery?store_id=eq.${currentStoreId}&record_date=eq.${date}&is_recovered=eq.false&limit=1&select=id`);
+const existingRes=await apiFetch(`gold_recovery?store_id=eq.${currentStoreId}&record_date=eq.${date}&is_recovered=eq.false&manual_choice=eq.true&limit=1&select=id`);
 const existingRows=await existingRes.json()||[];
 manualNotRecovered=existingRows.length>0;
 }
@@ -758,6 +758,7 @@ return_weight:ret,
 recovery_weight:recovery,
 next_carry_over:nextCarry,
 is_recovered:willAutoRecover,
+manual_choice:false,
 };
 });
 
