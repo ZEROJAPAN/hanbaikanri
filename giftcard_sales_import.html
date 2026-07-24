@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テレカ・金券類売上 CSV取込 - ゼロジャパン</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1d4ed8; --bg:#f4f6f9; --card:#ffffff;
+    --border:#dbe1e8; --text:#1f2937; --muted:#6b7280; --green:#16a34a; --red:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--blue-dark);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:16px;margin:0;}
+  header a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;}
+  main{max-width:900px;margin:20px auto;padding:0 16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:18px;}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--blue-dark);}
+  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+  .btn{padding:9px 18px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:14px;cursor:pointer;font-weight:600;}
+  .btn:hover{background:var(--blue-dark);}
+  .btn:disabled{background:#9ca3af;cursor:not-allowed;}
+  .file-inp{padding:8px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:13px;}
+  .status{margin-top:10px;font-size:13px;white-space:pre-wrap;}
+  .status.ok{color:var(--green);}
+  .status.err{color:var(--red);}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  th,td{border:1px solid var(--border);padding:6px 8px;text-align:right;}
+  th{background:#eef2f7;text-align:center;}
+  td.label{text-align:left;font-weight:600;background:#fafbfc;}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+  .summary-grid .box{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+  .summary-grid .box .num{font-size:20px;font-weight:700;color:var(--blue-dark);}
+  .summary-grid .box .cap{font-size:11px;color:var(--muted);}
+  .muted{color:var(--muted);font-size:12px;}
+  .warn-box{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#9a3412;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📥 テレカ・金券類売上 CSV取込</h1>
+  <a href="index.html">← メニューに戻る</a>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>CSVファイル選択</h2>
+    <div class="row">
+      <input type="file" id="csvFile" class="file-inp" accept=".csv">
+      <button class="btn" type="button" id="btnParse">CSVを読み込む</button>
+    </div>
+    <p class="muted" style="margin-top:8px;">
+      形式：A列=日付、B列=店舗コード、C列=（使用しません）、D列=金額（ヘッダー行なし）<br>
+      ※ 非課税のため、税込・税抜とも同じ金額として扱います。<br>
+      ※ 日付・店舗ごとに、既存データを削除してから取り込んだ内容で上書きします（再取込しても重複しません）。
+    </p>
+    <div id="parseStatus" class="status"></div>
+  </div>
+
+  <div class="card" id="warnCard" style="display:none;"><div class="warn-box" id="warnBox"></div></div>
+
+  <div class="card" id="summaryCard" style="display:none;">
+    <h2>取込内容プレビュー</h2>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <table id="previewTable">
+      <thead><tr><th style="text-align:left;">店舗</th><th>金額</th></tr></thead>
+      <tbody id="previewBody"></tbody>
+    </table>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn" type="button" id="btnSave">この内容を保存</button>
+      <span class="muted" id="saveStatus"></span>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path, method='GET', body=null){
+  const opts={method,headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}};
+  if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
+
+let parsedRows=[];
+let aggregated=null;
+
+document.getElementById('btnParse').onclick = async () => {
+  const fileInput=document.getElementById('csvFile');
+  const statusEl=document.getElementById('parseStatus');
+  const file=fileInput.files[0];
+  if(!file){statusEl.className='status err';statusEl.textContent='ファイルを選択してください。';return;}
+
+  try{
+    const text=await file.text();
+    const lines=text.split(/\r\n|\n|\r/).filter(l=>l.trim().length>0);
+    parsedRows=lines.map(line=>{
+      const cells=line.split(',');
+      return {date:cells[0]?.trim(), code:cells[1]?.trim(), amount:Number(cells[3])||0};
+    }).filter(r=>r.date&&r.code);
+
+    await aggregate();
+    statusEl.className='status ok';
+    statusEl.textContent=`✅ ${parsedRows.length}行を読み込みました。`;
+  }catch(e){
+    statusEl.className='status err';
+    statusEl.textContent='❌ 読み込みに失敗しました: '+e.message;
+  }
+};
+
+async function aggregate(){
+  const stores=await (await apiFetch('stores?select=id,code,name')).json()||[];
+  const codeToStore={};
+  stores.forEach(s=>{codeToStore[String(s.code)]=s;});
+
+  const byDate={};
+  const unmatchedNonZero={}; // code -> 合計金額（0以外のみ記録）
+  parsedRows.forEach(r=>{
+    const store=codeToStore[r.code];
+    if(!store){
+      if(r.amount!==0){
+        unmatchedNonZero[r.code]=(unmatchedNonZero[r.code]||0)+r.amount;
+      }
+      return; // 店舗マスタに無いコードは無視（閉店店舗等）。金額0なら警告も出さない
+    }
+    if(!byDate[r.date])byDate[r.date]={};
+    byDate[r.date][store.id]=(byDate[r.date][store.id]||0)+r.amount;
+  });
+
+  const dates=Object.keys(byDate);
+  aggregated={dates, byDate, codeToStore};
+
+  const warnCard=document.getElementById('warnCard');
+  const unmatchedEntries=Object.entries(unmatchedNonZero);
+  if(unmatchedEntries.length>0){
+    const detail=unmatchedEntries.map(([code,amt])=>`店舗コード${code}：¥${fmt(amt)}`).join('\n');
+    document.getElementById('warnBox').innerHTML='<strong>⚠ 店舗マスタに無いコードなのに金額が0ではありません（要確認）</strong><br>'+unmatchedEntries.map(([code,amt])=>`店舗コード${code}：¥${fmt(amt)}`).join('<br>');
+    warnCard.style.display='block';
+    alert('⚠ 店舗マスタに登録の無い店舗コードで、金額が0ではない行があります。ご確認ください。\n\n'+detail);
+  } else {
+    warnCard.style.display='none';
+  }
+
+  render(stores);
+}
+
+function render(stores){
+  const storeNameById={}; stores.forEach(s=>{storeNameById[s.id]=s.name;});
+  let html='';
+  let grandTotal=0;
+  let storeCount=0;
+
+  aggregated.dates.forEach(date=>{
+    html+=`<tr><td class="label" colspan="2" style="background:#EEF2FF;color:#1E2761;">${date}</td></tr>`;
+    const dayData=aggregated.byDate[date];
+    Object.entries(dayData).forEach(([storeId,amount])=>{
+      html+=`<tr><td class="label">${storeNameById[storeId]||('店舗ID'+storeId)}</td><td>¥${fmt(amount)}</td></tr>`;
+      grandTotal+=amount;
+      storeCount++;
+    });
+  });
+
+  document.getElementById('previewBody').innerHTML=html;
+  document.getElementById('summaryGrid').innerHTML=`
+    <div class="box"><div class="num">${aggregated.dates.length}</div><div class="cap">対象日数</div></div>
+    <div class="box"><div class="num">${storeCount}</div><div class="cap">店舗×日数</div></div>
+    <div class="box"><div class="num">¥${fmt(grandTotal)}</div><div class="cap">金額合計</div></div>
+  `;
+  document.getElementById('summaryCard').style.display='block';
+}
+
+document.getElementById('btnSave').onclick = saveData;
+
+async function saveData(){
+  if(!aggregated){return;}
+  const btn=document.getElementById('btnSave');
+  const statusEl=document.getElementById('saveStatus');
+  btn.disabled=true;
+  statusEl.textContent='保存中...';
+
+  try{
+    let savedCount=0;
+    for(const date of aggregated.dates){
+      const dayData=aggregated.byDate[date];
+      const rows=Object.entries(dayData).map(([storeId,amount])=>({
+        report_date:date, store_id:Number(storeId), amount, updated_at:new Date().toISOString(),
+      }));
+      if(rows.length===0)continue;
+
+      const storeIdList=Object.keys(dayData).join(',');
+      await apiFetch(`giftcard_sales_settlement?report_date=eq.${date}&store_id=in.(${storeIdList})`,'DELETE');
+      const res=await apiFetch('giftcard_sales_settlement','POST',rows);
+      if(!res.ok)throw new Error(`${date}: 保存失敗 `+(await res.text()));
+      savedCount+=rows.length;
+    }
+    statusEl.textContent=`✅ ${savedCount}件を保存しました。`;
+  }catch(e){
+    statusEl.textContent='❌ 保存失敗: '+e.message;
+  }finally{
+    btn.disabled=false;
+  }
+}
+</script>
+
+</body>
+</html>
