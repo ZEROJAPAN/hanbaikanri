@@ -261,10 +261,11 @@ async function loadReport(){
   try{
     if(CATS.length===0) await loadMasters();
 
-    const [dailyRows, purchaseRows, goldSettlementRows]=await Promise.all([
+    const [dailyRows, purchaseRows, goldSettlementRows, giftcardSalesRows]=await Promise.all([
       apiFetchAll(`daily_reports?report_date=gte.${from}&report_date=lte.${to}&select=store_id,category_id,channel_id,quantity,amount&order=id`),
       apiFetchAll(`purchase_details?report_date=gte.${from}&report_date=lte.${to}&select=store_id,report_date,visit_reason_id,visitors,amount,first_visit,repeat_visit,no_purchase,cancel_count&order=id`),
       apiFetchAll(`gold_recovery_settlement?settlement_date=gte.${from}&settlement_date=lte.${to}&select=store_id,amount&order=id`),
+      apiFetchAll(`giftcard_sales_settlement?report_date=gte.${from}&report_date=lte.${to}&select=store_id,amount&order=id`),
     ]);
 
     const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
@@ -324,7 +325,14 @@ async function loadReport(){
       preciousMetalAmountsByStore[PRODUCT_REGEN_STORE_ID].push(-totalAllStores);
     }
 
-    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, preciousMetalAmountsByStore, from, to};
+    // テレカ・金券類　売上（giftcard_sales_settlement）：非課税のため税込・税抜とも同額
+    const giftcardSalesAmountsByStore={};
+    giftcardSalesRows.forEach(row=>{
+      if(!giftcardSalesAmountsByStore[row.store_id])giftcardSalesAmountsByStore[row.store_id]=[];
+      giftcardSalesAmountsByStore[row.store_id].push(row.amount||0);
+    });
+
+    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, preciousMetalAmountsByStore, giftcardSalesAmountsByStore, from, to};
 
     renderTable();
     let msg=`✅ ${from}〜${to}：daily_reports ${dailyRows.length.toLocaleString()}行 / purchase_details ${purchaseRows.length.toLocaleString()}行 を集計しました`;
@@ -446,6 +454,16 @@ function renderTable(){
         rowData[sid]={qty:0, amount};
         if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
         ecTotalByStore[sid].amount+=amount; // 総売上・総合計に反映（商品再生課のマイナス分で相殺される）
+      });
+      bodyHtml+=ecCellRow(label, col=>sumForCols(rowData, col));
+    } else if(label==='テレカ・金券類　売上'){
+      const rowData={};
+      Object.keys(d.giftcardSalesAmountsByStore).forEach(sid=>{
+        const arr=d.giftcardSalesAmountsByStore[sid];
+        const amount=roundedSumOfAmounts(arr, true, taxMode); // 非課税：税込・税抜とも同額（換算なし）
+        rowData[sid]={qty:0, amount};
+        if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
+        ecTotalByStore[sid].amount+=amount; // 総売上・総合計に反映
       });
       bodyHtml+=ecCellRow(label, col=>sumForCols(rowData, col));
     } else {
