@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仕入れ入力 - ゼロジャパン</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:13px;background:#90ee90;}
+.wrap{padding:10px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:10px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.date-input{padding:8px 10px;border:1px solid #ccc;border-radius:4px;font-size:14px;margin-bottom:10px;background:#fff;width:160px;}
+.msg{padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:12px;display:none;}
+.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
+.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:6px;overflow:hidden;}
+th{background:#FF9999;color:#000;padding:8px 10px;text-align:center;font-weight:bold;font-size:13px;border:1px solid #ffb3b3;}
+td{padding:7px 10px;border:1px solid #E2E8F0;vertical-align:middle;}
+tr:nth-child(even) td{background:#E0FFFF;}
+td.store-cell{white-space:nowrap;}
+td.num{text-align:right;}
+td.del-cell{text-align:center;width:70px;}
+.del-btn{padding:5px 12px;background:linear-gradient(180deg,#3D5AFE,#1E2761);color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;}
+.del-btn:hover{background:linear-gradient(180deg,#4D6AFF,#2E3771);}
+.total-row td{background:#FFFF88!important;font-weight:bold;text-align:center;}
+.total-row td.num{text-align:right;}
+select,.qty-inp,.amt-inp{padding:5px 8px;border:1px solid #aaa;border-radius:4px;font-size:12px;width:100%;}
+.qty-inp,.amt-inp{text-align:right;}
+.add-btn{padding:7px 16px;background:linear-gradient(180deg,#2D4FBA,#1E2761);color:#fff;border:none;border-radius:4px;font-size:12px;font-weight:bold;cursor:pointer;width:100%;}
+.add-btn:hover{background:linear-gradient(180deg,#3D6FCA,#2E3771);}
+.bottom-bar{display:flex;justify-content:flex-end;margin-top:14px;}
+.clear-btn{padding:8px 20px;background:linear-gradient(180deg,#FF6666,#CC2222);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:bold;cursor:pointer;}
+.clear-btn:hover{background:linear-gradient(180deg,#FF8888,#DD3333);}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar">
+<div style="display:flex;align-items:center;gap:12px;">
+<button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+<div class="topbar-title">📦 仕入れ入力</div>
+</div>
+<button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<input type="date" class="date-input" id="recordDate">
+
+<table>
+<thead>
+<tr>
+<th style="width:22%;">店舗</th>
+<th style="width:48%;">仕入</th>
+<th style="width:12%;">点数</th>
+<th style="width:12%;">金額</th>
+<th style="width:6%;"></th>
+</tr>
+</thead>
+<tbody id="tbl-body"></tbody>
+<tfoot>
+<tr>
+<td><select id="newStore"></select></td>
+<td><select id="newSource"></select></td>
+<td><input type="number" class="qty-inp" id="newQty" value="0"></td>
+<td><input type="number" class="amt-inp" id="newAmt" value="0"></td>
+<td><button type="button" class="add-btn" onclick="handleAdd()">追加</button></td>
+</tr>
+<tr class="total-row">
+<td>合計</td>
+<td></td>
+<td class="num" id="totQty">0</td>
+<td class="num" id="totAmt">0</td>
+<td></td>
+</tr>
+</tfoot>
+</table>
+
+<div class="bottom-bar">
+<button type="button" class="clear-btn" onclick="handleClearAll()">クリア</button>
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path,method='GET',body=null){
+const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+if(body){opts.headers['Content-Type']='application/json';opts.headers['Prefer']='return=minimal';opts.body=JSON.stringify(body);}
+return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function showMsg(text,type='success'){
+const el=document.getElementById('msg');
+el.textContent=text;el.className='msg '+type;el.style.display='block';
+setTimeout(()=>el.style.display='none',3500);
+}
+
+let STORES=[], SOURCES=[];
+let rows=[]; // 現在の日付の登録済み行
+
+document.getElementById('recordDate').value=todayStr();
+document.getElementById('recordDate').addEventListener('change', loadRows);
+
+async function loadMasters(){
+STORES=await (await apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name')).json()||[];
+SOURCES=await (await apiFetch('purchase_source_master?is_active=eq.true&order=sort_order&select=id,code,name')).json()||[];
+
+const storeSel=document.getElementById('newStore');
+storeSel.innerHTML='<option value="">-- 店舗を選択 --</option>';
+STORES.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;storeSel.appendChild(o);});
+
+const sourceSel=document.getElementById('newSource');
+sourceSel.innerHTML='<option value="">-- 仕入先を選択 --</option>';
+SOURCES.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sourceSel.appendChild(o);});
+}
+
+async function loadRows(){
+const date=document.getElementById('recordDate').value;
+if(!date)return;
+const res=await apiFetch(`purchase_input?record_date=eq.${date}&order=id&select=*`);
+rows=await res.json()||[];
+renderTable();
+}
+
+function renderTable(){
+const storeNameById={}; STORES.forEach(s=>{storeNameById[s.id]=s.name;});
+const sourceNameById={}; SOURCES.forEach(s=>{sourceNameById[s.id]=s.name;});
+
+const tbody=document.getElementById('tbl-body');
+let h='';
+let totQty=0, totAmt=0;
+rows.forEach(r=>{
+h+=`<tr>
+<td class="store-cell">${storeNameById[r.store_id]||('店舗ID'+r.store_id)}</td>
+<td>${sourceNameById[r.purchase_source_id]||('仕入先ID'+r.purchase_source_id)}</td>
+<td class="num">${fmt(r.quantity)}</td>
+<td class="num">${fmt(r.amount)}</td>
+<td class="del-cell"><button type="button" class="del-btn" onclick="handleDelete(${r.id})">削除</button></td>
+</tr>`;
+totQty+=r.quantity||0;
+totAmt+=r.amount||0;
+});
+tbody.innerHTML=h;
+document.getElementById('totQty').textContent=fmt(totQty);
+document.getElementById('totAmt').textContent=fmt(totAmt);
+}
+
+async function handleAdd(){
+const date=document.getElementById('recordDate').value;
+const storeId=document.getElementById('newStore').value;
+const sourceId=document.getElementById('newSource').value;
+const qty=Number(document.getElementById('newQty').value)||0;
+const amt=Number(document.getElementById('newAmt').value)||0;
+
+if(!date){showMsg('日付を指定してください。','error');return;}
+if(!storeId){showMsg('店舗を選択してください。','error');return;}
+if(!sourceId){showMsg('仕入先を選択してください。','error');return;}
+if(qty===0&&amt===0){showMsg('点数または金額を入力してください。','error');return;}
+
+try{
+const res=await apiFetch('purchase_input','POST',[{
+record_date:date, store_id:Number(storeId), purchase_source_id:Number(sourceId), quantity:qty, amount:amt,
+}]);
+if(!res.ok){showMsg('登録エラー：'+(await res.text()),'error');return;}
+
+document.getElementById('newStore').value='';
+document.getElementById('newSource').value='';
+document.getElementById('newQty').value=0;
+document.getElementById('newAmt').value=0;
+
+showMsg('✅ 登録しました。');
+await loadRows();
+}catch(e){
+showMsg('通信エラー：'+e.message,'error');
+}
+}
+
+async function handleDelete(id){
+if(!confirm('この行を削除しますか？'))return;
+const res=await apiFetch(`purchase_input?id=eq.${id}`,'DELETE');
+if(!res.ok){showMsg('削除エラー：'+(await res.text()),'error');return;}
+showMsg('削除しました。');
+await loadRows();
+}
+
+async function handleClearAll(){
+const date=document.getElementById('recordDate').value;
+if(!date)return;
+if(rows.length===0){showMsg('この日付にはデータがありません。','error');return;}
+if(!confirm(`${date} の仕入れ入力データをすべて削除します。よろしいですか？`))return;
+const res=await apiFetch(`purchase_input?record_date=eq.${date}`,'DELETE');
+if(!res.ok){showMsg('削除エラー：'+(await res.text()),'error');return;}
+showMsg('✅ この日付のデータをすべてクリアしました。');
+await loadRows();
+}
+
+function handleLogout(){
+if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+
+async function init(){
+await loadMasters();
+await loadRows();
+}
+init();
+</script>
+</body>
+</html>
