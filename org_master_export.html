@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>組織マスタ Excel出力 - ゼロジャパン</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+  :root{--blue:#2563eb;--blue-dark:#1d4ed8;--bg:#f4f6f9;--card:#fff;--border:#dbe1e8;--text:#1f2937;--muted:#6b7280;--green:#16a34a;--red:#dc2626;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--blue-dark);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:16px;margin:0;}
+  header a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;}
+  main{max-width:800px;margin:20px auto;padding:0 16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:18px;}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--blue-dark);}
+  .btn{padding:10px 22px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:14px;cursor:pointer;font-weight:600;}
+  .btn:hover{background:var(--blue-dark);}
+  .btn:disabled{background:#9ca3af;cursor:not-allowed;}
+  .status{margin-top:12px;font-size:13px;white-space:pre-wrap;}
+  .status.ok{color:var(--green);}
+  .status.err{color:var(--red);}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:14px;}
+  .summary-grid .box{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+  .summary-grid .box .num{font-size:20px;font-weight:700;color:var(--blue-dark);}
+  .summary-grid .box .cap{font-size:11px;color:var(--muted);}
+  ul{margin:10px 0 0 20px;color:var(--muted);font-size:13px;line-height:1.8;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 組織マスタ Excel出力</h1>
+  <a href="index.html">← メニューに戻る</a>
+</header>
+
+<main>
+  <div class="card">
+    <h2>出力内容</h2>
+    <p style="font-size:13px;color:var(--muted);">現在Supabaseに登録されている部門・エリア・グループ・チーム・店舗のマスタデータを、そのままExcelに出力します。</p>
+    <ul>
+      <li>店舗一覧（所属チーム・グループ・エリア・部門を1行にまとめた形）</li>
+      <li>部門マスタ／エリアマスタ／グループマスタ／チームマスタ（各シート）</li>
+    </ul>
+    <div style="margin-top:16px;">
+      <button class="btn" type="button" id="btnExport">📥 Excel出力する</button>
+    </div>
+    <div id="status" class="status"></div>
+    <div class="summary-grid" id="summaryGrid"></div>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+
+async function apiFetch(path){
+  const res = await fetch(SUPABASE_URL+'/rest/v1/'+path, {headers:{apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`}});
+  return await res.json();
+}
+
+document.getElementById('btnExport').onclick = exportMaster;
+
+async function exportMaster(){
+  const btn = document.getElementById('btnExport');
+  const statusEl = document.getElementById('status');
+  btn.disabled = true;
+  statusEl.className = 'status';
+  statusEl.textContent = '取得中...';
+
+  try{
+    const [stores, teams, groups, areas, departments] = await Promise.all([
+      apiFetch('stores?order=sort_order&select=*'),
+      apiFetch('teams?order=sort_order&select=*'),
+      apiFetch('groups?order=sort_order&select=*'),
+      apiFetch('areas?order=sort_order&select=*'),
+      apiFetch('departments?order=sort_order&select=*'),
+    ]);
+
+    [stores, teams, groups, areas, departments].forEach(r=>{
+      if(!Array.isArray(r)) throw new Error('取得エラー: '+JSON.stringify(r));
+    });
+
+    const teamById={}; teams.forEach(t=>teamById[t.id]=t);
+    const groupById={}; groups.forEach(g=>groupById[g.id]=g);
+    const areaById={}; areas.forEach(a=>areaById[a.id]=a);
+    const deptById={}; departments.forEach(d=>deptById[d.id]=d);
+
+    const wb = new ExcelJS.Workbook();
+    const thin={style:'thin',color:{argb:'FF000000'}};
+    const border={top:thin,bottom:thin,left:thin,right:thin};
+
+    function styleHeader(row){
+      row.eachCell(c=>{
+        c.font={bold:true,color:{argb:'FFFFFFFF'}};
+        c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};
+        c.alignment={horizontal:'center',vertical:'middle'};
+        c.border=border;
+      });
+    }
+    function styleDataRow(row){
+      row.eachCell(c=>{c.border=border;c.font={size:10};});
+    }
+    function autoWidth(ws, widths){
+      widths.forEach((w,i)=>{ws.getColumn(i+1).width=w;});
+    }
+
+    // ---- シート1：店舗一覧（階層フラット化） ----
+    const wsStores = wb.addWorksheet('店舗一覧');
+    const hdr1 = wsStores.addRow(['店舗ID','店舗コード','店舗名','表示順','有効','チームID','チーム名','グループ名','エリア名','部門名']);
+    styleHeader(hdr1);
+    stores.forEach(s=>{
+      const team = s.team_id ? teamById[s.team_id] : null;
+      const group = team && team.group_id ? groupById[team.group_id] : null;
+      const area = group && group.area_id ? areaById[group.area_id] : null;
+      const dept = area && area.department_id ? deptById[area.department_id] : null;
+      const row = wsStores.addRow([
+        s.id, s.code||'', s.name||'', s.sort_order??'', s.is_active?'有効':'無効',
+        s.team_id||'', team?team.name:'', group?group.name:'', area?area.name:'', dept?dept.name:'',
+      ]);
+      styleDataRow(row);
+    });
+    autoWidth(wsStores, [8,10,26,8,8,10,20,20,20,20]);
+
+    // ---- シート2〜5：各マスタそのまま ----
+    function addMasterSheet(name, rows, cols){
+      const ws = wb.addWorksheet(name);
+      const hdr = ws.addRow(cols.map(c=>c.label));
+      styleHeader(hdr);
+      rows.forEach(r=>{
+        const row = ws.addRow(cols.map(c=>{
+          const v = r[c.key];
+          if(c.key==='is_active') return v?'有効':'無効';
+          return v??'';
+        }));
+        styleDataRow(row);
+      });
+      autoWidth(ws, cols.map(c=>c.width||14));
+    }
+
+    addMasterSheet('部門マスタ', departments, [
+      {key:'id',label:'ID',width:8},{key:'code',label:'コード',width:10},{key:'name',label:'部門名',width:22},
+      {key:'sort_order',label:'表示順',width:8},{key:'is_active',label:'状態',width:8},
+    ]);
+
+    addMasterSheet('エリアマスタ', areas.map(a=>({...a, dept_name: a.department_id?(deptById[a.department_id]?.name||''):''})), [
+      {key:'id',label:'ID',width:8},{key:'code',label:'コード',width:10},{key:'name',label:'エリア名',width:22},
+      {key:'department_id',label:'部門ID',width:8},{key:'dept_name',label:'所属部門',width:20},
+      {key:'sort_order',label:'表示順',width:8},{key:'is_active',label:'状態',width:8},
+    ]);
+
+    addMasterSheet('グループマスタ', groups.map(g=>({...g, area_name: g.area_id?(areaById[g.area_id]?.name||''):''})), [
+      {key:'id',label:'ID',width:8},{key:'code',label:'コード',width:10},{key:'name',label:'グループ名',width:22},
+      {key:'area_id',label:'エリアID',width:8},{key:'area_name',label:'所属エリア',width:20},
+      {key:'sort_order',label:'表示順',width:8},{key:'is_active',label:'状態',width:8},
+    ]);
+
+    addMasterSheet('チームマスタ', teams.map(t=>({...t, group_name: t.group_id?(groupById[t.group_id]?.name||''):''})), [
+      {key:'id',label:'ID',width:8},{key:'code',label:'コード',width:10},{key:'name',label:'チーム名',width:22},
+      {key:'group_id',label:'グループID',width:8},{key:'group_name',label:'所属グループ',width:20},
+      {key:'sort_order',label:'表示順',width:8},{key:'is_active',label:'状態',width:8},
+    ]);
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `組織マスタ_${new Date().toISOString().slice(0,10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    document.getElementById('summaryGrid').innerHTML = `
+      <div class="box"><div class="num">${departments.length}</div><div class="cap">部門</div></div>
+      <div class="box"><div class="num">${areas.length}</div><div class="cap">エリア</div></div>
+      <div class="box"><div class="num">${groups.length}</div><div class="cap">グループ</div></div>
+      <div class="box"><div class="num">${teams.length}</div><div class="cap">チーム</div></div>
+      <div class="box"><div class="num">${stores.length}</div><div class="cap">店舗</div></div>
+    `;
+    statusEl.className = 'status ok';
+    statusEl.textContent = '✅ 出力しました。';
+  }catch(e){
+    statusEl.className = 'status err';
+    statusEl.textContent = '❌ エラー: '+e.message;
+  }finally{
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
