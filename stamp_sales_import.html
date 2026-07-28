@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>切手・印紙売上 CSV取込 - ゼロジャパン</title>
+<title>切手・印紙換金 - ゼロジャパン</title>
 <style>
   :root{
     --blue:#2563eb; --blue-dark:#1d4ed8; --bg:#f4f6f9; --card:#ffffff;
@@ -40,7 +40,7 @@
 <body>
 
 <header>
-  <h1>📥 切手・印紙売上 CSV取込</h1>
+  <h1>📮 切手・印紙換金</h1>
   <a href="index.html">← メニューに戻る</a>
 </header>
 
@@ -53,7 +53,7 @@
       <button class="btn" type="button" id="btnParse">CSVを読み込む</button>
     </div>
     <p class="muted" style="margin-top:8px;">
-      形式：A列=日付、B列=店舗コード、C列=（使用しません）、D列=金額（ヘッダー行なし）<br>
+      形式：A列=日付、B列=店舗コード、C列=区分コード（1601であることを確認）、D列=（使用しません）、E列=金額（ヘッダー行なし）<br>
       ※ 非課税のため、税込・税抜とも同じ金額として扱います。<br>
       ※ 日付・店舗ごとに、既存データを削除してから取り込んだ内容で上書きします（再取込しても重複しません）。
     </p>
@@ -103,7 +103,7 @@ document.getElementById('btnParse').onclick = async () => {
     const lines=text.split(/\r\n|\n|\r/).filter(l=>l.trim().length>0);
     parsedRows=lines.map(line=>{
       const cells=line.split(',');
-      return {date:cells[0]?.trim(), code:cells[1]?.trim(), amount:Number(cells[3])||0};
+      return {date:cells[0]?.trim(), code:cells[1]?.trim(), checkCol:cells[2]?.trim(), amount:Number(cells[4])||0};
     }).filter(r=>r.date&&r.code);
 
     await aggregate();
@@ -115,6 +115,8 @@ document.getElementById('btnParse').onclick = async () => {
   }
 };
 
+const EXPECTED_CHECK_COL='1601';
+
 async function aggregate(){
   const stores=await (await apiFetch('stores?select=id,code,name')).json()||[];
   const codeToStore={};
@@ -122,7 +124,11 @@ async function aggregate(){
 
   const byDate={};
   const unmatchedNonZero={};
+  const wrongCheckColRows=[];
   parsedRows.forEach(r=>{
+    if(r.checkCol!==EXPECTED_CHECK_COL){
+      wrongCheckColRows.push(r);
+    }
     const store=codeToStore[r.code];
     if(!store){
       if(r.amount!==0){
@@ -139,11 +145,24 @@ async function aggregate(){
 
   const warnCard=document.getElementById('warnCard');
   const unmatchedEntries=Object.entries(unmatchedNonZero);
+  let warnHtml='';
+  let alertMsg='';
+
+  if(wrongCheckColRows.length>0){
+    const sample=wrongCheckColRows.slice(0,10).map(r=>`日付${r.date} 店舗コード${r.code}：C列=${r.checkCol}`).join('\n');
+    warnHtml+=`<strong>⚠ C列の区分コードが想定（${EXPECTED_CHECK_COL}）と異なる行が${wrongCheckColRows.length}件あります（切手・印紙以外のCSVを読み込んでいませんか？）</strong><br>`+wrongCheckColRows.slice(0,10).map(r=>`日付${r.date} 店舗コード${r.code}：C列=${r.checkCol}`).join('<br>')+'<br>';
+    alertMsg+=`⚠ C列の区分コードが想定（${EXPECTED_CHECK_COL}）と異なる行が${wrongCheckColRows.length}件あります。ファイルを間違えていないかご確認ください。\n\n`+sample+'\n\n';
+  }
   if(unmatchedEntries.length>0){
     const detail=unmatchedEntries.map(([code,amt])=>`店舗コード${code}：¥${fmt(amt)}`).join('\n');
-    document.getElementById('warnBox').innerHTML='<strong>⚠ 店舗マスタに無いコードなのに金額が0ではありません（要確認）</strong><br>'+unmatchedEntries.map(([code,amt])=>`店舗コード${code}：¥${fmt(amt)}`).join('<br>');
+    warnHtml+='<strong>⚠ 店舗マスタに無いコードなのに金額が0ではありません（要確認）</strong><br>'+unmatchedEntries.map(([code,amt])=>`店舗コード${code}：¥${fmt(amt)}`).join('<br>');
+    alertMsg+='⚠ 店舗マスタに登録の無い店舗コードで、金額が0ではない行があります。ご確認ください。\n\n'+detail;
+  }
+
+  if(warnHtml){
+    document.getElementById('warnBox').innerHTML=warnHtml;
     warnCard.style.display='block';
-    alert('⚠ 店舗マスタに登録の無い店舗コードで、金額が0ではない行があります。ご確認ください。\n\n'+detail);
+    alert(alertMsg);
   } else {
     warnCard.style.display='none';
   }
