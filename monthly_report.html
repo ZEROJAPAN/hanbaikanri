@@ -85,7 +85,7 @@ tr.zero-row td.rowlabel{color:#94A3B8;}
 </div>
 
 <p class="muted" style="margin-top:10px;">
-※ 灰色文字の行（テレカ50度・ニチマテ・業者仕入 等）は本社側の入力機能が未実装のため、現時点では0固定です。今後の対応で実データに置き換わります。<br>
+※ 灰色文字の行（ニチマテ・業者仕入 等）は本社側の入力機能が未実装のため、現時点では0固定です。今後の対応で実データに置き換わります。<br>
 ※ 税抜表示時：テレカ・金券類（非課税）と、チャンネル名に「免税」が付くものはそのまま据え置き、それ以外は金額を1.1で割って税抜換算しています。
 </p>
 </div>
@@ -121,7 +121,6 @@ function firstOfMonthStr(){const d=new Date();return `${d.getFullYear()}-${Strin
 document.getElementById('dateFrom').value=firstOfMonthStr();
 document.getElementById('dateTo').value=todayStr();
 
-// ===== EC売上セクション（列A順を完全固定） =====
 const EC_SECTIONS=[
 {cat:'4.ジュエリー', channels:['店売り','本店','楽天国内','YahooShop','ヤフオク','Wowma!','メルカリ','ebay(免税)','Amazon','サブスク','ラクマ','Qoo10','GLOBAZONE']},
 {cat:'5.時計', channels:['店売り','店売り(免税)','本店','楽天国内','YahooShop','ヤフオク','Wowma!','メルカリ','ebay(免税)','ラクマ','GLOBAZONE']},
@@ -165,7 +164,7 @@ let CATS=[],CHANNELS=[],BUY_CHID=null,CANCEL_CHID=null,VISIT_REASONS=[];
 let ORG_COLUMNS=[];
 let lastReportData=null;
 let STORES_RAW=[];
-let PRODUCT_REGEN_STORE_ID=null; // 「商品再生課」store_id
+let PRODUCT_REGEN_STORE_ID=null;
 
 async function loadMasters(){
   [CATS, CHANNELS, VISIT_REASONS]=await Promise.all([
@@ -226,7 +225,6 @@ async function loadMasters(){
   cols.push({type:'grand_total',name:'総合計',storeIds:[...new Set(allStoreIds)]});
   ORG_COLUMNS=cols;
 
-  // 階層が実際に機能しているかの簡易診断
   const hierarchyDiag={
     departments: departments.length,
     areas: areas.length,
@@ -246,7 +244,7 @@ function taxAdjust(amount, exempt, taxMode){return (taxMode==='incl'||exempt)?am
 document.getElementById('btnLoad').onclick=loadReport;
 document.getElementById('btnExport').onclick=exportExcel;
 document.getElementById('taxMode').addEventListener('change', ()=>{
-  if(lastReportData) renderTable(); // 再取得せず、既存データのまま税込⇄税抜を即時切替
+  if(lastReportData) renderTable();
 });
 
 async function loadReport(){
@@ -261,18 +259,19 @@ async function loadReport(){
   try{
     if(CATS.length===0) await loadMasters();
 
-    const [dailyRows, purchaseRows, goldSettlementRows, giftcardSalesRows]=await Promise.all([
+    const [dailyRows, purchaseRows, goldSettlementRows, giftcardSalesRows, stampSalesRows]=await Promise.all([
       apiFetchAll(`daily_reports?report_date=gte.${from}&report_date=lte.${to}&select=store_id,category_id,channel_id,quantity,amount&order=id`),
       apiFetchAll(`purchase_details?report_date=gte.${from}&report_date=lte.${to}&select=store_id,report_date,visit_reason_id,visitors,amount,first_visit,repeat_visit,no_purchase,cancel_count&order=id`),
       apiFetchAll(`gold_recovery_settlement?settlement_date=gte.${from}&settlement_date=lte.${to}&select=store_id,amount&order=id`),
       apiFetchAll(`giftcard_sales_settlement?report_date=gte.${from}&report_date=lte.${to}&select=store_id,amount&order=id`),
+      apiFetchAll(`stamp_sales_settlement?report_date=gte.${from}&report_date=lte.${to}&select=store_id,amount&order=id`),
     ]);
 
     const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
     const chMap={}; CHANNELS.forEach(c=>chMap[c.id]=c.name);
 
-    const ecGrouped={}; // "catName|chName" -> {storeId:{qty, amounts:[各日の税込金額,...]}}
-    const buyByCatStore={}; // catId -> {storeId:{qty, amounts:[...]}}
+    const ecGrouped={};
+    const buyByCatStore={};
     const cancelAmountByStore={};
 
     for(const row of dailyRows){
@@ -312,7 +311,6 @@ async function loadReport(){
       visitorsByReasonStore[row.visit_reason_id][row.store_id]=(visitorsByReasonStore[row.visit_reason_id][row.store_id]||0)+(row.visitors||0);
     }
 
-    // 貴金属　売上（gold_recovery_settlement）：店舗ごとに日別金額配列を保持、商品再生課はマイナス合計
     const preciousMetalAmountsByStore={};
     goldSettlementRows.forEach(row=>{
       if(!preciousMetalAmountsByStore[row.store_id])preciousMetalAmountsByStore[row.store_id]=[];
@@ -320,19 +318,23 @@ async function loadReport(){
     });
     if(PRODUCT_REGEN_STORE_ID){
       const totalAllStores=goldSettlementRows.reduce((s,r)=>s+(r.amount||0),0);
-      // 商品再生課自身の実績（通常は無いはずだが、念のため既存分に追加する形にする）
       if(!preciousMetalAmountsByStore[PRODUCT_REGEN_STORE_ID])preciousMetalAmountsByStore[PRODUCT_REGEN_STORE_ID]=[];
       preciousMetalAmountsByStore[PRODUCT_REGEN_STORE_ID].push(-totalAllStores);
     }
 
-    // テレカ・金券類　売上（giftcard_sales_settlement）：非課税のため税込・税抜とも同額
     const giftcardSalesAmountsByStore={};
     giftcardSalesRows.forEach(row=>{
       if(!giftcardSalesAmountsByStore[row.store_id])giftcardSalesAmountsByStore[row.store_id]=[];
       giftcardSalesAmountsByStore[row.store_id].push(row.amount||0);
     });
 
-    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, preciousMetalAmountsByStore, giftcardSalesAmountsByStore, from, to};
+    const stampSalesAmountsByStore={};
+    stampSalesRows.forEach(row=>{
+      if(!stampSalesAmountsByStore[row.store_id])stampSalesAmountsByStore[row.store_id]=[];
+      stampSalesAmountsByStore[row.store_id].push(row.amount||0);
+    });
+
+    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, preciousMetalAmountsByStore, giftcardSalesAmountsByStore, stampSalesAmountsByStore, from, to};
 
     renderTable();
     let msg=`✅ ${from}〜${to}：daily_reports ${dailyRows.length.toLocaleString()}行 / purchase_details ${purchaseRows.length.toLocaleString()}行 を集計しました`;
@@ -351,15 +353,6 @@ async function loadReport(){
   }
 }
 
-function colClass(col){
-  if(col.type==='team_total')return 'col-team';
-  if(col.type==='group_total')return 'col-group';
-  if(col.type==='area_total')return 'col-area';
-  if(col.type==='dept_total')return 'col-dept';
-  if(col.type==='grand_total')return 'col-grand';
-  return '';
-}
-
 function sumForCols(dataByStore, col){
   let qty=0, amount=0;
   col.storeIds.forEach(id=>{const d=dataByStore[id];if(d){qty+=d.qty||0;amount+=d.amount||0;}});
@@ -370,10 +363,18 @@ function sumSimpleForCols(dataByStore, col){
   col.storeIds.forEach(id=>{v+=dataByStore[id]||0;});
   return v;
 }
+function colClass(col){
+  if(col.type==='team_total')return 'col-team';
+  if(col.type==='group_total')return 'col-group';
+  if(col.type==='area_total')return 'col-area';
+  if(col.type==='dept_total')return 'col-dept';
+  if(col.type==='grand_total')return 'col-grand';
+  return '';
+}
 
 function renderTable(){
   const d=lastReportData;
-  const taxMode=document.getElementById('taxMode').value; // 常に現在の選択値を参照（再取得不要で即時反映）
+  const taxMode=document.getElementById('taxMode').value;
   const table=document.getElementById('reportTable');
 
   let headHtml='<tr><th style="min-width:260px;">カテゴリー / チャンネル</th>';
@@ -383,7 +384,6 @@ function renderTable(){
   headHtml+='</tr>';
   table.querySelector('thead').innerHTML=headHtml;
 
-  // 2段ヘッダーが重ならないよう、1段目の実測高さを CSS変数に反映
   requestAnimationFrame(()=>{
     const row1=table.querySelector('thead tr:first-child');
     if(row1){table.style.setProperty('--hdr1-h', row1.offsetHeight+'px');}
@@ -416,6 +416,8 @@ function renderTable(){
     return html;
   }
 
+  let currentCat=null;
+  let catAcc={};
   const ecTotalByStore={};
 
   function roundedSumOfAmounts(amounts, exempt, taxMode){
@@ -433,7 +435,7 @@ function renderTable(){
       const exempt=exemptCat||isTaxExemptChannel(chName);
       const rowData={};
       Object.entries(storesRaw).forEach(([sid,v])=>{
-        const adjAmount=roundedSumOfAmounts(v.amounts, exempt, taxMode); // 日ごとに税抜換算→四捨五入してから合計
+        const adjAmount=roundedSumOfAmounts(v.amounts, exempt, taxMode);
         rowData[sid]={qty:v.qty, amount:adjAmount};
         if(!catAcc[sid])catAcc[sid]={qty:0,amount:0};
         catAcc[sid].qty+=v.qty; catAcc[sid].amount+=adjAmount;
@@ -450,20 +452,30 @@ function renderTable(){
       const rowData={};
       Object.keys(d.preciousMetalAmountsByStore).forEach(sid=>{
         const arr=d.preciousMetalAmountsByStore[sid];
-        const amount=roundedSumOfAmounts(arr, false, taxMode); // 課税対象（テレカ金券・免税ではない）
+        const amount=roundedSumOfAmounts(arr, false, taxMode);
         rowData[sid]={qty:0, amount};
         if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
-        ecTotalByStore[sid].amount+=amount; // 総売上・総合計に反映（商品再生課のマイナス分で相殺される）
+        ecTotalByStore[sid].amount+=amount;
       });
       bodyHtml+=ecCellRow(label, col=>sumForCols(rowData, col));
     } else if(label==='テレカ・金券類　売上'){
       const rowData={};
       Object.keys(d.giftcardSalesAmountsByStore).forEach(sid=>{
         const arr=d.giftcardSalesAmountsByStore[sid];
-        const amount=roundedSumOfAmounts(arr, true, taxMode); // 非課税：税込・税抜とも同額（換算なし）
+        const amount=roundedSumOfAmounts(arr, true, taxMode);
         rowData[sid]={qty:0, amount};
         if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
-        ecTotalByStore[sid].amount+=amount; // 総売上・総合計に反映
+        ecTotalByStore[sid].amount+=amount;
+      });
+      bodyHtml+=ecCellRow(label, col=>sumForCols(rowData, col));
+    } else if(label==='切手・印紙　売上'){
+      const rowData={};
+      Object.keys(d.stampSalesAmountsByStore).forEach(sid=>{
+        const arr=d.stampSalesAmountsByStore[sid];
+        const amount=roundedSumOfAmounts(arr, true, taxMode);
+        rowData[sid]={qty:0, amount};
+        if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
+        ecTotalByStore[sid].amount+=amount;
       });
       bodyHtml+=ecCellRow(label, col=>sumForCols(rowData, col));
     } else {
@@ -532,7 +544,7 @@ function renderTable(){
 
   document.getElementById('summaryBar').innerHTML=`
     <div class="sum-card"><div class="sum-card-title">総売上（${taxMode==='incl'?'税込':'税抜'}）</div><div class="sum-card-value">¥${fmt(ecTotalGrand.amount)}</div></div>
-    <div class="sum-card"><div class="sum-card-title">買取（仕入合計）</div><div class="sum-card-value">¥${fmt(buyTotalGrand.amount)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">買取（仕入れ合計）</div><div class="sum-card-value">¥${fmt(buyTotalGrand.amount)}</div></div>
     <div class="sum-card"><div class="sum-card-title">アンケート計（初めて＋2回目）</div><div class="sum-card-value">${fmt(ankeTotal)}</div></div>
     <div class="sum-card"><div class="sum-card-title">リピーター率</div><div class="sum-card-value">${fmtPct(repeatRate)}</div></div>
   `;
@@ -542,7 +554,7 @@ function rgbToArgb(rgbStr){
   const m=rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
   if(!m)return null;
   const alpha=m[4]!==undefined?parseFloat(m[4]):1;
-  if(alpha===0)return null; // 透明は塗りつぶさない
+  if(alpha===0)return null;
   const hex=n=>Number(n).toString(16).padStart(2,'0').toUpperCase();
   return 'FF'+hex(m[1])+hex(m[2])+hex(m[3]);
 }
@@ -559,7 +571,7 @@ async function exportExcel(){
   rows.forEach((tr,ri)=>{
     const cells=tr.querySelectorAll('th,td');
     const rowData=[];
-    const cellMeta=[]; // {colspanStart, colspan, argb, isHeader}
+    const cellMeta=[];
     let colIdx=1;
     cells.forEach(cell=>{
       const colspan=parseInt(cell.getAttribute('colspan')||'1');
@@ -579,7 +591,6 @@ async function exportExcel(){
       cell.font={size:9};
       if(typeof cell.value==='number')cell.numFmt='#,##0';
     });
-    // 背景色とヘッダーの文字色・結合を適用
     cellMeta.forEach(meta=>{
       const cell=row.getCell(meta.col);
       if(meta.argb)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:meta.argb}};
