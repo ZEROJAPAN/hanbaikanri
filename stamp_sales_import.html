@@ -53,7 +53,7 @@
       <button class="btn" type="button" id="btnParse">CSVを読み込む</button>
     </div>
     <p class="muted" style="margin-top:8px;">
-      形式：A列=日付、B列=店舗コード、C列=区分コード（1601であることを確認）、D列=（使用しません）、E列=金額（ヘッダー行なし）<br>
+      形式：A列=日付、B列=店舗コード、C列=区分コード（01601であることを確認）、D列=（使用しません）、E列=金額（ヘッダー行なし）<br>
       ※ 非課税のため、税込・税抜とも同じ金額として扱います。<br>
       ※ 日付・店舗ごとに、既存データを削除してから取り込んだ内容で上書きします（再取込しても重複しません）。
     </p>
@@ -103,7 +103,15 @@ document.getElementById('btnParse').onclick = async () => {
     const lines=text.split(/\r\n|\n|\r/).filter(l=>l.trim().length>0);
     parsedRows=lines.map(line=>{
       const cells=line.split(',');
-      return {date:cells[0]?.trim(), code:cells[1]?.trim(), checkCol:cells[2]?.trim(), amount:Number(cells[4])||0};
+      const rawDate=cells[0]?.trim();
+      let isoDate=rawDate;
+      if(rawDate&&rawDate.includes('/')){
+        const parts=rawDate.split('/');
+        if(parts.length===3){
+          isoDate=`${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+        }
+      }
+      return {date:isoDate, code:cells[1]?.trim(), checkCol:cells[2]?.trim(), amount:Number(cells[4])||0};
     }).filter(r=>r.date&&r.code);
 
     await aggregate();
@@ -115,7 +123,7 @@ document.getElementById('btnParse').onclick = async () => {
   }
 };
 
-const EXPECTED_CHECK_COL='1601';
+const EXPECTED_CHECK_COL='01601';
 
 async function aggregate(){
   const stores=await (await apiFetch('stores?select=id,code,name')).json()||[];
