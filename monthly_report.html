@@ -472,7 +472,7 @@ function renderTable(){
       const rowData={};
       Object.keys(d.stampSalesAmountsByStore).forEach(sid=>{
         const arr=d.stampSalesAmountsByStore[sid];
-        const amount=roundedSumOfAmounts(arr, true, taxMode);
+        const amount=roundedSumOfAmounts(arr, false, taxMode); // 税込データにつき、税抜表示時は1.1で割って計算
         rowData[sid]={qty:0, amount};
         if(!ecTotalByStore[sid])ecTotalByStore[sid]={qty:0,amount:0};
         ecTotalByStore[sid].amount+=amount;
