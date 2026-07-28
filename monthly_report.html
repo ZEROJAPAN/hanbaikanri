@@ -152,12 +152,6 @@ const ZERO_ROWS_A=['テレカ50度（非課税）','テレカ105度（非課税�
 '仕入請求-中古ジュエリー','仕入請求-委託ジュエリー','仕入請求-ブランドジュエリー','仕入請求-ブランド','仕入請求-時計','仕入請求-その他','仕入請求-市場仕入ジュエリー',
 '店舗間移動 ジュエリー','店舗間移動 その他','店舗間移動 合計'];
 
-const ZERO_ROWS_B=['業者仕入×市場×オークネット×ブランド','業者仕入×市場×オークネット×時計','業者仕入×市場×スターオークション×ブランド','業者仕入×市場×ペンギンオークション×ブランド',
-'業者仕入×市場×ペンギンオークション×時計','業者仕入×市場×横浜レスオク×ブランド','業者仕入×市場×コメ兵×時計','業者仕入×市場×ライブネットＪＢＡ×ブランド',
-'業者仕入×市場×TIMELESS×ブランド','業者仕入×市場×TIMELESS×時計','業者仕入×市場×エコリング×時計','業者仕入×市場×エコリング×ブランド',
-'業者仕入×市場×MEKIKIオークション×ブランド','業者仕入×市場×リバオク×ブランド','業者仕入×市場×おたからやオークション×ブランド','業者仕入×市場×トレジャーファクトリー×ブランド',
-'業者仕入×市場×タイムレス×ジュエリー','業者仕入×市場×つなオク×ブランド','業者仕入×市場×俺オク×ブランド','業者仕入×市場×俺オク×ジュエリー'];
-
 const BUY_CATEGORY_IDS=[1,2,3,4,5,6,7,9,10];
 
 let CATS=[],CHANNELS=[],BUY_CHID=null,CANCEL_CHID=null,VISIT_REASONS=[];
@@ -259,12 +253,14 @@ async function loadReport(){
   try{
     if(CATS.length===0) await loadMasters();
 
-    const [dailyRows, purchaseRows, goldSettlementRows, giftcardSalesRows, stampSalesRows]=await Promise.all([
+    const [dailyRows, purchaseRows, goldSettlementRows, giftcardSalesRows, stampSalesRows, purchaseInputRows, purchaseSources]=await Promise.all([
       apiFetchAll(`daily_reports?report_date=gte.${from}&report_date=lte.${to}&select=store_id,category_id,channel_id,quantity,amount&order=id`),
       apiFetchAll(`purchase_details?report_date=gte.${from}&report_date=lte.${to}&select=store_id,report_date,visit_reason_id,visitors,amount,first_visit,repeat_visit,no_purchase,cancel_count&order=id`),
       apiFetchAll(`gold_recovery_settlement?settlement_date=gte.${from}&settlement_date=lte.${to}&select=store_id,amount&order=id`),
       apiFetchAll(`giftcard_sales_settlement?report_date=gte.${from}&report_date=lte.${to}&select=store_id,amount&order=id`),
       apiFetchAll(`stamp_sales_settlement?report_date=gte.${from}&report_date=lte.${to}&select=store_id,amount&order=id`),
+      apiFetchAll(`purchase_input?record_date=gte.${from}&record_date=lte.${to}&select=store_id,purchase_source_id,quantity,amount&order=id`),
+      apiFetch('purchase_source_master?is_active=eq.true&order=sort_order&select=id,name,sort_order'),
     ]);
 
     const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
@@ -334,7 +330,17 @@ async function loadReport(){
       stampSalesAmountsByStore[row.store_id].push(row.amount||0);
     });
 
-    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, preciousMetalAmountsByStore, giftcardSalesAmountsByStore, stampSalesAmountsByStore, from, to};
+    // 仕入れ入力：仕入先ごとに店舗別の点数・金額配列を保持
+    const purchaseInputBySource={}; // sourceId -> {storeId:{qty, amounts:[...]}}
+    purchaseInputRows.forEach(row=>{
+      if(!purchaseInputBySource[row.purchase_source_id])purchaseInputBySource[row.purchase_source_id]={};
+      const bySource=purchaseInputBySource[row.purchase_source_id];
+      if(!bySource[row.store_id])bySource[row.store_id]={qty:0, amounts:[]};
+      bySource[row.store_id].qty+=row.quantity||0;
+      bySource[row.store_id].amounts.push(row.amount||0);
+    });
+
+    lastReportData={taxMode, ecGrouped, buyByCatStore, cancelAmountByStore, firstVisitByStore, repeatVisitByStore, noPurchaseByStore, cancelCountByStore, visitorsByReasonStore, preciousMetalAmountsByStore, giftcardSalesAmountsByStore, stampSalesAmountsByStore, purchaseInputBySource, purchaseSources, from, to};
 
     renderTable();
     let msg=`✅ ${from}〜${to}：daily_reports ${dailyRows.length.toLocaleString()}行 / purchase_details ${purchaseRows.length.toLocaleString()}行 を集計しました`;
@@ -501,7 +507,22 @@ function renderTable(){
     bodyHtml+=ecCellRow(catName, col=>sumForCols(adjByStore, col));
   });
 
-  ZERO_ROWS_B.forEach(label=>{bodyHtml+=zeroRow(label);});
+  // 仕入先マスタごとに、期間内にデータがある行だけ表示（数字が入ったもののみ）
+  (d.purchaseSources||[]).forEach(src=>{
+    const byStore=d.purchaseInputBySource[src.id];
+    if(!byStore)return; // この仕入先はデータなし → 行自体を表示しない
+    const rowData={};
+    let hasNonZero=false;
+    Object.entries(byStore).forEach(([sid,v])=>{
+      const amount=roundedSumOfAmounts(v.amounts, false, taxMode); // 業者仕入も買取と同じく税込前提で税抜計算
+      if(v.qty!==0||amount!==0)hasNonZero=true;
+      rowData[sid]={qty:v.qty, amount};
+      if(!buyTotalByStore[sid])buyTotalByStore[sid]={qty:0,amount:0};
+      buyTotalByStore[sid].qty+=v.qty; buyTotalByStore[sid].amount+=amount; // 仕入れ合計に含める
+    });
+    if(!hasNonZero)return; // 全店舗0円なら表示しない
+    bodyHtml+=ecCellRow(src.name, col=>sumForCols(rowData, col));
+  });
 
   bodyHtml+=ecCellRow('仕入れ合計', col=>sumForCols(buyTotalByStore, col), 'sectiontotal');
 
