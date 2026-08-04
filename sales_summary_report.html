@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>売上集計報告書 - ゼロジャパン</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
+.wrap{padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
+.topbar-title{font-size:14px;font-weight:bold;color:#fff;}
+.back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
+.main{background:#fff;border-radius:8px;padding:16px;}
+.ctrl-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.month-input{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;}
+.reload-btn{padding:7px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#2D4FBA,#1E2761);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #0F1640;}
+.export-btn{padding:7px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #015060;}
+.status{font-size:11px;color:#64748B;margin-left:8px;white-space:pre-wrap;}
+.summary-bar{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;}
+.sum-card{background:#EEF2FF;border:1px solid #C7D2FE;border-radius:6px;padding:8px 14px;font-size:12px;}
+.sum-card-title{color:#475569;font-size:11px;}
+.sum-card-value{font-size:16px;font-weight:bold;color:#1E2761;}
+.tbl-wrap{overflow:auto;max-height:70vh;border:1px solid #E2E8F0;}
+table{border-collapse:collapse;font-size:10.5px;}
+th,td{border:1px solid #E2E8F0;padding:3px 5px;white-space:nowrap;}
+th{background:#1E2761;color:#fff;position:sticky;top:0;z-index:3;text-align:center;}
+th.hdr-row2{top:var(--hdr1-h, 24px);z-index:2;}
+th.total-col{background:#028090;}
+th.col-team{background:#1E88E5;}
+th.col-group{background:#43A047;}
+th.col-area{background:#FB8C00;}
+th.col-dept{background:#8E24AA;}
+th.col-grand{background:#C62828;}
+td.rowlabel{position:sticky;left:0;background:#F8FAFC;font-weight:bold;color:#1E2761;z-index:1;text-align:center;min-width:70px;}
+td.num{text-align:right;}
+td.total-col{background:#EAF7F5;}
+td.col-team{background:#E3F2FD;}
+td.col-group{background:#E8F5E9;}
+td.col-area{background:#FFF3E0;}
+td.col-dept{background:#F3E5F5;}
+td.col-grand{background:#FFEBEE;font-weight:bold;}
+tr.sectiontotal td{background:#FFE0B2;font-weight:bold;}
+tr.sectiontotal td.col-team,tr.sectiontotal td.col-group{background:#FFD599;}
+tr.sectiontotal td.col-area,tr.sectiontotal td.col-dept{background:#FFC77D;}
+tr.sectiontotal td.col-grand{background:#FFB74D;}
+tr.weekend td.rowlabel{color:#DC2626;}
+.muted{color:#64748B;font-size:11px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar">
+<div style="display:flex;align-items:center;gap:12px;">
+<button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+<div class="topbar-title">📉 売上集計報告書</div>
+</div>
+<button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
+<div class="main">
+<div class="ctrl-bar">
+<label class="muted">対象月</label><input type="month" class="month-input" id="targetMonth">
+<button type="button" class="reload-btn" id="btnLoad">🔄 集計する</button>
+<button type="button" class="export-btn" id="btnExport">📥 Excel出力</button>
+<span class="status" id="status"></span>
+</div>
+
+<div class="summary-bar" id="summaryBar"></div>
+
+<div class="tbl-wrap">
+<table id="reportTable">
+<thead><tr><th>日</th></tr></thead>
+<tbody><tr><td style="text-align:center;padding:20px;color:#94A3B8;">対象月を指定して「集計する」を押してください</td></tr></tbody>
+</table>
+</div>
+
+<p class="muted" style="margin-top:10px;">
+※ 金額はすべて税抜きで計算しています（テレカ・金券類のみ据え置き）。<br>
+※ 客数＝その日の来店客数、売上金額＝買取・キャンセルを除く全チャンネル合計、件数＝買取成約数、買取金額＝買取合計、です。
+</p>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
+const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+const TAX_RATE=1.1;
+
+async function apiFetch(path){
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+  return await res.json();
+}
+async function apiFetchAll(pathBase){
+  let all=[],offset=0;const pageSize=1000;
+  while(true){
+    const sep=pathBase.includes('?')?'&':'?';
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${pathBase}${sep}limit=${pageSize}&offset=${offset}`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    const page=await res.json();
+    if(!Array.isArray(page))throw new Error(JSON.stringify(page));
+    all=all.concat(page);
+    if(page.length<pageSize)break;
+    offset+=pageSize;
+  }
+  return all;
+}
+function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
+function todayMonthStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+document.getElementById('targetMonth').value=todayMonthStr();
+
+const WEEKDAY_JP=['日','月','火','水','木','金','土'];
+
+let CATS=[],CHANNELS=[],BUY_CHID=null,CANCEL_CHID=null;
+let ORG_COLUMNS=[];
+let lastReportData=null;
+
+async function loadMasters(){
+  [CATS, CHANNELS]=await Promise.all([
+    apiFetch('product_categories?order=sort_order&select=id,name,sort_order'),
+    apiFetch('channels?order=sort_order&select=id,name,sort_order'),
+  ]);
+  const buyCh=CHANNELS.find(c=>c.name==='買取');
+  const cancelCh=CHANNELS.find(c=>c.name==='キャンセル');
+  BUY_CHID=buyCh?buyCh.id:1;
+  CANCEL_CHID=cancelCh?cancelCh.id:2;
+
+  const [stores, teams, groups, areas, departments]=await Promise.all([
+    apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name,sort_order,team_id,code'),
+    apiFetch('teams?is_active=eq.true&order=sort_order&select=id,name,sort_order,group_id'),
+    apiFetch('groups?is_active=eq.true&order=sort_order&select=id,name,sort_order,area_id'),
+    apiFetch('areas?is_active=eq.true&order=sort_order&select=id,name,sort_order,department_id'),
+    apiFetch('departments?is_active=eq.true&order=sort_order&select=id,name,sort_order'),
+  ]);
+
+  const cols=[];
+  const allStoreIds=[];
+  const unassignedStores=stores.filter(s=>!s.team_id);
+  const usedStoreIds=new Set();
+
+  for(const dept of departments){
+    const deptAreas=areas.filter(a=>a.department_id===dept.id);
+    const deptStoreIds=[];
+    for(const area of deptAreas){
+      const areaGroups=groups.filter(g=>g.area_id===area.id);
+      const areaStoreIds=[];
+      for(const group of areaGroups){
+        const groupTeams=teams.filter(t=>t.group_id===group.id);
+        const groupStoreIds=[];
+        for(const team of groupTeams){
+          const teamStores=stores.filter(s=>s.team_id===team.id);
+          const teamStoreIds=teamStores.map(s=>s.id);
+          teamStores.forEach(s=>{cols.push({type:'store',id:s.id,name:s.name,storeIds:[s.id]});usedStoreIds.add(s.id);});
+          if(teamStores.length>1)cols.push({type:'team_total',name:team.name+' 計',storeIds:teamStoreIds});
+          groupStoreIds.push(...teamStoreIds);
+        }
+        if(groupTeams.length>1)cols.push({type:'group_total',name:group.name+' 計',storeIds:groupStoreIds});
+        areaStoreIds.push(...groupStoreIds);
+      }
+      if(areaGroups.length>1)cols.push({type:'area_total',name:area.name+' 計',storeIds:areaStoreIds});
+      deptStoreIds.push(...areaStoreIds);
+    }
+    if(deptAreas.length>1)cols.push({type:'dept_total',name:dept.name+' 計',storeIds:deptStoreIds});
+    allStoreIds.push(...deptStoreIds);
+  }
+  unassignedStores.forEach(s=>{
+    if(!usedStoreIds.has(s.id)){cols.push({type:'store',id:s.id,name:s.name,storeIds:[s.id]});allStoreIds.push(s.id);}
+  });
+
+  cols.push({type:'grand_total',name:'総合計',storeIds:[...new Set(allStoreIds)]});
+  ORG_COLUMNS=cols;
+}
+
+function isTaxExemptChannel(chName){return chName.includes('免税');}
+function isTaxExemptCategory(catName){return catName.includes('テレカ・金券');}
+function taxAdjust(amount, exempt, taxMode){return exempt?amount:amount/TAX_RATE;} // このレポートは常に税抜
+function colClass(col){
+  if(col.type==='team_total')return 'col-team';
+  if(col.type==='group_total')return 'col-group';
+  if(col.type==='area_total')return 'col-area';
+  if(col.type==='dept_total')return 'col-dept';
+  if(col.type==='grand_total')return 'col-grand';
+  return '';
+}
+
+document.getElementById('btnLoad').onclick=loadReport;
+document.getElementById('btnExport').onclick=exportExcel;
+
+async function loadReport(){
+  const month=document.getElementById('targetMonth').value; // "YYYY-MM"
+  const statusEl=document.getElementById('status');
+  if(!month){statusEl.textContent='対象月を指定してください。';return;}
+  statusEl.textContent='集計中...';
+  document.getElementById('btnLoad').disabled=true;
+
+  try{
+    if(CHANNELS.length===0) await loadMasters();
+
+    const [y,m]=month.split('-').map(Number);
+    const firstDay=`${month}-01`;
+    const lastDate=new Date(Date.UTC(y, m, 0)); // 月末日
+    const daysInMonth=lastDate.getUTCDate();
+    const lastDay=`${month}-${String(daysInMonth).padStart(2,'0')}`;
+
+    const dailyRows=await apiFetchAll(`daily_reports?report_date=gte.${firstDay}&report_date=lte.${lastDay}&select=store_id,report_date,category_id,channel_id,quantity,amount,visitors,customers&order=id`);
+
+    const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
+
+    // 日ごと・店舗ごとに集計
+    const byDayStore={}; // "day-storeId" -> {visitors, buyCustomers, salesAmount, buyAmount}
+    function key(day,storeId){return day+'-'+storeId;}
+
+    for(const row of dailyRows){
+      const day=Number(row.report_date.slice(8,10));
+      const k=key(day,row.store_id);
+      if(!byDayStore[k])byDayStore[k]={visitorsMax:0, buyCustomersMax:0, salesAmount:0, buyAmount:0};
+      const cell=byDayStore[k];
+
+      if((row.visitors||0)>cell.visitorsMax)cell.visitorsMax=row.visitors||0;
+
+      if(row.channel_id===BUY_CHID){
+        if((row.customers||0)>cell.buyCustomersMax)cell.buyCustomersMax=row.customers||0;
+        const catName=catMap[row.category_id]||'';
+        const exempt=isTaxExemptCategory(catName);
+        cell.buyAmount+=Math.ceil(taxAdjust(row.amount||0, exempt, 'excl'));
+      } else if(row.channel_id===CANCEL_CHID){
+        // 売上・買取金額どちらにも含めない
+      } else {
+        const catName=catMap[row.category_id]||'';
+        const chName=(CHANNELS.find(c=>c.id===row.channel_id)||{}).name||'';
+        const exempt=isTaxExemptCategory(catName)||isTaxExemptChannel(chName);
+        cell.salesAmount+=Math.ceil(taxAdjust(row.amount||0, exempt, 'excl'));
+      }
+    }
+
+    lastReportData={month, daysInMonth, byDayStore};
+    renderTable();
+    statusEl.textContent=`✅ ${month}：daily_reports ${dailyRows.length.toLocaleString()}行を集計しました`;
+  }catch(e){
+    statusEl.textContent='❌ エラー: '+e.message;
+  }finally{
+    document.getElementById('btnLoad').disabled=false;
+  }
+}
+
+function sumCols(dataFn, col, field){
+  let v=0;
+  col.storeIds.forEach(id=>{v+=dataFn(id)[field]||0;});
+  return v;
+}
+
+function renderTable(){
+  const d=lastReportData;
+  const table=document.getElementById('reportTable');
+
+  let headHtml='<tr><th rowspan="2" style="min-width:50px;">日</th><th rowspan="2" style="min-width:40px;">曜日</th>';
+  ORG_COLUMNS.forEach(c=>{headHtml+=`<th colspan="4" class="${c.type!=='store'?'total-col '+colClass(c):''}">${c.name}</th>`;});
+  headHtml+='</tr><tr>';
+  ORG_COLUMNS.forEach(()=>{headHtml+='<th class="hdr-row2">客数</th><th class="hdr-row2">売上金額</th><th class="hdr-row2">件数</th><th class="hdr-row2">買取金額</th>';});
+  headHtml+='</tr>';
+  table.querySelector('thead').innerHTML=headHtml;
+
+  requestAnimationFrame(()=>{
+    const row1=table.querySelector('thead tr:first-child');
+    if(row1){table.style.setProperty('--hdr1-h', row1.offsetHeight+'px');}
+  });
+
+  let bodyHtml='';
+  const monthTotals={}; // colIdx key -> {visitors,sales,buyCust,buyAmt}
+
+  for(let day=1; day<=d.daysInMonth; day++){
+    const [y,m]=d.month.split('-').map(Number);
+    const dow=new Date(Date.UTC(y, m-1, day)).getUTCDay();
+    const dowLabel=WEEKDAY_JP[dow];
+    const isWeekend=(dow===0||dow===6);
+
+    function dataFn(storeId){
+      const cell=d.byDayStore[day+'-'+storeId];
+      return cell?{visitors:cell.visitorsMax, sales:cell.salesAmount, buyCust:cell.buyCustomersMax, buyAmt:cell.buyAmount}:{visitors:0,sales:0,buyCust:0,buyAmt:0};
+    }
+
+    bodyHtml+=`<tr class="${isWeekend?'weekend':''}"><td class="rowlabel">${String(day).padStart(2,'0')}</td><td class="rowlabel">${dowLabel}</td>`;
+    ORG_COLUMNS.forEach((col,idx)=>{
+      const visitors=sumCols(dataFn,col,'visitors');
+      const sales=sumCols(dataFn,col,'sales');
+      const buyCust=sumCols(dataFn,col,'buyCust');
+      const buyAmt=sumCols(dataFn,col,'buyAmt');
+      const cls=col.type!=='store'?'total-col '+colClass(col):'';
+      bodyHtml+=`<td class="num ${cls}">${fmt(visitors)}</td><td class="num ${cls}">${fmt(sales)}</td><td class="num ${cls}">${fmt(buyCust)}</td><td class="num ${cls}">${fmt(buyAmt)}</td>`;
+
+      if(!monthTotals[idx])monthTotals[idx]={visitors:0,sales:0,buyCust:0,buyAmt:0};
+      monthTotals[idx].visitors+=visitors; monthTotals[idx].sales+=sales; monthTotals[idx].buyCust+=buyCust; monthTotals[idx].buyAmt+=buyAmt;
+    });
+    bodyHtml+='</tr>';
+  }
+
+  // 月合計行
+  bodyHtml+=`<tr class="sectiontotal"><td class="rowlabel" colspan="2">合計</td>`;
+  ORG_COLUMNS.forEach((col,idx)=>{
+    const t=monthTotals[idx]||{visitors:0,sales:0,buyCust:0,buyAmt:0};
+    const cls=col.type!=='store'?colClass(col):'';
+    bodyHtml+=`<td class="num ${cls}">${fmt(t.visitors)}</td><td class="num ${cls}">${fmt(t.sales)}</td><td class="num ${cls}">${fmt(t.buyCust)}</td><td class="num ${cls}">${fmt(t.buyAmt)}</td>`;
+  });
+  bodyHtml+='</tr>';
+
+  table.querySelector('tbody').innerHTML=bodyHtml;
+
+  const grandIdx=ORG_COLUMNS.length-1;
+  const grand=monthTotals[grandIdx]||{visitors:0,sales:0,buyCust:0,buyAmt:0};
+  document.getElementById('summaryBar').innerHTML=`
+    <div class="sum-card"><div class="sum-card-title">客数合計</div><div class="sum-card-value">${fmt(grand.visitors)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">売上金額合計</div><div class="sum-card-value">¥${fmt(grand.sales)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">買取件数合計</div><div class="sum-card-value">${fmt(grand.buyCust)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">買取金額合計</div><div class="sum-card-value">¥${fmt(grand.buyAmt)}</div></div>
+  `;
+}
+
+function rgbToArgb(rgbStr){
+  const m=rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if(!m)return null;
+  const alpha=m[4]!==undefined?parseFloat(m[4]):1;
+  if(alpha===0)return null;
+  const hex=n=>Number(n).toString(16).padStart(2,'0').toUpperCase();
+  return 'FF'+hex(m[1])+hex(m[2])+hex(m[3]);
+}
+
+async function exportExcel(){
+  if(!lastReportData){alert('先に集計してください。');return;}
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('売上集計報告書');
+  const table=document.getElementById('reportTable');
+  const rows=table.querySelectorAll('tr');
+  const thin={style:'thin',color:{argb:'FF000000'}};
+  const border={top:thin,bottom:thin,left:thin,right:thin};
+
+  rows.forEach((tr,ri)=>{
+    const cells=tr.querySelectorAll('th,td');
+    const rowData=[];
+    const cellMeta=[];
+    let colIdx=1;
+    cells.forEach(cell=>{
+      const colspan=parseInt(cell.getAttribute('colspan')||'1');
+      const rowspan=parseInt(cell.getAttribute('rowspan')||'1');
+      const text=cell.textContent.trim();
+      const num=Number(text.replace(/[,%]/g,''));
+      const isNumericCell=!isNaN(num)&&text!==''&&cell.tagName==='TD';
+      rowData.push(isNumericCell?num:text);
+      const bg=getComputedStyle(cell).backgroundColor;
+      const argb=rgbToArgb(bg);
+      cellMeta.push({col:colIdx, colspan, rowspan, argb, isHeader:cell.tagName==='TH'});
+      for(let i=1;i<colspan;i++){rowData.push('');}
+      colIdx+=colspan;
+    });
+    const row=ws.addRow(rowData);
+    row.eachCell(cell=>{
+      cell.border=border;
+      cell.font={size:9};
+      if(typeof cell.value==='number')cell.numFmt='#,##0';
+    });
+    cellMeta.forEach(meta=>{
+      const cell=row.getCell(meta.col);
+      if(meta.argb)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:meta.argb}};
+      if(meta.isHeader){
+        cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};
+        cell.alignment={horizontal:'center',vertical:'middle'};
+      }
+      if(meta.colspan>1||meta.rowspan>1){
+        ws.mergeCells(ri+1, meta.col, ri+meta.rowspan, meta.col+meta.colspan-1);
+      }
+    });
+  });
+  ws.getColumn(1).width=8;
+  ws.getColumn(2).width=8;
+
+  const month=document.getElementById('targetMonth').value;
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`売上集計報告書_${month}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
+}
+</script>
+</body>
+</html>
