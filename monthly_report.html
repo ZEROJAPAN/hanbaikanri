@@ -178,6 +178,9 @@ async function loadMasters(){
     apiFetch('areas?is_active=eq.true&order=sort_order&select=id,name,sort_order,department_id'),
     apiFetch('departments?is_active=eq.true&order=sort_order&select=id,name,sort_order'),
   ]);
+  // sort_orderが未設定(null)の項目があっても順序が崩れないよう、取得後に明示的に再ソート
+  const bySortOrder=(a,b)=>(a.sort_order??999999)-(b.sort_order??999999);
+  stores.sort(bySortOrder); teams.sort(bySortOrder); groups.sort(bySortOrder); areas.sort(bySortOrder); departments.sort(bySortOrder);
   STORES_RAW=stores;
   const productRegenStore=stores.find(s=>String(s.code)==='290');
   PRODUCT_REGEN_STORE_ID=productRegenStore?productRegenStore.id:null;
