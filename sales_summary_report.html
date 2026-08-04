@@ -133,6 +133,8 @@ async function loadMasters(){
     apiFetch('areas?is_active=eq.true&order=sort_order&select=id,name,sort_order,department_id'),
     apiFetch('departments?is_active=eq.true&order=sort_order&select=id,name,sort_order'),
   ]);
+  const bySortOrder=(a,b)=>(a.sort_order??999999)-(b.sort_order??999999);
+  stores.sort(bySortOrder); teams.sort(bySortOrder); groups.sort(bySortOrder); areas.sort(bySortOrder); departments.sort(bySortOrder);
 
   const cols=[];
   const allStoreIds=[];
