@@ -191,28 +191,25 @@ async function loadMasters(){
   const usedStoreIds=new Set();
 
   for(const dept of departments){
-    const deptAreas=areas.filter(a=>a.department_id===dept.id);
+    // エリアは構造上のグルーピングにのみ使用し、エリア合計列・エリア単位の並び順は使わない
+    // （部門配下の全グループを、エリアをまたいでgroup.sort_orderだけでフラットに並べる）
+    const deptAreaIds=new Set(areas.filter(a=>a.department_id===dept.id).map(a=>a.id));
+    const deptGroups=groups.filter(g=>deptAreaIds.has(g.area_id));
     const deptStoreIds=[];
-    for(const area of deptAreas){
-      const areaGroups=groups.filter(g=>g.area_id===area.id);
-      const areaStoreIds=[];
-      for(const group of areaGroups){
-        const groupTeams=teams.filter(t=>t.group_id===group.id);
-        const groupStoreIds=[];
-        for(const team of groupTeams){
-          const teamStores=stores.filter(s=>s.team_id===team.id);
-          const teamStoreIds=teamStores.map(s=>s.id);
-          teamStores.forEach(s=>{cols.push({type:'store',id:s.id,name:s.name,storeIds:[s.id]});usedStoreIds.add(s.id);});
-          if(teamStores.length>1)cols.push({type:'team_total',name:team.name+' 計',storeIds:teamStoreIds});
-          groupStoreIds.push(...teamStoreIds);
-        }
-        if(groupTeams.length>1)cols.push({type:'group_total',name:group.name+' 計',storeIds:groupStoreIds});
-        areaStoreIds.push(...groupStoreIds);
+    for(const group of deptGroups){
+      const groupTeams=teams.filter(t=>t.group_id===group.id);
+      const groupStoreIds=[];
+      for(const team of groupTeams){
+        const teamStores=stores.filter(s=>s.team_id===team.id);
+        const teamStoreIds=teamStores.map(s=>s.id);
+        teamStores.forEach(s=>{cols.push({type:'store',id:s.id,name:s.name,storeIds:[s.id]});usedStoreIds.add(s.id);});
+        if(teamStores.length>1)cols.push({type:'team_total',name:team.name+' 計',storeIds:teamStoreIds});
+        groupStoreIds.push(...teamStoreIds);
       }
-      if(areaGroups.length>1)cols.push({type:'area_total',name:area.name+' 計',storeIds:areaStoreIds});
-      deptStoreIds.push(...areaStoreIds);
+      if(groupTeams.length>1)cols.push({type:'group_total',name:group.name+' 計',storeIds:groupStoreIds});
+      deptStoreIds.push(...groupStoreIds);
     }
-    if(deptAreas.length>1)cols.push({type:'dept_total',name:dept.name+' 計',storeIds:deptStoreIds});
+    if(deptGroups.length>1)cols.push({type:'dept_total',name:dept.name+' 計',storeIds:deptStoreIds});
     allStoreIds.push(...deptStoreIds);
   }
   unassignedStores.forEach(s=>{
