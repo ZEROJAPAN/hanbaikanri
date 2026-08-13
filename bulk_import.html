@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>一括登録</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
@@ -17,7 +16,6 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
 .main{background:#fff;border-radius:8px;padding:16px;margin-top:6px;}
 .page-title{font-size:16px;font-weight:bold;color:#1E2761;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #1E2761;}
 
-/* タブ */
 .tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap;}
 .tab{
   padding:8px 16px;border:2px solid #CBD5E1;border-radius:6px 6px 0 0;
@@ -26,7 +24,6 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
 }
 .tab.active{background:#1E2761;color:#fff;border-color:#1E2761;}
 
-/* セクション */
 .tab-content{display:none;}
 .tab-content.active{display:block;}
 
@@ -41,7 +38,6 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
   display:flex;align-items:center;gap:8px;
 }
 
-/* ダウンロードボタン */
 .dl-btn{
   padding:8px 16px;background:#028090;color:#fff;
   border:none;border-radius:5px;font-size:12px;font-weight:bold;
@@ -49,7 +45,6 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
 }
 .dl-btn:hover{background:#016070;}
 
-/* アップロードエリア */
 .upload-area{
   border:2px dashed #CBD5E1;border-radius:8px;
   padding:20px;text-align:center;
@@ -62,7 +57,6 @@ body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;back
 .upload-area .upload-sub{font-size:10px;color:#94A3B8;margin-top:4px;}
 input[type="file"]{display:none;}
 
-/* プレビュー */
 .preview-area{margin-top:12px;display:none;}
 .preview-title{font-size:11px;font-weight:bold;color:#475569;margin-bottom:6px;}
 .preview-table-wrap{overflow-x:auto;max-height:200px;overflow-y:auto;}
@@ -73,7 +67,6 @@ tr:nth-child(even) td{background:#F8FAFC;}
 .row-ok td{background:#D1FAE5!important;}
 .row-err td{background:#FEE2E2!important;}
 
-/* 実行ボタン */
 .exec-btn{
   padding:10px 24px;background:#1E2761;color:#fff;
   border:none;border-radius:5px;font-size:13px;font-weight:bold;
@@ -82,7 +75,6 @@ tr:nth-child(even) td{background:#F8FAFC;}
 .exec-btn:hover{background:#028090;}
 .exec-btn:disabled{background:#94A3B8;cursor:not-allowed;}
 
-/* 結果 */
 .result{
   margin-top:12px;padding:10px 14px;
   border-radius:6px;font-size:12px;display:none;
@@ -91,7 +83,6 @@ tr:nth-child(even) td{background:#F8FAFC;}
 .result.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
 .result.warning{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;}
 
-/* フォーマット説明 */
 .format-info{
   background:#EEF2FF;border:1px solid #C7D2FE;
   border-radius:6px;padding:10px 14px;margin-bottom:10px;
@@ -124,13 +115,13 @@ tr:nth-child(even) td{background:#F8FAFC;}
 <div class="main">
   <div class="page-title">📥 マスタ一括登録（CSVインポート）</div>
 
-  <!-- タブ -->
   <div class="tabs">
     <div class="tab active" onclick="switchTab('dept')">🏛 部門</div>
     <div class="tab" onclick="switchTab('area')">🗾 エリア／課</div>
     <div class="tab" onclick="switchTab('group')">👥 グループ</div>
     <div class="tab" onclick="switchTab('team')">🤝 チーム</div>
     <div class="tab" onclick="switchTab('store')">🏪 店舗</div>
+    <div class="tab" onclick="switchTab('user')">👤 ユーザー</div>
   </div>
 
   <!-- 部門 -->
@@ -277,15 +268,58 @@ tr:nth-child(even) td{background:#F8FAFC;}
     </div>
   </div>
 
+  <!-- ユーザー -->
+  <div class="tab-content" id="tab-user">
+    <div class="section">
+      <div class="section-title">① フォーマットをダウンロード</div>
+      <div class="format-info">
+        <strong>列の順番：</strong>
+        <code>ユーザーID</code>　<code>氏名</code>　<code>パスワード</code>　<code>役職コード</code>　<code>所属コード</code><br>
+        <strong>役職コード：</strong> store_staff（店舗スタッフ）／team_leader（チームリーダー）／group_leader（グループリーダー）／area_manager（エリアマネージャー）／hq_staff（本社スタッフ）／admin（設定管理者）<br>
+        <strong>所属コード：</strong> 役職に応じて店舗コード／チームコード／グループコード／エリアコード／部門コードのいずれかを入力（本社スタッフ・設定管理者は空欄可）<br>
+        <strong>例：</strong> t001,山田太郎,pass1234,team_leader,T001
+      </div>
+      <button type="button" class="dl-btn" onclick="downloadCSV('user')">📥 フォーマットダウンロード（ユーザー）</button>
+    </div>
+    <div class="section">
+      <div class="section-title">② CSVをアップロードして登録</div>
+      <div class="upload-area" id="upload-user" onclick="document.getElementById('file-user').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,'user')">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">クリックまたはドラッグ＆ドロップでCSVを選択</div>
+        <div class="upload-sub">対応形式：CSV（UTF-8 / Shift-JIS）</div>
+      </div>
+      <input type="file" id="file-user" accept=".csv" onchange="onFileSelect(event,'user')">
+      <div class="preview-area" id="preview-user">
+        <div class="preview-title">📋 プレビュー（登録前確認）</div>
+        <div class="preview-table-wrap" id="preview-table-user"></div>
+        <button type="button" class="exec-btn" id="exec-user" onclick="importData('user')">✅ 登録実行</button>
+      </div>
+      <div class="result" id="result-user"></div>
+    </div>
+  </div>
+
 </div>
 </div>
 
 <script>
 const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-// CSVフォーマット定義
+async function apiFetch(path,method='GET',body=null){
+  const opts={method,headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}};
+  if(body){
+    opts.headers['Content-Type']='application/json';
+    opts.headers['Prefer']=method==='POST'?'resolution=merge-duplicates,return=minimal':'return=minimal';
+    opts.body=JSON.stringify(body);
+  }
+  return await fetch(SUPABASE_URL+'/rest/v1/'+path,opts);
+}
+async function upsertOne(table, row, conflictCol){
+  const res=await apiFetch(`${table}?on_conflict=${conflictCol}`,'POST',row);
+  if(!res.ok){const err=await res.text();return {ok:false,error:err};}
+  return {ok:true};
+}
+
 const FORMATS={
   dept: {
     headers:['部門コード','部門名','表示順'],
@@ -312,21 +346,24 @@ const FORMATS={
     sample:[['S001','新宿店','T001','03-1234-5678','東京都新宿区...','1']],
     filename:'店舗マスタ_フォーマット.csv'
   },
+  user: {
+    headers:['ユーザーID','氏名','パスワード','役職コード','所属コード'],
+    sample:[['t001','山田太郎','pass1234','team_leader','T001'],['s001','新宿店','pass0000','store_staff','S001']],
+    filename:'ユーザーマスタ_フォーマット.csv'
+  },
 };
 
 let parsedData={};
 
-// タブ切り替え
 function switchTab(type){
+  const types=['dept','area','group','team','store','user'];
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const types=['dept','area','group','team','store'];
     t.classList.toggle('active', types[i]===type);
   });
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+type).classList.add('active');
 }
 
-// CSVダウンロード
 function downloadCSV(type){
   const fmt=FORMATS[type];
   const bom='\uFEFF';
@@ -339,7 +376,6 @@ function downloadCSV(type){
   URL.revokeObjectURL(url);
 }
 
-// ドラッグ
 function onDragOver(e){e.preventDefault();}
 function onDrop(e,type){
   e.preventDefault();
@@ -351,12 +387,10 @@ function onFileSelect(e,type){
   if(file)parseCSV(file,type);
 }
 
-// CSV解析
 function parseCSV(file,type){
   const reader=new FileReader();
   reader.onload=function(e){
     let text=e.target.result;
-    // Shift-JIS対応（文字化け検出）
     if(text.includes('ï¿½')){
       const reader2=new FileReader();
       reader2.onload=function(e2){
@@ -375,9 +409,7 @@ function processCSV(text,type){
   if(lines.length<2){
     showResult(type,'CSVにデータがありません。','error');return;
   }
-  // 1行目はヘッダー（スキップ）
   const rows=lines.slice(1).filter(l=>l.trim()).map(l=>{
-    // カンマ区切り（ダブルクォート対応）
     return l.split(',').map(v=>v.replace(/^"|"$/g,'').trim());
   });
   parsedData[type]=rows;
@@ -395,10 +427,9 @@ function showPreview(type,rows){
   html+=`<th>状態</th></tr></thead><tbody>`;
 
   rows.forEach((row,i)=>{
-    const ok=row.length>=fmt.headers.length&&row[0]&&row[1];
+    const ok=row.length>=3&&row[0]&&row[1];
     html+=`<tr class="${ok?'row-ok':'row-err'}"><td>${i+2}</td>`;
     row.forEach(v=>html+=`<td>${v||'－'}</td>`);
-    // 列が足りない場合補完
     for(let j=row.length;j<fmt.headers.length;j++) html+=`<td>－</td>`;
     html+=`<td>${ok?'✅ OK':'❌ エラー'}</td></tr>`;
   });
@@ -407,13 +438,12 @@ function showPreview(type,rows){
 
   const errCount=rows.filter(r=>!r[0]||!r[1]).length;
   if(errCount>0){
-    showResult(type,`⚠️ ${errCount}行にエラーがあります。コードと名称は必須です。確認してください。`,'warning');
+    showResult(type,`⚠️ ${errCount}行にエラーがあります。必須項目を確認してください。`,'warning');
   } else {
     showResult(type,`✅ ${rows.length}件のデータを確認しました。「登録実行」で一括登録します。`,'success');
   }
 }
 
-// 一括登録実行
 async function importData(type){
   const rows=parsedData[type];
   if(!rows||rows.length===0){alert('CSVを先に選択してください。');return;}
@@ -428,72 +458,104 @@ async function importData(type){
       for(const row of rows){
         const [code,name,sort]=row;
         if(!code||!name){errorCount++;continue;}
-        const {error}=await sb.from('departments').upsert({
-          code,name,sort_order:parseInt(sort)||0,is_active:true
-        },{onConflict:'code'});
-        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
-        else successCount++;
+        const r=await upsertOne('departments',{code,name,sort_order:parseInt(sort)||0,is_active:true},'code');
+        if(!r.ok){errorCount++;errors.push(`${code}：${r.error}`);} else successCount++;
       }
     }
     else if(type==='area'){
-      // 部門コード→IDの変換
-      const {data:depts}=await sb.from('departments').select('id,code');
-      const deptMap=Object.fromEntries((depts||[]).map(d=>[d.code,d.id]));
+      const depts=await (await apiFetch('departments?select=id,code')).json()||[];
+      const deptMap=Object.fromEntries(depts.map(d=>[d.code,d.id]));
       for(const row of rows){
         const [code,name,deptCode,sort]=row;
         if(!code||!name){errorCount++;continue;}
         const department_id=deptMap[deptCode]||null;
         if(deptCode&&!department_id){errors.push(`${code}：部門コード「${deptCode}」が見つかりません`);errorCount++;continue;}
-        const {error}=await sb.from('areas').upsert({
-          code,name,department_id,sort_order:parseInt(sort)||0,is_active:true
-        },{onConflict:'code'});
-        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
-        else successCount++;
+        const r=await upsertOne('areas',{code,name,department_id,sort_order:parseInt(sort)||0,is_active:true},'code');
+        if(!r.ok){errorCount++;errors.push(`${code}：${r.error}`);} else successCount++;
       }
     }
     else if(type==='group'){
-      const {data:areas}=await sb.from('areas').select('id,code');
-      const areaMap=Object.fromEntries((areas||[]).map(a=>[a.code,a.id]));
+      const areasData=await (await apiFetch('areas?select=id,code')).json()||[];
+      const areaMap=Object.fromEntries(areasData.map(a=>[a.code,a.id]));
       for(const row of rows){
         const [code,name,areaCode,sort]=row;
         if(!code||!name){errorCount++;continue;}
         const area_id=areaMap[areaCode]||null;
         if(areaCode&&!area_id){errors.push(`${code}：エリアコード「${areaCode}」が見つかりません`);errorCount++;continue;}
-        const {error}=await sb.from('groups').upsert({
-          code,name,area_id,sort_order:parseInt(sort)||0,is_active:true
-        },{onConflict:'code'});
-        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
-        else successCount++;
+        const r=await upsertOne('groups',{code,name,area_id,sort_order:parseInt(sort)||0,is_active:true},'code');
+        if(!r.ok){errorCount++;errors.push(`${code}：${r.error}`);} else successCount++;
       }
     }
     else if(type==='team'){
-      const {data:groups}=await sb.from('groups').select('id,code');
-      const groupMap=Object.fromEntries((groups||[]).map(g=>[g.code,g.id]));
+      const groupsData=await (await apiFetch('groups?select=id,code')).json()||[];
+      const groupMap=Object.fromEntries(groupsData.map(g=>[g.code,g.id]));
       for(const row of rows){
         const [code,name,groupCode,sort]=row;
         if(!code||!name){errorCount++;continue;}
         const group_id=groupMap[groupCode]||null;
         if(groupCode&&!group_id){errors.push(`${code}：グループコード「${groupCode}」が見つかりません`);errorCount++;continue;}
-        const {error}=await sb.from('teams').upsert({
-          code,name,group_id,sort_order:parseInt(sort)||0,is_active:true
-        },{onConflict:'code'});
-        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
-        else successCount++;
+        const r=await upsertOne('teams',{code,name,group_id,sort_order:parseInt(sort)||0,is_active:true},'code');
+        if(!r.ok){errorCount++;errors.push(`${code}：${r.error}`);} else successCount++;
       }
     }
     else if(type==='store'){
-      const {data:teams}=await sb.from('teams').select('id,code');
-      const teamMap=Object.fromEntries((teams||[]).map(t=>[t.code,t.id]));
+      const teamsData=await (await apiFetch('teams?select=id,code')).json()||[];
+      const teamMap=Object.fromEntries(teamsData.map(t=>[t.code,t.id]));
       for(const row of rows){
         const [code,name,teamCode,tel,address,sort]=row;
         if(!code||!name){errorCount++;continue;}
         const team_id=teamMap[teamCode]||null;
-        const {error}=await sb.from('stores').upsert({
-          code,name,team_id,tel:tel||null,address:address||null,
-          sort_order:parseInt(sort)||0,is_active:true
-        },{onConflict:'code'});
-        if(error){errorCount++;errors.push(`${code}：${error.message}`);}
-        else successCount++;
+        const r=await upsertOne('stores',{code,name,team_id,tel:tel||null,address:address||null,sort_order:parseInt(sort)||0,is_active:true},'code');
+        if(!r.ok){errorCount++;errors.push(`${code}：${r.error}`);} else successCount++;
+      }
+    }
+    else if(type==='user'){
+      const [storesData, teamsData, groupsData, areasData, deptsData, rolesData]=await Promise.all([
+        apiFetch('stores?select=id,code').then(r=>r.json()),
+        apiFetch('teams?select=id,code').then(r=>r.json()),
+        apiFetch('groups?select=id,code').then(r=>r.json()),
+        apiFetch('areas?select=id,code').then(r=>r.json()),
+        apiFetch('departments?select=id,code').then(r=>r.json()),
+        apiFetch('role_master?select=code,edit_scope').then(r=>r.json()),
+      ]);
+      const storeMap=Object.fromEntries((storesData||[]).map(s=>[s.code,s.id]));
+      const teamMap=Object.fromEntries((teamsData||[]).map(t=>[t.code,t.id]));
+      const groupMap=Object.fromEntries((groupsData||[]).map(g=>[g.code,g.id]));
+      const areaMap=Object.fromEntries((areasData||[]).map(a=>[a.code,a.id]));
+      const deptMap=Object.fromEntries((deptsData||[]).map(d=>[d.code,d.id]));
+      const roleMap=Object.fromEntries((rolesData||[]).map(r=>[r.code,r.edit_scope]));
+
+      for(const row of rows){
+        const [userCode,name,password,roleCode,scopeCode]=row;
+        if(!userCode||!name||!password||!roleCode){errorCount++;continue;}
+        const editScope=roleMap[roleCode];
+        if(!editScope){errors.push(`${userCode}：役職コード「${roleCode}」が見つかりません`);errorCount++;continue;}
+
+        const payload={user_code:userCode,name,password,role:roleCode,is_active:true,
+          store_id:null,team_id:null,group_id:null,area_id:null,department_id:null};
+
+        if(editScope==='store'){
+          const id=storeMap[scopeCode];
+          if(!id){errors.push(`${userCode}：店舗コード「${scopeCode}」が見つかりません`);errorCount++;continue;}
+          payload.store_id=id;
+        } else if(editScope==='team'){
+          const id=teamMap[scopeCode];
+          if(!id){errors.push(`${userCode}：チームコード「${scopeCode}」が見つかりません`);errorCount++;continue;}
+          payload.team_id=id;
+        } else if(editScope==='group'){
+          const id=groupMap[scopeCode];
+          if(!id){errors.push(`${userCode}：グループコード「${scopeCode}」が見つかりません`);errorCount++;continue;}
+          payload.group_id=id;
+        } else if(editScope==='area'){
+          const id=areaMap[scopeCode];
+          if(!id){errors.push(`${userCode}：エリアコード「${scopeCode}」が見つかりません`);errorCount++;continue;}
+          payload.area_id=id;
+        } else if(editScope==='all'&&scopeCode){
+          payload.department_id=deptMap[scopeCode]||null;
+        }
+
+        const r=await upsertOne('users',payload,'user_code');
+        if(!r.ok){errorCount++;errors.push(`${userCode}：${r.error}`);} else successCount++;
       }
     }
 
