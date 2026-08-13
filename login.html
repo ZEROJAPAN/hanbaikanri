@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ゼロジャパン 売上自動集計システム</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','Yu Gothic',sans-serif;background:linear-gradient(135deg,#1E2761 0%,#028090 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -56,17 +55,19 @@ body{font-family:'Meiryo','Yu Gothic',sans-serif;background:linear-gradient(135d
 </div>
 
 <script>
-// Supabase接続設定
 const SUPABASE_URL = 'https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function apiFetch(path){
+  const res = await fetch(SUPABASE_URL+'/rest/v1/'+path, {headers:{apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`}});
+  return await res.json();
+}
 
 // 店舗一覧をDBから取得
 async function loadStores(){
-  const {data, error} = await sb.from('stores').select('*').eq('is_active', true).order('sort_order');
-  if(error){ console.error(error); return; }
+  const data = await apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name');
   const sel = document.getElementById('store');
-  data.forEach(s=>{
+  (data||[]).forEach(s=>{
     const o = document.createElement('option');
     o.value = s.id;
     o.textContent = s.name;
@@ -93,37 +94,51 @@ async function handleLogin(){
   btn.disabled = true;
   btn.textContent = 'ログイン中...';
 
-  // DBからユーザー確認
-  const {data, error} = await sb
-    .from('users')
-    .select('*')
-    .eq('user_code', userid)
-    .eq('is_active', true)
-    .single();
+  try{
+    // DBからユーザー確認
+    const users = await apiFetch(`users?user_code=eq.${encodeURIComponent(userid)}&is_active=eq.true&select=*`);
+    const data = (users||[])[0];
 
-  if(error || !data){
-    errMsg.textContent='ユーザーIDが見つかりません。';
+    if(!data){
+      errMsg.textContent='ユーザーIDが見つかりません。';
+      errMsg.style.display='block';
+      btn.disabled=false; btn.textContent='ログイン';
+      return;
+    }
+
+    if(password !== data.password){
+      errMsg.textContent='パスワードが正しくありません。';
+      errMsg.style.display='block';
+      btn.disabled=false; btn.textContent='ログイン';
+      document.getElementById('password').value='';
+      return;
+    }
+
+    // 役職マスタから権限スコープを取得
+    const roles = await apiFetch(`role_master?code=eq.${encodeURIComponent(data.role||'')}&select=*`);
+    const role = (roles||[])[0] || {menu_level:1, edit_scope:'store', view_scope:'team'};
+
+    errMsg.style.display='none';
+    localStorage.setItem('store_id', storeId);
+    localStorage.setItem('store', storeName);
+    localStorage.setItem('userid', userid);
+    localStorage.setItem('user_name', data.name);
+    localStorage.setItem('role', data.role||'');
+    localStorage.setItem('role_name', role.name||'');
+    localStorage.setItem('menu_level', role.menu_level||1);
+    localStorage.setItem('edit_scope', role.edit_scope||'store');
+    localStorage.setItem('view_scope', role.view_scope||'team');
+    localStorage.setItem('scope_store_id', data.store_id||'');
+    localStorage.setItem('scope_team_id', data.team_id||'');
+    localStorage.setItem('scope_group_id', data.group_id||'');
+    localStorage.setItem('scope_area_id', data.area_id||'');
+    localStorage.setItem('scope_department_id', data.department_id||'');
+    window.location.href='index.html';
+  }catch(e){
+    errMsg.textContent='通信エラー：'+e.message;
     errMsg.style.display='block';
     btn.disabled=false; btn.textContent='ログイン';
-    return;
   }
-
-  // ※現在はパスワード簡易チェック（本番はSupabase Authに切り替え予定）
-  if(password !== '1234'){
-    errMsg.textContent='パスワードが正しくありません。';
-    errMsg.style.display='block';
-    btn.disabled=false; btn.textContent='ログイン';
-    document.getElementById('password').value='';
-    return;
-  }
-
-  errMsg.style.display='none';
-  localStorage.setItem('store_id', storeId);
-  localStorage.setItem('store', storeName);
-  localStorage.setItem('userid', userid);
-  localStorage.setItem('user_name', data.name);
-  localStorage.setItem('role', data.role);
-  window.location.href='index.html';
 }
 
 loadStores();
