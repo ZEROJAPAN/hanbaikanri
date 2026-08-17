@@ -43,12 +43,6 @@ body{font-family:'Meiryo','Yu Gothic',sans-serif;background:linear-gradient(135d
     <label>パスワード</label>
     <input type="password" id="password" placeholder="パスワードを入力" autocomplete="current-password">
   </div>
-  <div class="store-group">
-    <label>所属店舗</label>
-    <select id="store">
-      <option value="">-- 店舗を選択 --</option>
-    </select>
-  </div>
   <button class="login-btn" id="login-btn" onclick="handleLogin()">ログイン</button>
   <hr class="divider">
   <div class="footer-note">パスワードを忘れた場合は管理者にお問い合わせください</div>
@@ -63,31 +57,16 @@ async function apiFetch(path){
   return await res.json();
 }
 
-// 店舗一覧をDBから取得
-async function loadStores(){
-  const data = await apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name');
-  const sel = document.getElementById('store');
-  (data||[]).forEach(s=>{
-    const o = document.createElement('option');
-    o.value = s.id;
-    o.textContent = s.name;
-    sel.appendChild(o);
-  });
-}
-
 document.addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
 
 async function handleLogin(){
   const userid   = document.getElementById('userid').value.trim();
   const password = document.getElementById('password').value;
-  const storeEl  = document.getElementById('store');
-  const storeId  = storeEl.value;
-  const storeName= storeEl.options[storeEl.selectedIndex]?.text || '';
   const errMsg   = document.getElementById('error-msg');
   const btn      = document.getElementById('login-btn');
 
-  if(!userid || !password || !storeId){
-    errMsg.textContent='ユーザーID・パスワード・店舗をすべて入力してください。';
+  if(!userid || !password){
+    errMsg.textContent='ユーザーIDとパスワードを入力してください。';
     errMsg.style.display='block'; return;
   }
 
@@ -118,8 +97,15 @@ async function handleLogin(){
     const roles = await apiFetch(`role_master?code=eq.${encodeURIComponent(data.role||'')}&select=*`);
     const role = (roles||[])[0] || {menu_level:1, edit_scope:'store', view_scope:'team'};
 
+    // 店舗スタッフの場合、自分の所属店舗名をDBから取得（ログイン画面での選択は不要）
+    let storeName = '';
+    if(data.store_id){
+      const stores = await apiFetch(`stores?id=eq.${data.store_id}&select=name`);
+      storeName = (stores||[])[0]?.name || '';
+    }
+
     errMsg.style.display='none';
-    localStorage.setItem('store_id', storeId);
+    localStorage.setItem('store_id', data.store_id||'');
     localStorage.setItem('store', storeName);
     localStorage.setItem('userid', userid);
     localStorage.setItem('user_name', data.name);
@@ -140,8 +126,6 @@ async function handleLogin(){
     btn.disabled=false; btn.textContent='ログイン';
   }
 }
-
-loadStores();
 </script>
 </body>
 </html>
