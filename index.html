@@ -17,6 +17,7 @@ padding:10px 16px;margin-bottom:10px;
 .topbar-info{font-size:11px;color:#CADCFC;}
 .topbar-right{display:flex;align-items:center;gap:8px;}
 .store-sel{font-size:11px;padding:4px 8px;border:1px solid #9FE1CB;border-radius:4px;background:#fff;}
+.user-badge{font-size:11px;color:#fff;background:rgba(255,255,255,0.12);padding:5px 12px;border-radius:4px;font-weight:bold;}
 .logout-btn{
 padding:5px 12px;background:#fff;color:#1E2761;
 border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;
@@ -78,16 +79,9 @@ cursor:not-allowed;opacity:0.75;
 <div class="topbar">
 <div>
 <div class="topbar-title">💎 ゼロジャパン 売上自動集計システム</div>
-<div class="topbar-info" id="user-info"></div>
 </div>
 <div class="topbar-right">
-<select class="store-sel" id="store">
-<option>宅配ゴールドプライス</option>
-<option>新宿店</option>
-<option>渋谷店</option>
-<option>池袋店</option>
-<option>銀座店</option>
-</select>
+<div class="user-badge" id="user-badge"></div>
 <button class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
 </div>
 </div>
@@ -95,99 +89,99 @@ cursor:not-allowed;opacity:0.75;
 <div class="main">
 
 <!-- 日次業務 -->
-<div class="section">
+<div class="section" id="section-daily">
 <div class="section-title">📋 日次業務</div>
 <div class="btn-grid">
-<button class="mbtn mbtn-blue" onclick="location.href='daily.html'">
+<button class="mbtn mbtn-blue" id="btn-daily" onclick="location.href='daily.html'">
 <span class="icon">📋</span><span class="label">日報入力</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="location.href='kintone_sync.html'">
+<button class="mbtn mbtn-blue" id="btn-kintone" onclick="location.href='kintone_sync.html'">
 <span class="icon">🔗</span><span class="label">Kintone連携</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="location.href='gold_rate_input.html'">
+<button class="mbtn mbtn-blue" id="btn-goldrate" onclick="location.href='gold_rate_input.html'">
 <span class="icon">💹</span><span class="label">地金換金レート入力</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="location.href='gold_recovery_summary.html'">
+<button class="mbtn mbtn-blue" id="btn-goldsettle" onclick="location.href='gold_recovery_summary.html'">
 <span class="icon">💰</span><span class="label">地金換金 全店計上</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="location.href='giftcard_sales_import.html'">
+<button class="mbtn mbtn-blue" id="btn-giftcard" onclick="location.href='giftcard_sales_import.html'">
 <span class="icon">🎫</span><span class="label">テレカ・金券換金</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="location.href='stamp_sales_import.html'">
+<button class="mbtn mbtn-blue" id="btn-stamp" onclick="location.href='stamp_sales_import.html'">
 <span class="icon">📮</span><span class="label">切手・印紙換金</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="alert('準備中')">
+<button class="mbtn mbtn-blue" id="btn-storetransfer" onclick="alert('準備中')">
 <span class="icon">🏪</span><span class="label">店舗間移動</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="location.href='purchase_input.html'">
+<button class="mbtn mbtn-blue" id="btn-purchaseinput" onclick="location.href='purchase_input.html'">
 <span class="icon">📦</span><span class="label">仕入れ入力</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="alert('準備中')">
+<button class="mbtn mbtn-blue" id="btn-evaluation" onclick="alert('準備中')">
 <span class="icon">👥</span><span class="label">評価入力</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="alert('準備中')">
+<button class="mbtn mbtn-blue" id="btn-cashledger" onclick="alert('準備中')">
 <span class="icon">💵</span><span class="label">現金出納帳</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="alert('準備中')">
+<button class="mbtn mbtn-blue" id="btn-expense" onclick="alert('準備中')">
 <span class="icon">💴</span><span class="label">費用登録</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="alert('準備中')">
+<button class="mbtn mbtn-blue" id="btn-expensegroup" onclick="alert('準備中')">
 <span class="icon">📂</span><span class="label">費用グループ</span>
 </button>
-<button class="mbtn mbtn-blue" onclick="location.href='sales_csv_import.html'">
+<button class="mbtn mbtn-blue" id="btn-csvimport" onclick="location.href='sales_csv_import.html'">
 <span class="icon">📤</span><span class="label">CSV取込・取出（EC売上）</span>
 </button>
 </div>
 </div>
 
 <!-- 集計・レポート -->
-<div class="section">
+<div class="section" id="section-report">
 <div class="section-title">📊 集計・レポート</div>
 <div class="btn-grid">
-<button class="mbtn mbtn-green" onclick="location.href='nippo_export.html'">
+<button class="mbtn mbtn-green" id="btn-nippo" onclick="location.href='nippo_export.html'">
 <span class="icon">📄</span><span class="label">日報帳票</span>
 </button>
-<button class="mbtn mbtn-green" onclick="location.href='mid_report.html'">
+<button class="mbtn mbtn-green" id="btn-midreport" onclick="location.href='mid_report.html'">
 <span class="icon">📊</span><span class="label">業務中間レポート</span>
 </button>
-<button class="mbtn mbtn-green" onclick="location.href='monthly_report.html'">
+<button class="mbtn mbtn-green" id="btn-monthlyreport" onclick="location.href='monthly_report.html'">
 <span class="icon">📈</span><span class="label">売上月次報告書</span>
 </button>
-<button class="mbtn mbtn-green" onclick="location.href='sales_summary_report.html'">
+<button class="mbtn mbtn-green" id="btn-summaryreport" onclick="location.href='sales_summary_report.html'">
 <span class="icon">📉</span><span class="label">売上集計報告書</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-ranking" onclick="alert('準備中')">
 <span class="icon">🏆</span><span class="label">順位表</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-goldtable" onclick="alert('準備中')">
 <span class="icon">💹</span><span class="label">地金換金表</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-gifttable" onclick="alert('準備中')">
 <span class="icon">🎫</span><span class="label">テレカ・金券換金表</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-transfersummary" onclick="alert('準備中')">
 <span class="icon">🔄</span><span class="label">店舗間移動集計</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-quantranking" onclick="alert('準備中')">
 <span class="icon">🎯</span><span class="label">定量ランキング</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-cashtrend" onclick="alert('準備中')">
 <span class="icon">💰</span><span class="label">現金推移表</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-buyranking" onclick="alert('準備中')">
 <span class="icon">🛒</span><span class="label">買取順位表</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-incentive" onclick="alert('準備中')">
 <span class="icon">💎</span><span class="label">成果給出力</span>
 </button>
-<button class="mbtn mbtn-green" onclick="alert('準備中')">
+<button class="mbtn mbtn-green" id="btn-giftcheck" onclick="alert('準備中')">
 <span class="icon">✅</span><span class="label">テレカ・金券回収チェック</span>
 </button>
 </div>
 </div>
 
 <!-- マスタ管理 -->
-<div class="section">
+<div class="section" id="section-master">
 <div class="section-title">⚙️ マスタ管理</div>
 <div class="btn-grid">
 <button class="mbtn mbtn-red" onclick="location.href='master.html'">
@@ -203,23 +197,61 @@ cursor:not-allowed;opacity:0.75;
 </div>
 
 <script>
-const savedStore=localStorage.getItem('store')||'';
+// 未ログインならログイン画面へ
 const savedUser=localStorage.getItem('userid')||'';
+if(!savedUser){
+  window.location.href='login.html';
+}
+
+const savedStore=localStorage.getItem('store')||'';
 const savedName=localStorage.getItem('user_name')||'';
+const roleName=localStorage.getItem('role_name')||'';
+const menuLevel=parseInt(localStorage.getItem('menu_level'))||1;
 
-const sel=document.getElementById('store');
-if(savedStore){
-for(let i=0;i<sel.options.length;i++){
-if(sel.options[i].text===savedStore){sel.selectedIndex=i;break;}
+// ユーザーバッジ表示（役職・所属を表示。店舗が無い役職は所属店舗を表示しない）
+let badgeText=(savedName||savedUser)+'（'+(roleName||'役職未設定')+'）';
+if(savedStore)badgeText+=' ／ '+savedStore;
+document.getElementById('user-badge').textContent=badgeText;
+
+// 役職レベルごとに表示するメニューID
+const MENU_RULES={
+  1:{ // 店舗スタッフ
+    daily:['btn-daily','btn-storetransfer','btn-cashledger'],
+    report:['btn-nippo','btn-midreport','btn-monthlyreport','btn-summaryreport','btn-ranking'],
+    master:false,
+  },
+  2:{ // チームリーダー
+    daily:['btn-daily','btn-storetransfer','btn-evaluation','btn-cashledger'],
+    report:['btn-nippo','btn-midreport','btn-monthlyreport','btn-summaryreport','btn-ranking'],
+    master:false,
+  },
+  3:{ // グループリーダー・エリアマネージャー・本社スタッフ（マスタ管理以外すべて）
+    daily:'all',
+    report:'all',
+    master:false,
+  },
+  4:{ // 設定管理者（すべて）
+    daily:'all',
+    report:'all',
+    master:true,
+  },
+};
+
+function applyMenuVisibility(){
+  const rule=MENU_RULES[menuLevel]||MENU_RULES[1];
+
+  document.querySelectorAll('#section-daily .mbtn').forEach(btn=>{
+    const show = rule.daily==='all' || rule.daily.includes(btn.id);
+    btn.style.display = show ? '' : 'none';
+  });
+  document.querySelectorAll('#section-report .mbtn').forEach(btn=>{
+    const show = rule.report==='all' || rule.report.includes(btn.id);
+    btn.style.display = show ? '' : 'none';
+  });
+
+  document.getElementById('section-master').style.display = rule.master ? '' : 'none';
 }
-}
-
-document.getElementById('user-info').textContent=
-'ログイン中：'+(savedName||savedUser)+' 店舗：'+savedStore;
-
-sel.addEventListener('change',function(){
-localStorage.setItem('store',this.value);
-});
+applyMenuVisibility();
 
 function handleLogout(){
 if(confirm('ログアウトしますか？')){
