@@ -221,7 +221,7 @@ async function loadMasters(){
   });
 
   cols.push({type:'grand_total',name:'総合計',storeIds:[...new Set(allStoreIds)]});
-  ORG_COLUMNS=cols;
+  ORG_COLUMNS=filterColumnsByViewScope(cols);
 
   const hierarchyDiag={
     departments: departments.length,
@@ -236,6 +236,20 @@ async function loadMasters(){
 }
 
 // ログインユーザーの役職・閲覧範囲（view_scope）に応じて、見える店舗だけに絞り込む
+// ログインユーザーの閲覧範囲（view_scope）を超える階層の合計列（グループ計・部門計・総合計）を非表示にする
+function filterColumnsByViewScope(cols){
+  const viewScope=localStorage.getItem('view_scope')||'all';
+  // 各view_scopeで「表示してよい合計列の種類」を定義（storeは常に表示）
+  const ALLOWED={
+    team: ['store','team_total'],
+    group: ['store','team_total','group_total'],
+    area: ['store','team_total','group_total','dept_total'], // エリア自体は列を持たないため、部門計までが上限
+    all: ['store','team_total','group_total','dept_total','grand_total'],
+  };
+  const allowed=ALLOWED[viewScope]||ALLOWED.all;
+  return cols.filter(c=>allowed.includes(c.type));
+}
+
 function filterStoresByViewScope(stores, teams, groups, areas){
   const viewScope=localStorage.getItem('view_scope')||'all';
   if(viewScope==='all')return stores;
