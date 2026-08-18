@@ -186,7 +186,7 @@ if(!storeId)return;
 const res=await apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=lt.${reportDate}&order=record_date.desc&limit=100&select=*`);
 const data=await res.json()||[];
 data.forEach(row=>{
-if(!carryOverData[row.metal_type_id]){
+if(carryOverData[row.metal_type_id]===undefined){
 carryOverData[row.metal_type_id]=row.next_carry_over||0;
 }
 });
