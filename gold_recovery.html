@@ -306,8 +306,14 @@ if(!res.ok){const err=await res.text();showMsg('登録エラー：'+err,'error')
 if(isRecover){
 metalTypes.forEach(m=>{
 carryOverData[m.id]=0;
-const carryEl=document.getElementById('carry_'+m.id);
-if(carryEl)carryEl.textContent='0.00';
+// 本日分は既に回収に含まれたので入力欄もクリアし、全列を再計算（翌日繰越・つぶし重量・回収分も含めて0にする）
+const todayEl=document.getElementById('today_'+m.id);
+const prodEl=document.getElementById('prod_'+m.id);
+const retEl=document.getElementById('ret_'+m.id);
+if(todayEl)todayEl.value=0;
+if(prodEl)prodEl.value=0;
+if(retEl)retEl.value=0;
+recalcRow(m.id);
 });
 showMsg('✅ 回収を確定しました。翌日繰越をリセットしました。','success');
 } else {
