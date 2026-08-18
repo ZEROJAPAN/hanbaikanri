@@ -168,7 +168,19 @@ async function loadMasters(){
   });
 
   cols.push({type:'grand_total',name:'総合計',storeIds:[...new Set(allStoreIds)]});
-  ORG_COLUMNS=cols;
+  ORG_COLUMNS=filterColumnsByViewScope(cols);
+}
+
+function filterColumnsByViewScope(cols){
+  const viewScope=localStorage.getItem('view_scope')||'all';
+  const ALLOWED={
+    team: ['store','team_total'],
+    group: ['store','team_total','group_total'],
+    area: ['store','team_total','group_total','dept_total'],
+    all: ['store','team_total','group_total','dept_total','grand_total'],
+  };
+  const allowed=ALLOWED[viewScope]||ALLOWED.all;
+  return cols.filter(c=>allowed.includes(c.type));
 }
 
 function filterStoresByViewScope(stores, teams, groups, areas){
