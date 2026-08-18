@@ -3,457 +3,424 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>日報出力 - ゼロジャパン</title>
+<title>売上集計報告書 - ゼロジャパン</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Meiryo','MS Gothic','Yu Gothic',sans-serif;font-size:12px;background:#90ee90;}
 .wrap{padding:6px;}
 .topbar{display:flex;align-items:center;justify-content:space-between;background:#1E2761;border-radius:8px;padding:8px 14px;margin-bottom:8px;}
-.topbar-left{display:flex;align-items:center;gap:12px;}
 .topbar-title{font-size:14px;font-weight:bold;color:#fff;}
 .back-btn{padding:5px 14px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
-.back-btn:hover{background:#EEF2FF;}
 .logout-btn{padding:5px 12px;background:#fff;color:#1E2761;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;}
-.main{background:#fff;border-radius:8px;padding:20px;}
-.section{margin-bottom:24px;}
-.section-title{font-size:13px;font-weight:bold;color:#1E2761;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1E2761;}
-.form-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
-.form-label{font-size:12px;font-weight:bold;color:#475569;min-width:80px;}
-.form-input{padding:7px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;font-family:'Meiryo','Yu Gothic',sans-serif;}
-.form-input:focus{border-color:#1E2761;}
-.store-sel{min-width:200px;}
-.export-btn{padding:10px 28px;font-size:13px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:6px;cursor:pointer;box-shadow:0 4px 0 #015060;}
-.export-btn:hover{background:linear-gradient(180deg,#1FBA8A,#029090);}
-.export-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #015060;}
-.export-btn:disabled{background:#94A3B8;box-shadow:none;cursor:not-allowed;}
-.msg{padding:8px 14px;border-radius:5px;margin-top:10px;font-size:12px;display:none;}
-.msg.success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;}
-.msg.error{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;}
-.msg.info{background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;}
-.divider{border:none;border-top:1px solid #E2E8F0;margin:20px 0;}
+.main{background:#fff;border-radius:8px;padding:16px;}
+.ctrl-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.month-input{padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:5px;font-size:12px;outline:none;}
+.reload-btn{padding:7px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#2D4FBA,#1E2761);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #0F1640;}
+.export-btn{padding:7px 18px;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#0FAA7A,#028090);color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 3px 0 #015060;}
+.status{font-size:11px;color:#64748B;margin-left:8px;white-space:pre-wrap;}
+.summary-bar{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;}
+.sum-card{background:#EEF2FF;border:1px solid #C7D2FE;border-radius:6px;padding:8px 14px;font-size:12px;}
+.sum-card-title{color:#475569;font-size:11px;}
+.sum-card-value{font-size:16px;font-weight:bold;color:#1E2761;}
+.tbl-wrap{overflow:auto;max-height:70vh;border:1px solid #E2E8F0;}
+table{border-collapse:collapse;font-size:10.5px;}
+th,td{border:1px solid #E2E8F0;padding:3px 5px;white-space:nowrap;}
+th{background:#1E2761;color:#fff;position:sticky;top:0;z-index:3;text-align:center;}
+th.hdr-row2{top:var(--hdr1-h, 24px);z-index:2;}
+th.total-col{background:#028090;}
+th.col-team{background:#1E88E5;}
+th.col-group{background:#43A047;}
+th.col-area{background:#FB8C00;}
+th.col-dept{background:#8E24AA;}
+th.col-grand{background:#C62828;}
+td.rowlabel{position:sticky;left:0;background:#F8FAFC;font-weight:bold;color:#1E2761;z-index:1;text-align:center;min-width:70px;}
+td.num{text-align:right;}
+td.total-col{background:#EAF7F5;}
+td.col-team{background:#E3F2FD;}
+td.col-group{background:#E8F5E9;}
+td.col-area{background:#FFF3E0;}
+td.col-dept{background:#F3E5F5;}
+td.col-grand{background:#FFEBEE;font-weight:bold;}
+tr.sectiontotal td{background:#FFE0B2;font-weight:bold;}
+tr.sectiontotal td.col-team,tr.sectiontotal td.col-group{background:#FFD599;}
+tr.sectiontotal td.col-area,tr.sectiontotal td.col-dept{background:#FFC77D;}
+tr.sectiontotal td.col-grand{background:#FFB74D;}
+tr.weekend td.rowlabel{color:#DC2626;}
+.muted{color:#64748B;font-size:11px;}
 </style>
 </head>
 <body>
 <div class="wrap">
 <div class="topbar">
-  <div class="topbar-left">
-    <button type="button" class="back-btn" onclick="location.href='daily.html'">◀ 日報入力に戻る</button>
-    <div class="topbar-title">📄 日報帳票出力</div>
-  </div>
-  <div><button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button></div>
+<div style="display:flex;align-items:center;gap:12px;">
+<button type="button" class="back-btn" onclick="location.href='index.html'">◀ メニューに戻る</button>
+<div class="topbar-title">📉 売上集計報告書</div>
 </div>
+<button type="button" class="logout-btn" onclick="handleLogout()">🏠 ログアウト</button>
+</div>
+
 <div class="main">
-  <div class="section">
-    <div class="section-title">📋 日報出力（1日分）</div>
-    <div class="form-row">
-      <span class="form-label">店舗</span>
-      <select class="form-input store-sel" id="store-single"></select>
-    </div>
-    <div class="form-row">
-      <span class="form-label">日付</span>
-      <input type="date" class="form-input" id="date-single">
-    </div>
-    <button type="button" class="export-btn" id="btn-single" onclick="exportSingle()">📥 日報をExcelで出力</button>
-    <div class="msg" id="msg-single"></div>
-  </div>
-  <hr class="divider">
-  <div class="section">
-    <div class="section-title">📊 日報出力（期間）</div>
-    <div class="form-row">
-      <span class="form-label">店舗</span>
-      <select class="form-input store-sel" id="store-range"></select>
-    </div>
-    <div class="form-row">
-      <span class="form-label">期間</span>
-      <input type="date" class="form-input" id="date-from">
-      <span>〜</span>
-      <input type="date" class="form-input" id="date-to">
-    </div>
-    <button type="button" class="export-btn" id="btn-range" onclick="exportRange()">📥 期間日報をExcelで出力</button>
-    <div class="msg" id="msg-range"></div>
-  </div>
+<div class="ctrl-bar">
+<label class="muted">対象月</label><input type="month" class="month-input" id="targetMonth">
+<button type="button" class="reload-btn" id="btnLoad">🔄 集計する</button>
+<button type="button" class="export-btn" id="btnExport">📥 Excel出力</button>
+<span class="status" id="status"></span>
+</div>
+
+<div class="summary-bar" id="summaryBar"></div>
+
+<div class="tbl-wrap">
+<table id="reportTable">
+<thead><tr><th>日</th></tr></thead>
+<tbody><tr><td style="text-align:center;padding:20px;color:#94A3B8;">対象月を指定して「集計する」を押してください</td></tr></tbody>
+</table>
+</div>
+
+<p class="muted" style="margin-top:10px;">
+※ 金額はすべて税抜きで計算しています（テレカ・金券類のみ据え置き）。<br>
+※ 客数＝その日の来店客数、売上金額＝買取・キャンセルを除く全チャンネル合計、件数＝買取成約数、買取金額＝買取合計、です。
+</p>
 </div>
 </div>
+
 <script>
 const SUPABASE_URL='https://fvkssslpmjtykxoulfmf.supabase.co';
 const SUPABASE_KEY='sb_publishable_cE7_r5efkdwSM7YM_8qZmw_6Cxrwfpk';
+const TAX_RATE=1.1;
 
 async function apiFetch(path){
   const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
   return await res.json();
 }
-function showMsg(id,text,type='info'){const el=document.getElementById(id);el.textContent=text;el.className='msg '+type;el.style.display='block';}
+async function apiFetchAll(pathBase){
+  let all=[],offset=0;const pageSize=1000;
+  while(true){
+    const sep=pathBase.includes('?')?'&':'?';
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${pathBase}${sep}limit=${pageSize}&offset=${offset}`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    const page=await res.json();
+    if(!Array.isArray(page))throw new Error(JSON.stringify(page));
+    all=all.concat(page);
+    if(page.length<pageSize)break;
+    offset+=pageSize;
+  }
+  return all;
+}
+function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
+function todayMonthStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+document.getElementById('targetMonth').value=todayMonthStr();
 
-const COLS=[
-  {chId:1,name:'買取'},{chId:2,name:'キャンセル'},{chId:3,name:'店売り'},{chId:4,name:'店売り（免税）'},
-  {chId:5,name:'本店'},{chId:6,name:'楽天国内'},{chId:7,name:'楽天海外（免税）'},{chId:8,name:'YahooShop'},
-  {chId:9,name:'ヤフオク'},{chId:10,name:'Wowma!'},{chId:11,name:'メルカリ'},{chId:12,name:'ebay（免税）'},
-  {chId:13,name:'LuxUness'},{chId:14,name:'Amazon'},{chId:15,name:'サブスク'},{chId:16,name:'ラクマ'},
-  {chId:17,name:'Qoo10'},{chId:18,name:'GLOBAZONE'},{chId:19,name:'オークション'},{chId:20,name:'WEB販売'},{chId:21,name:'その他販売'},
-];
-const TAXFREE=[4,7,12];
-const NON_SALE=[1,2];
+const WEEKDAY_JP=['日','月','火','水','木','金','土'];
 
-async function fetchData(storeId,date){
-  const [daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons]=await Promise.all([
-    apiFetch(`daily_reports?report_date=eq.${date}&store_id=eq.${storeId}&select=*`),
-    apiFetch(`product_categories?is_active=eq.true&order=sort_order`),
-    apiFetch(`cash_register?store_id=eq.${storeId}&record_date=eq.${date}&select=*`),
-    apiFetch(`purchase_details?store_id=eq.${storeId}&report_date=eq.${date}&select=*`),
-    apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=eq.${date}&select=*,precious_metal_types(name)`),
-    apiFetch(`telecard_recovery?store_id=eq.${storeId}&record_date=eq.${date}&select=*,gift_card_types(name)`),
-    apiFetch(`stamp_recovery?store_id=eq.${storeId}&record_date=eq.${date}&select=*`),
-    apiFetch(`visit_reasons?is_active=eq.true&order=sort_order`),
+let CATS=[],CHANNELS=[],BUY_CHID=null,CANCEL_CHID=null;
+let ORG_COLUMNS=[];
+let lastReportData=null;
+
+async function loadMasters(){
+  [CATS, CHANNELS]=await Promise.all([
+    apiFetch('product_categories?order=sort_order&select=id,name,sort_order'),
+    apiFetch('channels?order=sort_order&select=id,name,sort_order'),
   ]);
-  return {daily,cats,cashReg:cashReg[0]||null,purchase,goldRec,teleRec,stampRec,visitReasons};
+  const buyCh=CHANNELS.find(c=>c.name==='買取');
+  const cancelCh=CHANNELS.find(c=>c.name==='キャンセル');
+  BUY_CHID=buyCh?buyCh.id:1;
+  CANCEL_CHID=cancelCh?cancelCh.id:2;
+
+  const [stores, teams, groups, areas, departments]=await Promise.all([
+    apiFetch('stores?is_active=eq.true&order=sort_order&select=id,name,sort_order,team_id,code'),
+    apiFetch('teams?is_active=eq.true&order=sort_order&select=id,name,sort_order,group_id'),
+    apiFetch('groups?is_active=eq.true&order=sort_order&select=id,name,sort_order,area_id'),
+    apiFetch('areas?is_active=eq.true&order=sort_order&select=id,name,sort_order,department_id'),
+    apiFetch('departments?is_active=eq.true&order=sort_order&select=id,name,sort_order'),
+  ]);
+  const bySortOrder=(a,b)=>(a.sort_order??999999)-(b.sort_order??999999);
+  stores.sort(bySortOrder); teams.sort(bySortOrder); groups.sort(bySortOrder); areas.sort(bySortOrder); departments.sort(bySortOrder);
+
+  const visibleStores=filterStoresByViewScope(stores, teams, groups, areas);
+
+  const cols=[];
+  const allStoreIds=[];
+  const unassignedStores=visibleStores.filter(s=>!s.team_id);
+  const usedStoreIds=new Set();
+
+  for(const dept of departments){
+    const deptAreaIds=new Set(areas.filter(a=>a.department_id===dept.id).map(a=>a.id));
+    const deptGroups=groups.filter(g=>deptAreaIds.has(g.area_id));
+    const deptStoreIds=[];
+    for(const group of deptGroups){
+      const groupTeams=teams.filter(t=>t.group_id===group.id);
+      const groupStoreIds=[];
+      for(const team of groupTeams){
+        const teamStores=visibleStores.filter(s=>s.team_id===team.id);
+        const teamStoreIds=teamStores.map(s=>s.id);
+        teamStores.forEach(s=>{cols.push({type:'store',id:s.id,name:s.name,storeIds:[s.id]});usedStoreIds.add(s.id);});
+        if(teamStores.length>1)cols.push({type:'team_total',name:team.name+' 計',storeIds:teamStoreIds});
+        groupStoreIds.push(...teamStoreIds);
+      }
+      if(groupStoreIds.length>0 && groupTeams.length>1)cols.push({type:'group_total',name:group.name+' 計',storeIds:groupStoreIds});
+      deptStoreIds.push(...groupStoreIds);
+    }
+    if(deptStoreIds.length>0 && deptGroups.length>1)cols.push({type:'dept_total',name:dept.name+' 計',storeIds:deptStoreIds});
+    allStoreIds.push(...deptStoreIds);
+  }
+  unassignedStores.forEach(s=>{
+    if(!usedStoreIds.has(s.id)){cols.push({type:'store',id:s.id,name:s.name,storeIds:[s.id]});allStoreIds.push(s.id);}
+  });
+
+  cols.push({type:'grand_total',name:'総合計',storeIds:[...new Set(allStoreIds)]});
+  ORG_COLUMNS=cols;
 }
 
-// スタイル定義
-const FILLS={
-  pink:'FFFFB3C1', yellow:'FFFFFF88', lyellow:'FFFFFF00', white:'FFFFFFFF',
-  lblue:'FFD0F0F8', lblue2:'FFE0E0FF', gray:'FFC0C0C0', hdr:'FFFFCCCC',
-};
-const thin={style:'thin',color:{argb:'FF000000'}};
-const allBorder={top:thin,bottom:thin,left:thin,right:thin};
+function filterStoresByViewScope(stores, teams, groups, areas){
+  const viewScope=localStorage.getItem('view_scope')||'all';
+  if(viewScope==='all')return stores;
 
-function sf(ws,r,c,val,fillKey,bold,size,align,fmt){
-  const cell=ws.getCell(r,c);
-  cell.value=val;
-  if(fillKey&&FILLS[fillKey])cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:FILLS[fillKey]}};
-  cell.font={bold:!!bold,size:size||9,name:'Meiryo'};
-  cell.alignment={horizontal:align||'center',vertical:'middle'};
-  cell.border=allBorder;
-  if(fmt&&(typeof val==='number'))cell.numFmt=fmt;
-}
-function mc(ws,r1,c1,r2,c2){ws.mergeCells(r1,c1,r2,c2);}
+  const scopeStoreId=localStorage.getItem('scope_store_id');
+  const scopeTeamId=localStorage.getItem('scope_team_id');
+  const scopeGroupId=localStorage.getItem('scope_group_id');
 
-async function buildSheet(wb,storeName,date,data){
-  const {daily,cats,cashReg,purchase,goldRec,teleRec,stampRec,visitReasons}=data;
-  const ws=wb.addWorksheet(date);
-  const cr=cashReg||{};
+  const teamById={}; teams.forEach(t=>teamById[t.id]=t);
+  const groupById={}; groups.forEach(g=>groupById[g.id]=g);
 
-  // 列幅
-  ws.getColumn(1).width=22;
-  for(let i=0;i<COLS.length;i++){ws.getColumn(2+i*2).width=7;ws.getColumn(3+i*2).width=12;}
-  ws.getColumn(2+COLS.length*2).width=14;
-
-  // データマップ
-  const dm={};
-  cats.forEach(c=>{dm[c.id]={};COLS.forEach(col=>{dm[c.id][col.chId]={qty:0,amt:0};});});
-  daily.forEach(r=>{if(dm[r.category_id]&&dm[r.category_id][r.channel_id])dm[r.category_id][r.channel_id]={qty:r.quantity||0,amt:r.amount||0};});
-  const visitors=daily.find(r=>r.visitors>0)?.visitors||0;
-
-  // 行高設定
-  for(let i=1;i<=88;i++)ws.getRow(i).height=24.00;
-  ws.getRow(1).height=24.00;
-
-  // 行1: 店舗名・日付
-  ws.getCell(1,1).value=storeName;ws.getCell(1,1).font={bold:true,size:11,name:'Meiryo'};
-  ws.getCell(1,2+COLS.length*2).value=date;
-  ws.getCell(1,2+COLS.length*2).font={bold:true,size:11,name:'Meiryo'};
-  ws.getCell(1,2+COLS.length*2).alignment={horizontal:'right'};
-
-  // 行2: チャンネル名（2列結合）
-  sf(ws,2,1,'','hdr',true,9);
-  for(let i=0;i<COLS.length;i++){
-    const c1=2+i*2,c2=3+i*2;
-    sf(ws,2,c1,COLS[i].name,'hdr',true,9);sf(ws,2,c2,'','hdr',true,9);
-    mc(ws,2,c1,2,c2);
+  if(viewScope==='team'){
+    const myStore=stores.find(s=>String(s.id)===String(scopeStoreId));
+    const teamId=myStore?myStore.team_id:null;
+    if(!teamId)return myStore?[myStore]:[];
+    return stores.filter(s=>s.team_id===teamId);
   }
-
-  // 行3: 商品名/点数/金額
-  sf(ws,3,1,'商品名','hdr',true,9);
-  for(let i=0;i<COLS.length;i++){sf(ws,3,2+i*2,'点数','hdr',true,9);sf(ws,3,3+i*2,'金額','hdr',true,9);}
-
-  // 商品データ行
-  cats.forEach((cat,ci)=>{
-    const r=4+ci;
-    sf(ws,r,1,cat.name,'lblue',false,9,'left');
-    COLS.forEach((col,i)=>{
-      const d=dm[cat.id]?.[col.chId]||{qty:0,amt:0};
-      sf(ws,r,2+i*2,d.qty,'lyellow',false,9,'right','#,##0');
-      sf(ws,r,3+i*2,d.amt,'white',false,9,'right','#,##0');
-    });
-  });
-
-  let nr=4+cats.length;
-
-  // 計行
-  sf(ws,nr,1,'計','yellow',true,9);
-  COLS.forEach((col,i)=>{
-    const sq=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.qty||0),0);
-    const sa=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.amt||0),0);
-    sf(ws,nr,2+i*2,sq,'yellow',true,9,'right','#,##0');
-    sf(ws,nr,3+i*2,sa,'yellow',true,9,'right','#,##0');
-  });nr++;
-
-  // 純売上行
-  sf(ws,nr,1,'純売上','lblue2',true,9);
-  COLS.forEach((col,i)=>{
-    if(NON_SALE.includes(col.chId)){sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,'','gray',false,9);}
-    else{
-      const amt=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.amt||0),0);
-      sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,amt,'lblue2',true,9,'right','#,##0');
-    }
-  });nr++;
-
-  // 消費税行
-  sf(ws,nr,1,'消費税','lblue2',true,9);
-  COLS.forEach((col,i)=>{
-    if(NON_SALE.includes(col.chId)||TAXFREE.includes(col.chId)){sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,'','gray',false,9);}
-    else{
-      const amt=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.amt||0),0);
-      sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,Math.floor(amt*10/110),'lblue2',true,9,'right','#,##0');
-    }
-  });nr++;
-
-  // 現計・掛計
-  ['現計','掛計'].forEach(lbl=>{
-    sf(ws,nr,1,lbl,'gray',true,9);
-    COLS.forEach((col,i)=>{sf(ws,nr,2+i*2,'','gray',false,9);sf(ws,nr,3+i*2,'','gray',false,9);});nr++;
-  });
-
-  // 客数行
-  sf(ws,nr,1,'客数','yellow',true,9);
-  COLS.forEach((col,i)=>{
-    const sq=cats.reduce((s,c)=>s+(dm[c.id]?.[col.chId]?.qty||0),0);
-    sf(ws,nr,2+i*2,sq,'yellow',true,9,'right','#,##0');sf(ws,nr,3+i*2,'','yellow',false,9);
-  });nr++;
-
-  // 来店客数
-  ws.getCell(nr,7).value='来店客数';ws.getCell(nr,7).font={bold:true,size:10,name:'Meiryo'};ws.getCell(nr,7).alignment={horizontal:'center'};
-  ws.getCell(nr,9).value=visitors;ws.getCell(nr,9).font={bold:true,size:10,name:'Meiryo'};ws.getCell(nr,9).alignment={horizontal:'right'};ws.getCell(nr,9).numFmt='#,##0';
-  nr+=2;
-
-  // ===== 下部セクション =====
-  const sec=nr;
-  ws.getCell(sec,1).value='金庫・レジ';ws.getCell(sec,1).font={bold:true,size:10,name:'Meiryo'};
-  ws.getCell(sec,6).value='買取件数明細';ws.getCell(sec,6).font={bold:true,size:10,name:'Meiryo'};
-  ws.getCell(sec,13).value='地金回収';ws.getCell(sec,13).font={bold:true,size:10,name:'Meiryo'};
-  ws.getCell(sec,18).value=storeName;ws.getCell(sec,18).font={bold:true,size:9,name:'Meiryo'};
-
-  const hr=sec+1;
-  // 金庫レジヘッダー
-  sf(ws,hr,1,'','pink',true,9);sf(ws,hr,2,'','pink',true,9);sf(ws,hr,3,'レジ','pink',true,9);sf(ws,hr,4,'','pink',true,9);
-  mc(ws,hr,1,hr,2);mc(ws,hr,3,hr,4);
-  // 買取件数ヘッダー
-  sf(ws,hr,6,'','pink',true,9);sf(ws,hr,7,'','pink',true,9);sf(ws,hr,8,'件数','pink',true,9);sf(ws,hr,9,'金額','pink',true,9);
-  mc(ws,hr,6,hr,7);
-  // 地金回収ヘッダー
-  const ghdrs=['','前日繰越','本日','商品化','つぶし','製品戻し','回収分','翌繰越'];
-  ghdrs.forEach((h,j)=>{
-    const c1=13+j*2,c2=14+j*2;
-    sf(ws,hr,c1,h,'pink',true,9);sf(ws,hr,c2,'','pink',true,9);
-    if(j>0)mc(ws,hr,c1,hr,c2);
-  });
-
-  const crRows=[
-    ['前日繰越',cr.carry_over||0,'pink'],['本部から入金',cr.hq_deposit||0,'pink'],
-    ['店売り（現計）',cr.shop_sales||0,'pink'],['買取',cr.purchase||0,'pink'],
-    ['出金',cr.withdrawal||0,'pink'],['本日有高',cr.todays_amount||0,'yellow'],
-    ['過不足',cr.shortage||0,'yellow'],
-  ];
-
-  const totalV=purchase.reduce((s,p)=>s+(p.visitors||0),0);
-  const totalA=purchase.reduce((s,p)=>s+(p.amount||0),0);
-  const firstV=purchase.reduce((s,p)=>s+(p.first_visit||0),0);
-  const repeatV=purchase.reduce((s,p)=>s+(p.repeat_visit||0),0);
-  const noPurchase=purchase[0]?.no_purchase||0;
-  const cancelCount=purchase[0]?.cancel_count||0;
-  const cancelRate=totalV+cancelCount>0?(cancelCount/(totalV+cancelCount)*100):0;
-
-  const visitRows=[
-    ['初めて',firstV,0,'yellow'],['２回目',repeatV,totalA,'yellow'],['小計',totalV,totalA,'yellow'],
-    ...visitReasons.map(vr=>{
-      const p=purchase.find(x=>x.visit_reason_id===vr.id);
-      return [vr.name,p?.visitors||0,p?.amount||0,'white'];
-    }),
-    ['小計',totalV,totalA,'yellow'],['買取不可',noPurchase,'','yellow'],
-    ['キャンセル',cancelCount,'','yellow'],[`キャンセル率`,`${cancelRate.toFixed(1)}%`,'','yellow'],
-  ];
-
-  const goldData=goldRec.filter(g=>(g.today_weight||0)+(g.carry_over||0)>0);
-  const maxRows=Math.max(crRows.length,visitRows.length,goldData.length);
-
-  for(let i=0;i<maxRows;i++){
-    const r=hr+1+i;
-    // 金庫レジ
-    if(i<crRows.length){
-      const [lbl,val,fill]=crRows[i];
-      sf(ws,r,1,lbl,fill,true,9,'left');sf(ws,r,2,'',fill,false,9);
-      sf(ws,r,3,val,fill==='pink'?'white':fill,fill==='yellow',9,'right','#,##0');sf(ws,r,4,'',fill==='pink'?'white':fill,false,9);
-      mc(ws,r,1,r,2);mc(ws,r,3,r,4);
-    }
-    // 買取件数明細
-    if(i<visitRows.length){
-      const [lbl,cnt,amt,fill]=visitRows[i];
-      sf(ws,r,6,lbl,fill,fill==='yellow',9,'left');sf(ws,r,7,'',fill,false,9);
-      sf(ws,r,8,cnt,fill,fill==='yellow',9,'right',typeof cnt==='number'?'#,##0':null);
-      sf(ws,r,9,amt,fill,fill==='yellow',9,'right',typeof amt==='number'?'#,##0':null);
-      mc(ws,r,6,r,7);
-    }
-    // 地金回収
-    if(i<goldData.length){
-      const g=goldData[i];
-      const mname=typeof g.precious_metal_types==='object'?g.precious_metal_types?.name||'':'';
-      sf(ws,r,13,mname,'lblue',false,9,'left');sf(ws,r,14,'重量','lblue',false,9);
-      ['carry_over','today_weight','product_weight','crush_weight','return_weight','recovery_weight','next_carry_over'].forEach((key,j)=>{
-        const c1=15+j*2,c2=16+j*2;
-        sf(ws,r,c1,g[key]||0,'white',false,9,'right','#,##0.00');sf(ws,r,c2,'','white',false,9);
-        mc(ws,r,c1,r,c2);
-      });
-    }
+  if(viewScope==='group'){
+    const myTeam=teamById[scopeTeamId];
+    const groupId=myTeam?myTeam.group_id:null;
+    if(!groupId)return stores.filter(s=>String(s.team_id)===String(scopeTeamId));
+    const teamIdsInGroup=new Set(teams.filter(t=>t.group_id===groupId).map(t=>t.id));
+    return stores.filter(s=>teamIdsInGroup.has(s.team_id));
   }
-
-  // 金種表（42行目固定）
-  const kn=42;
-  ws.getCell(kn,1).value='金種表';ws.getCell(kn,1).font={bold:true,size:10,name:'Meiryo'};
-  sf(ws,kn+1,1,'金種','pink',true,9);sf(ws,kn+1,2,'枚数','pink',true,9);
-  sf(ws,kn+1,3,'金額','pink',true,9);sf(ws,kn+1,4,'','pink',true,9);mc(ws,kn+1,3,kn+1,4);
-
-  const denoms=[['¥10,000','count_10000',10000],['¥5,000','count_5000',5000],['¥1,000','count_1000',1000],
-    ['¥500','count_500',500],['¥100','count_100',100],['¥50','count_50',50],
-    ['¥10','count_10',10],['¥5','count_5',5],['¥1','count_1',1]];
-  denoms.forEach(([name,key,val],di)=>{
-    const r=kn+2+di,cnt=cr[key]||0;
-    sf(ws,r,1,name,'lblue',false,9,'right');sf(ws,r,2,cnt,'white',false,9,'right','#,##0');
-    sf(ws,r,3,cnt*val,'white',false,9,'right','#,##0');sf(ws,r,4,'','white',false,9);mc(ws,r,3,r,4);
-  });
-  let kr=kn+2+denoms.length;
-  sf(ws,kr,1,'レジ内実現金','yellow',true,9);sf(ws,kr,2,'','yellow',true,9);
-  sf(ws,kr,3,cr.register_cash||0,'yellow',true,9,'right','#,##0');sf(ws,kr,4,'','yellow',true,9);
-  mc(ws,kr,1,kr,2);mc(ws,kr,3,kr,4);kr++;
-  sf(ws,kr,1,'本部入金','pink',true,9);sf(ws,kr,2,cr.hq_payment||0,'white',false,9,'right','#,##0');
-  sf(ws,kr,3,cr.hq_payment||0,'white',false,9,'right','#,##0');sf(ws,kr,4,'','white',false,9);mc(ws,kr,3,kr,4);kr++;
-  sf(ws,kr,1,'レジ内繰越','yellow',true,9);sf(ws,kr,2,'','yellow',true,9);
-  sf(ws,kr,3,cr.register_carry||0,'yellow',true,9,'right','#,##0');sf(ws,kr,4,'','yellow',true,9);
-  mc(ws,kr,1,kr,2);mc(ws,kr,3,kr,4);
-
-  // テレカ・金券回収（地金の下+2行）
-  let teleEndRow=hr+1+goldData.length+2;
-  if(teleRec.length>0){
-    const tc=13,tr=teleEndRow;
-    ws.getCell(tr,tc).value='テレカ・金券回収';ws.getCell(tr,tc).font={bold:true,size:10,name:'Meiryo'};
-    ws.getCell(tr,tc+4).value=storeName;ws.getCell(tr,tc+4).font={bold:true,size:9,name:'Meiryo'};
-    const th=tr+1;
-    ['種別','前日繰越','本日買取','回収枚数','店頭販売','翌日繰越','累計枚数'].forEach((h,j)=>{
-      const c1=tc+j*2,c2=c1+1;
-      sf(ws,th,c1,h,'pink',true,9);sf(ws,th,c2,'','pink',true,9);mc(ws,th,c1,th,c2);
-    });
-    let tdr=th+1;
-    teleRec.forEach(t=>{
-      const tname=typeof t.gift_card_types==='object'?t.gift_card_types?.name||'':'';
-      sf(ws,tdr,tc,tname,'lblue',false,9,'left');sf(ws,tdr,tc+1,'','lblue',false,9);mc(ws,tdr,tc,tdr,tc+1);
-      ['carry_over','today_purchase','recovery_count','shop_sales','next_carry_over','cumulative'].forEach((key,j)=>{
-        const c1=tc+2+j*2,c2=c1+1;
-        sf(ws,tdr,c1,t[key]||0,'white',false,9,'right','#,##0');sf(ws,tdr,c2,'','white',false,9);mc(ws,tdr,c1,tdr,c2);
-      });tdr++;
-    });
-    teleEndRow=tdr+1;
+  if(viewScope==='area'){
+    const myGroup=groupById[scopeGroupId];
+    const areaId=myGroup?myGroup.area_id:null;
+    if(!areaId)return stores.filter(s=>{const t=teamById[s.team_id];return t&&String(t.group_id)===String(scopeGroupId);});
+    const groupIdsInArea=new Set(groups.filter(g=>g.area_id===areaId).map(g=>g.id));
+    const teamIdsInArea=new Set(teams.filter(t=>groupIdsInArea.has(t.group_id)).map(t=>t.id));
+    return stores.filter(s=>teamIdsInArea.has(s.team_id));
   }
-
-  // 切手・印紙回収
-  if(stampRec.length>0){
-    const sc2=13,sr=teleEndRow;
-    ws.getCell(sr,sc2).value='切手印紙回収';ws.getCell(sr,sc2).font={bold:true,size:10,name:'Meiryo'};
-    ws.getCell(sr,sc2+4).value=storeName;ws.getCell(sr,sc2+4).font={bold:true,size:9,name:'Meiryo'};
-    const sh=sr+1;
-    ['種類','回収枚数','回収金額','月末在庫枚数','月末在庫金額'].forEach((h,j)=>{
-      const c1=sc2+j*2,c2=c1+1;
-      sf(ws,sh,c1,h,'pink',true,9);sf(ws,sh,c2,'','pink',true,9);mc(ws,sh,c1,sh,c2);
-    });
-    let sdr=sh+1;
-    stampRec.forEach(s=>{
-      sf(ws,sdr,sc2,s.stamp_type||'','lblue',false,9,'left');sf(ws,sdr,sc2+1,'','lblue',false,9);mc(ws,sdr,sc2,sdr,sc2+1);
-      ['recovery_count','recovery_amount','stock_count','stock_amount'].forEach((key,j)=>{
-        const c1=sc2+2+j*2,c2=c1+1;
-        sf(ws,sdr,c1,s[key]||0,'white',false,9,'right','#,##0');sf(ws,sdr,c2,'','white',false,9);mc(ws,sdr,c1,sdr,c2);
-      });sdr++;
-    });
-  }
-
-  // 最終行：店舗名
-  const lastR=ws.rowCount+2;
-  ws.getCell(lastR,1).value=storeName;ws.getCell(lastR,1).font={bold:true,size:10,name:'Meiryo'};
+  return stores;
 }
 
-async function exportSingle(){
-  const btn=document.getElementById('btn-single');
-  const storeId=document.getElementById('store-single').value;
-  const storeName=document.getElementById('store-single').options[document.getElementById('store-single').selectedIndex]?.text||'';
-  const date=document.getElementById('date-single').value;
-  if(!storeId||!date){showMsg('msg-single','店舗と日付を選択してください。','error');return;}
-  btn.disabled=true;btn.textContent='出力中...';
-  showMsg('msg-single','データを取得中...','info');
+function isTaxExemptChannel(chName){return chName.includes('免税');}
+function isTaxExemptCategory(catName){return catName.includes('テレカ・金券');}
+function taxAdjust(amount, exempt, taxMode){return exempt?amount:amount/TAX_RATE;} // このレポートは常に税抜
+function colClass(col){
+  if(col.type==='team_total')return 'col-team';
+  if(col.type==='group_total')return 'col-group';
+  if(col.type==='area_total')return 'col-area';
+  if(col.type==='dept_total')return 'col-dept';
+  if(col.type==='grand_total')return 'col-grand';
+  return '';
+}
+
+document.getElementById('btnLoad').onclick=loadReport;
+document.getElementById('btnExport').onclick=exportExcel;
+
+async function loadReport(){
+  const month=document.getElementById('targetMonth').value; // "YYYY-MM"
+  const statusEl=document.getElementById('status');
+  if(!month){statusEl.textContent='対象月を指定してください。';return;}
+  statusEl.textContent='集計中...';
+  document.getElementById('btnLoad').disabled=true;
+
   try{
-    const data=await fetchData(storeId,date);
-    const wb=new ExcelJS.Workbook();
-    await buildSheet(wb,storeName,date,data);
-    const buf=await wb.xlsx.writeBuffer();
-    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=`日報_${storeName}_${date}.xlsx`;a.click();
-    URL.revokeObjectURL(url);
-    showMsg('msg-single','✅ 出力しました。','success');
-  }catch(e){showMsg('msg-single','エラー：'+e.message,'error');}
-  btn.disabled=false;btn.textContent='📥 日報をExcelで出力';
-}
+    if(CHANNELS.length===0) await loadMasters();
 
-async function exportRange(){
-  const btn=document.getElementById('btn-range');
-  const storeId=document.getElementById('store-range').value;
-  const storeName=document.getElementById('store-range').options[document.getElementById('store-range').selectedIndex]?.text||'';
-  const dateFrom=document.getElementById('date-from').value;
-  const dateTo=document.getElementById('date-to').value;
-  if(!storeId||!dateFrom||!dateTo){showMsg('msg-range','店舗と期間を選択してください。','error');return;}
-  if(dateFrom>dateTo){showMsg('msg-range','開始日は終了日以前にしてください。','error');return;}
-  btn.disabled=true;btn.textContent='出力中...';
-  showMsg('msg-range','データを取得中...','info');
-  try{
-    const wb=new ExcelJS.Workbook();
-    const dates=[];
-    let d=new Date(dateFrom);
-    while(d<=new Date(dateTo)){dates.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1);}
-    let cnt=0;
-    for(const date of dates){
-      const data=await fetchData(storeId,date);
-      if(data.daily.length===0&&!data.cashReg)continue;
-      await buildSheet(wb,storeName,date,data);cnt++;
+    const [y,m]=month.split('-').map(Number);
+    const firstDay=`${month}-01`;
+    const lastDate=new Date(Date.UTC(y, m, 0)); // 月末日
+    const daysInMonth=lastDate.getUTCDate();
+    const lastDay=`${month}-${String(daysInMonth).padStart(2,'0')}`;
+
+    const dailyRows=await apiFetchAll(`daily_reports?report_date=gte.${firstDay}&report_date=lte.${lastDay}&select=store_id,report_date,category_id,channel_id,quantity,amount,visitors,customers&order=id`);
+
+    const catMap={}; CATS.forEach(c=>catMap[c.id]=c.name);
+
+    // 日ごと・店舗ごとに集計
+    const byDayStore={}; // "day-storeId" -> {visitors, buyCustomers, salesAmount, buyAmount}
+    function key(day,storeId){return day+'-'+storeId;}
+
+    for(const row of dailyRows){
+      const day=Number(row.report_date.slice(8,10));
+      const k=key(day,row.store_id);
+      if(!byDayStore[k])byDayStore[k]={visitorsMax:0, buyCustomersMax:0, salesAmount:0, buyAmount:0};
+      const cell=byDayStore[k];
+
+      if((row.visitors||0)>cell.visitorsMax)cell.visitorsMax=row.visitors||0;
+
+      if(row.channel_id===BUY_CHID){
+        if((row.customers||0)>cell.buyCustomersMax)cell.buyCustomersMax=row.customers||0;
+        const catName=catMap[row.category_id]||'';
+        const exempt=isTaxExemptCategory(catName);
+        cell.buyAmount+=Math.ceil(taxAdjust(row.amount||0, exempt, 'excl'));
+      } else if(row.channel_id===CANCEL_CHID){
+        // 売上・買取金額どちらにも含めない
+      } else {
+        const catName=catMap[row.category_id]||'';
+        const chName=(CHANNELS.find(c=>c.id===row.channel_id)||{}).name||'';
+        const exempt=isTaxExemptCategory(catName)||isTaxExemptChannel(chName);
+        cell.salesAmount+=Math.ceil(taxAdjust(row.amount||0, exempt, 'excl'));
+      }
     }
-    if(cnt===0){showMsg('msg-range','期間内にデータがありませんでした。','error');btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';return;}
-    const buf=await wb.xlsx.writeBuffer();
-    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=`日報_${storeName}_${dateFrom}_${dateTo}.xlsx`;a.click();
-    URL.revokeObjectURL(url);
-    showMsg('msg-range',`✅ ${cnt}日分を出力しました。`,'success');
-  }catch(e){showMsg('msg-range','エラー：'+e.message,'error');}
-  btn.disabled=false;btn.textContent='📥 期間日報をExcelで出力';
+
+    lastReportData={month, daysInMonth, byDayStore};
+    renderTable();
+    statusEl.textContent=`✅ ${month}：daily_reports ${dailyRows.length.toLocaleString()}行を集計しました`;
+  }catch(e){
+    statusEl.textContent='❌ エラー: '+e.message;
+  }finally{
+    document.getElementById('btnLoad').disabled=false;
+  }
 }
 
-async function loadStores(){
-  const stores=await apiFetch('stores?is_active=eq.true&order=sort_order');
-  const savedId=localStorage.getItem('store_id')||'';
-  ['store-single','store-range'].forEach(id=>{
-    const sel=document.getElementById(id);
-    stores.forEach(s=>{
-      const o=document.createElement('option');
-      o.value=s.id;o.textContent=s.name;
-      if(String(s.id)===String(savedId))o.selected=true;
-      sel.appendChild(o);
+function sumCols(dataFn, col, field){
+  let v=0;
+  col.storeIds.forEach(id=>{v+=dataFn(id)[field]||0;});
+  return v;
+}
+
+function renderTable(){
+  const d=lastReportData;
+  const table=document.getElementById('reportTable');
+
+  let headHtml='<tr><th rowspan="2" style="min-width:50px;">日</th><th rowspan="2" style="min-width:40px;">曜日</th>';
+  ORG_COLUMNS.forEach(c=>{headHtml+=`<th colspan="4" class="${c.type!=='store'?'total-col '+colClass(c):''}">${c.name}</th>`;});
+  headHtml+='</tr><tr>';
+  ORG_COLUMNS.forEach(()=>{headHtml+='<th class="hdr-row2">客数</th><th class="hdr-row2">売上金額</th><th class="hdr-row2">件数</th><th class="hdr-row2">買取金額</th>';});
+  headHtml+='</tr>';
+  table.querySelector('thead').innerHTML=headHtml;
+
+  requestAnimationFrame(()=>{
+    const row1=table.querySelector('thead tr:first-child');
+    if(row1){table.style.setProperty('--hdr1-h', row1.offsetHeight+'px');}
+  });
+
+  let bodyHtml='';
+  const monthTotals={}; // colIdx key -> {visitors,sales,buyCust,buyAmt}
+
+  for(let day=1; day<=d.daysInMonth; day++){
+    const [y,m]=d.month.split('-').map(Number);
+    const dow=new Date(Date.UTC(y, m-1, day)).getUTCDay();
+    const dowLabel=WEEKDAY_JP[dow];
+    const isWeekend=(dow===0||dow===6);
+
+    function dataFn(storeId){
+      const cell=d.byDayStore[day+'-'+storeId];
+      return cell?{visitors:cell.visitorsMax, sales:cell.salesAmount, buyCust:cell.buyCustomersMax, buyAmt:cell.buyAmount}:{visitors:0,sales:0,buyCust:0,buyAmt:0};
+    }
+
+    bodyHtml+=`<tr class="${isWeekend?'weekend':''}"><td class="rowlabel">${String(day).padStart(2,'0')}</td><td class="rowlabel">${dowLabel}</td>`;
+    ORG_COLUMNS.forEach((col,idx)=>{
+      const visitors=sumCols(dataFn,col,'visitors');
+      const sales=sumCols(dataFn,col,'sales');
+      const buyCust=sumCols(dataFn,col,'buyCust');
+      const buyAmt=sumCols(dataFn,col,'buyAmt');
+      const cls=col.type!=='store'?'total-col '+colClass(col):'';
+      bodyHtml+=`<td class="num ${cls}">${fmt(visitors)}</td><td class="num ${cls}">${fmt(sales)}</td><td class="num ${cls}">${fmt(buyCust)}</td><td class="num ${cls}">${fmt(buyAmt)}</td>`;
+
+      if(!monthTotals[idx])monthTotals[idx]={visitors:0,sales:0,buyCust:0,buyAmt:0};
+      monthTotals[idx].visitors+=visitors; monthTotals[idx].sales+=sales; monthTotals[idx].buyCust+=buyCust; monthTotals[idx].buyAmt+=buyAmt;
+    });
+    bodyHtml+='</tr>';
+  }
+
+  // 月合計行
+  bodyHtml+=`<tr class="sectiontotal"><td class="rowlabel" colspan="2">合計</td>`;
+  ORG_COLUMNS.forEach((col,idx)=>{
+    const t=monthTotals[idx]||{visitors:0,sales:0,buyCust:0,buyAmt:0};
+    const cls=col.type!=='store'?colClass(col):'';
+    bodyHtml+=`<td class="num ${cls}">${fmt(t.visitors)}</td><td class="num ${cls}">${fmt(t.sales)}</td><td class="num ${cls}">${fmt(t.buyCust)}</td><td class="num ${cls}">${fmt(t.buyAmt)}</td>`;
+  });
+  bodyHtml+='</tr>';
+
+  table.querySelector('tbody').innerHTML=bodyHtml;
+
+  const grandIdx=ORG_COLUMNS.length-1;
+  const grand=monthTotals[grandIdx]||{visitors:0,sales:0,buyCust:0,buyAmt:0};
+  document.getElementById('summaryBar').innerHTML=`
+    <div class="sum-card"><div class="sum-card-title">客数合計</div><div class="sum-card-value">${fmt(grand.visitors)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">売上金額合計</div><div class="sum-card-value">¥${fmt(grand.sales)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">買取件数合計</div><div class="sum-card-value">${fmt(grand.buyCust)}</div></div>
+    <div class="sum-card"><div class="sum-card-title">買取金額合計</div><div class="sum-card-value">¥${fmt(grand.buyAmt)}</div></div>
+  `;
+}
+
+function rgbToArgb(rgbStr){
+  const m=rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if(!m)return null;
+  const alpha=m[4]!==undefined?parseFloat(m[4]):1;
+  if(alpha===0)return null;
+  const hex=n=>Number(n).toString(16).padStart(2,'0').toUpperCase();
+  return 'FF'+hex(m[1])+hex(m[2])+hex(m[3]);
+}
+
+async function exportExcel(){
+  if(!lastReportData){alert('先に集計してください。');return;}
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('売上集計報告書');
+  const table=document.getElementById('reportTable');
+  const rows=table.querySelectorAll('tr');
+  const thin={style:'thin',color:{argb:'FF000000'}};
+  const border={top:thin,bottom:thin,left:thin,right:thin};
+
+  rows.forEach((tr,ri)=>{
+    const cells=tr.querySelectorAll('th,td');
+    const rowData=[];
+    const cellMeta=[];
+    let colIdx=1;
+    cells.forEach(cell=>{
+      const colspan=parseInt(cell.getAttribute('colspan')||'1');
+      const rowspan=parseInt(cell.getAttribute('rowspan')||'1');
+      const text=cell.textContent.trim();
+      const num=Number(text.replace(/[,%]/g,''));
+      const isNumericCell=!isNaN(num)&&text!==''&&cell.tagName==='TD';
+      rowData.push(isNumericCell?num:text);
+      const bg=getComputedStyle(cell).backgroundColor;
+      const argb=rgbToArgb(bg);
+      cellMeta.push({col:colIdx, colspan, rowspan, argb, isHeader:cell.tagName==='TH'});
+      for(let i=1;i<colspan;i++){rowData.push('');}
+      colIdx+=colspan;
+    });
+    const row=ws.addRow(rowData);
+    row.eachCell(cell=>{
+      cell.border=border;
+      cell.font={size:9};
+      if(typeof cell.value==='number')cell.numFmt='#,##0';
+    });
+    cellMeta.forEach(meta=>{
+      const cell=row.getCell(meta.col);
+      if(meta.argb)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:meta.argb}};
+      if(meta.isHeader){
+        cell.font={color:{argb:'FFFFFFFF'},bold:true,size:9};
+        cell.alignment={horizontal:'center',vertical:'middle'};
+      }
+      if(meta.colspan>1||meta.rowspan>1){
+        ws.mergeCells(ri+1, meta.col, ri+meta.rowspan, meta.col+meta.colspan-1);
+      }
     });
   });
+  ws.getColumn(1).width=8;
+  ws.getColumn(2).width=8;
+
+  const month=document.getElementById('targetMonth').value;
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`売上集計報告書_${month}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
-function handleLogout(){if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}}
-async function init(){
-  const today=new Date().toISOString().slice(0,10);
-  document.getElementById('date-single').value=today;
-  document.getElementById('date-from').value=today.slice(0,8)+'01';
-  document.getElementById('date-to').value=today;
-  await loadStores();
+
+function handleLogout(){
+  if(confirm('ログアウトしますか？')){localStorage.clear();window.location.href='login.html';}
 }
-init();
 </script>
 </body>
 </html>
