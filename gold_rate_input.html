@@ -149,7 +149,7 @@ function buildTable(){
 }
 buildTable();
 
-document.getElementById('btnCalc').onclick=calcRates;
+document.getElementById('btnCalc').onclick=async ()=>{calcRates();await saveRates();};
 document.getElementById('btnSaveRates').onclick=saveRates;
 document.getElementById('btnLoadDate').onclick=loadRatesForDate;
 
