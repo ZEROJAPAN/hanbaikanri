@@ -693,7 +693,27 @@ weightByKintoneMetal[metalName]=(weightByKintoneMetal[metalName]||0)+weight;
 });
 });
 
-if(Object.keys(weightByKintoneMetal).length>0){
+// ① この日がこの店舗の回収日かどうか（全店共通＋店舗個別）
+const [rc1Res,rc2Res]=await Promise.all([
+apiFetch(`recovery_calendar?recover_date=eq.${date}&store_id=is.null`),
+apiFetch(`recovery_calendar?recover_date=eq.${date}&store_id=eq.${currentStoreId}`),
+]);
+const rc1=await rc1Res.json()||[];
+const rc2=await rc2Res.json()||[];
+const isRecoveryDay=(rc1.length+rc2.length)>0;
+
+// ② 既にこの店舗・この日で「回収しないで登録」（is_recovered=false）が手動登録済みかどうか
+let manualNotRecovered=false;
+if(isRecoveryDay){
+const existingRes=await apiFetch(`gold_recovery?store_id=eq.${currentStoreId}&record_date=eq.${date}&is_recovered=eq.false&manual_choice=eq.true&limit=1&select=id`);
+const existingRows=await existingRes.json()||[];
+manualNotRecovered=existingRows.length>0;
+}
+// 回収日かつ、まだ「回収しないで登録」が選ばれていなければ、自動で回収する扱い（累計を0にリセット）
+const willAutoRecover=isRecoveryDay&&!manualNotRecovered;
+
+// 重量データが0件でも、回収日であれば累計リセットのため必ず処理する
+if(isRecoveryDay||Object.keys(weightByKintoneMetal).length>0){
 try{
 // 金種マスタ取得
 const mtRes=await apiFetch('precious_metal_types?is_active=eq.true&order=sort_order&select=id,name');
@@ -718,25 +738,6 @@ const carryOverData={};
 coData.forEach(row=>{
 if(carryOverData[row.metal_type_id]===undefined)carryOverData[row.metal_type_id]=row.next_carry_over||0;
 });
-
-// ① この日がこの店舗の回収日かどうか（全店共通＋店舗個別）
-const [rc1Res,rc2Res]=await Promise.all([
-apiFetch(`recovery_calendar?recover_date=eq.${date}&store_id=is.null`),
-apiFetch(`recovery_calendar?recover_date=eq.${date}&store_id=eq.${currentStoreId}`),
-]);
-const rc1=await rc1Res.json()||[];
-const rc2=await rc2Res.json()||[];
-const isRecoveryDay=(rc1.length+rc2.length)>0;
-
-// ② 既にこの店舗・この日で「回収しないで登録」（is_recovered=false）が手動登録済みかどうか
-let manualNotRecovered=false;
-if(isRecoveryDay){
-const existingRes=await apiFetch(`gold_recovery?store_id=eq.${currentStoreId}&record_date=eq.${date}&is_recovered=eq.false&manual_choice=eq.true&limit=1&select=id`);
-const existingRows=await existingRes.json()||[];
-manualNotRecovered=existingRows.length>0;
-}
-// 回収日かつ、まだ「回収しないで登録」が選ばれていなければ、自動で回収する扱い（累計を0にリセット）
-const willAutoRecover=isRecoveryDay&&!manualNotRecovered;
 
 // 金種ごとに1行ずつ作成（既存gold_recovery.htmlの保存ロジックと同じ計算式）
 const goldRows=metalTypes.map(m=>{
@@ -792,7 +793,7 @@ countByKintoneCard[cardName]=(countByKintoneCard[cardName]||0)+qty;
 });
 });
 
-if(Object.keys(countByKintoneCard).length>0){
+{
 try{
 const gcRes=await apiFetch('gift_card_types?is_active=eq.true&order=sort_order&select=id,name');
 const cardTypes=await gcRes.json()||[];
