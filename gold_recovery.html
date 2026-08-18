@@ -192,10 +192,13 @@ carryOverData[row.metal_type_id]=row.next_carry_over||0;
 });
 }
 
+let todayAlreadyRecovered=false;
+
 async function loadTodayData(){
 if(!storeId)return;
 const res=await apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=eq.${reportDate}&select=*`);
 const data=await res.json()||[];
+todayAlreadyRecovered=data.some(row=>row.is_recovered===true);
 data.forEach(row=>{
 const id=row.metal_type_id;
 const todayEl=document.getElementById('today_'+id);
@@ -205,7 +208,21 @@ if(todayEl)todayEl.value=row.today_weight||0;
 if(prodEl)prodEl.value=row.product_weight||0;
 if(retEl)retEl.value=row.return_weight||0;
 recalcRow(id);
+if(todayAlreadyRecovered){
+// 既に回収済み：翌日繰越はDBに保存された実際の値（＝0）をそのまま表示する
+// （このページの前日繰越計算は「今日より前の日」しか見ないため、Kintone等が今日の分を
+// 既に自動回収済みでも、再計算だけでは反映されないための対応）
+const nextEl=document.getElementById('next_'+id);
+if(nextEl)nextEl.textContent=fmtNum(row.next_carry_over||0);
+}
 });
+if(todayAlreadyRecovered)applyAlreadyRecoveredState();
+}
+
+function applyAlreadyRecoveredState(){
+const bar=document.getElementById('recovery-bar');
+bar.className='recovery-bar is-day';
+bar.textContent='✅ 本日（'+reportDate+'）は回収日で、既に回収済みです（Kintone連携等により自動処理されました）。内容を修正したい場合は、入力し直して該当のボタンを押してください。';
 }
 
 function recalcRow(id){
