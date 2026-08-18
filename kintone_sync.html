@@ -623,9 +623,16 @@ async function importAllStoresDetails() {
         const status = rec['ステータス'] && rec['ステータス'].value;
         return store === kintoneStoreName && status === '確定';
       });
-      if (records.length === 0) continue; // この店舗はこの日データなし
+
+      // 回収日かどうかは、Kintoneの取引有無に関係なく必ず判定する
+      // （取引が0件の店舗でも、回収日であれば累計リセットは実行する必要があるため）
+      const isRecoveryDay = commonRecoveryDay || storeSpecificRecoveryDaySet.has(supabaseStoreId);
+      const willAutoRecover = isRecoveryDay && !manualNotRecoveredSet.has(supabaseStoreId);
+
+      // 取引が無い店舗・回収日でない店舗も、テレカ・金券回収の繰越を正しく引き継ぐため常に処理する
 
       try {
+        if (records.length > 0) {
         // ---- 買取明細（来店動機別） ----
         const byReason = {};
         let repeatCount = 0, noPurchaseCount = 0, cancelCount = 0;
@@ -669,8 +676,9 @@ async function importAllStoresDetails() {
           const pdRes = await fetch(`${SUPABASE_URL}/rest/v1/purchase_details`, { method: 'POST', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(pdRows) });
           if (!pdRes.ok) throw new Error('買取明細保存失敗: ' + await pdRes.text());
         }
+        } // records.length > 0 の場合のみ（買取明細）ここまで
 
-        // ---- 地金回収 ----
+        // ---- 地金回収（取引が0件でも、回収日なら累計リセットのため必ず実行） ----
         const seiyakuRecords = records.filter(rec => (rec['ドロップダウン_0'] && rec['ドロップダウン_0'].value) === '成約');
         const weightByKintoneMetal = {};
         seiyakuRecords.forEach(rec => {
@@ -685,7 +693,7 @@ async function importAllStoresDetails() {
             weightByKintoneMetal[metalName] = (weightByKintoneMetal[metalName] || 0) + weight;
           });
         });
-        if (Object.keys(weightByKintoneMetal).length > 0) {
+        {
           const weightByMetalId = {};
           Object.entries(weightByKintoneMetal).forEach(([kName, w]) => {
             const supName = KINTONE_METAL_TO_SUPABASE_NAME[kName];
@@ -698,8 +706,6 @@ async function importAllStoresDetails() {
             const today = weightByMetalId[m.id] || 0;
             const crush = carry + today;
             const recovery = carry + today;
-            const isRecoveryDay = commonRecoveryDay || storeSpecificRecoveryDaySet.has(supabaseStoreId);
-            const willAutoRecover = isRecoveryDay && !manualNotRecoveredSet.has(supabaseStoreId);
             const nextCarry = willAutoRecover ? 0 : recovery;
             return { store_id: supabaseStoreId, metal_type_id: m.id, record_date: date, carry_over: carry, today_weight: today, product_weight: 0, crush_weight: crush, return_weight: 0, recovery_weight: willAutoRecover?recovery:0, next_carry_over: nextCarry, is_recovered: willAutoRecover, manual_choice: false };
           });
@@ -708,7 +714,6 @@ async function importAllStoresDetails() {
           if (!grRes.ok) throw new Error('地金回収保存失敗: ' + await grRes.text());
         }
 
-        // ---- テレカ・金券回収 ----
         const countByKintoneCard = {};
         seiyakuRecords.forEach(rec => {
           const table = (rec['テーブル'] && rec['テーブル'].value) || [];
@@ -722,7 +727,7 @@ async function importAllStoresDetails() {
             countByKintoneCard[cardName] = (countByKintoneCard[cardName] || 0) + qty;
           });
         });
-        if (Object.keys(countByKintoneCard).length > 0) {
+        {
           const countByCardId = {};
           Object.entries(countByKintoneCard).forEach(([kName, q]) => {
             const supName = KINTONE_GIFTCARD_TO_SUPABASE_NAME[kName];
