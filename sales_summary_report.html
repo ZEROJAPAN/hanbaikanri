@@ -136,9 +136,11 @@ async function loadMasters(){
   const bySortOrder=(a,b)=>(a.sort_order??999999)-(b.sort_order??999999);
   stores.sort(bySortOrder); teams.sort(bySortOrder); groups.sort(bySortOrder); areas.sort(bySortOrder); departments.sort(bySortOrder);
 
+  const visibleStores=filterStoresByViewScope(stores, teams, groups, areas);
+
   const cols=[];
   const allStoreIds=[];
-  const unassignedStores=stores.filter(s=>!s.team_id);
+  const unassignedStores=visibleStores.filter(s=>!s.team_id);
   const usedStoreIds=new Set();
 
   for(const dept of departments){
@@ -149,16 +151,16 @@ async function loadMasters(){
       const groupTeams=teams.filter(t=>t.group_id===group.id);
       const groupStoreIds=[];
       for(const team of groupTeams){
-        const teamStores=stores.filter(s=>s.team_id===team.id);
+        const teamStores=visibleStores.filter(s=>s.team_id===team.id);
         const teamStoreIds=teamStores.map(s=>s.id);
         teamStores.forEach(s=>{cols.push({type:'store',id:s.id,name:s.name,storeIds:[s.id]});usedStoreIds.add(s.id);});
         if(teamStores.length>1)cols.push({type:'team_total',name:team.name+' 計',storeIds:teamStoreIds});
         groupStoreIds.push(...teamStoreIds);
       }
-      if(groupTeams.length>1)cols.push({type:'group_total',name:group.name+' 計',storeIds:groupStoreIds});
+      if(groupStoreIds.length>0 && groupTeams.length>1)cols.push({type:'group_total',name:group.name+' 計',storeIds:groupStoreIds});
       deptStoreIds.push(...groupStoreIds);
     }
-    if(deptGroups.length>1)cols.push({type:'dept_total',name:dept.name+' 計',storeIds:deptStoreIds});
+    if(deptStoreIds.length>0 && deptGroups.length>1)cols.push({type:'dept_total',name:dept.name+' 計',storeIds:deptStoreIds});
     allStoreIds.push(...deptStoreIds);
   }
   unassignedStores.forEach(s=>{
@@ -167,6 +169,41 @@ async function loadMasters(){
 
   cols.push({type:'grand_total',name:'総合計',storeIds:[...new Set(allStoreIds)]});
   ORG_COLUMNS=cols;
+}
+
+function filterStoresByViewScope(stores, teams, groups, areas){
+  const viewScope=localStorage.getItem('view_scope')||'all';
+  if(viewScope==='all')return stores;
+
+  const scopeStoreId=localStorage.getItem('scope_store_id');
+  const scopeTeamId=localStorage.getItem('scope_team_id');
+  const scopeGroupId=localStorage.getItem('scope_group_id');
+
+  const teamById={}; teams.forEach(t=>teamById[t.id]=t);
+  const groupById={}; groups.forEach(g=>groupById[g.id]=g);
+
+  if(viewScope==='team'){
+    const myStore=stores.find(s=>String(s.id)===String(scopeStoreId));
+    const teamId=myStore?myStore.team_id:null;
+    if(!teamId)return myStore?[myStore]:[];
+    return stores.filter(s=>s.team_id===teamId);
+  }
+  if(viewScope==='group'){
+    const myTeam=teamById[scopeTeamId];
+    const groupId=myTeam?myTeam.group_id:null;
+    if(!groupId)return stores.filter(s=>String(s.team_id)===String(scopeTeamId));
+    const teamIdsInGroup=new Set(teams.filter(t=>t.group_id===groupId).map(t=>t.id));
+    return stores.filter(s=>teamIdsInGroup.has(s.team_id));
+  }
+  if(viewScope==='area'){
+    const myGroup=groupById[scopeGroupId];
+    const areaId=myGroup?myGroup.area_id:null;
+    if(!areaId)return stores.filter(s=>{const t=teamById[s.team_id];return t&&String(t.group_id)===String(scopeGroupId);});
+    const groupIdsInArea=new Set(groups.filter(g=>g.area_id===areaId).map(g=>g.id));
+    const teamIdsInArea=new Set(teams.filter(t=>groupIdsInArea.has(t.group_id)).map(t=>t.id));
+    return stores.filter(s=>teamIdsInArea.has(s.team_id));
+  }
+  return stores;
 }
 
 function isTaxExemptChannel(chName){return chName.includes('免税');}
