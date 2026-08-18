@@ -110,13 +110,14 @@ function fmt(n){return Math.round(n||0).toLocaleString('ja-JP');}
 function todayStr(){return new Date().toISOString().slice(0,10);}
 document.getElementById('settleDate').value=todayStr();
 
-let STORES=[], PMT_ID_TO_NAME={}, PMT_NAME_TO_ID={};
+let STORES=[], PMT_LIST=[], PMT_ID_TO_NAME={}, PMT_NAME_TO_ID={};
 let pendingRowIds=[];
 let aggregated=null;
 
 async function loadMasters(){
   STORES=await apiFetchAll('stores?is_active=eq.true&order=sort_order&select=id,name');
-  const pmt=await apiFetchAll('precious_metal_types?select=id,name');
+  const pmt=await apiFetchAll('precious_metal_types?is_active=eq.true&order=sort_order&select=id,name');
+  PMT_LIST=pmt;
   pmt.forEach(p=>{PMT_ID_TO_NAME[p.id]=p.name; PMT_NAME_TO_ID[p.name]=p.id;});
 }
 
@@ -140,18 +141,30 @@ async function loadPending(){
   try{
     if(STORES.length===0) await loadMasters();
 
-    const pendingRows=await apiFetchAll(`gold_recovery?settled_at=is.null&record_date=lte.${date}&recovery_weight=gt.0&select=id,store_id,metal_type_id,recovery_weight`);
-    pendingRowIds=pendingRows.map(r=>r.id);
+    const pendingRows=await apiFetchAll(`gold_recovery?settled_at=is.null&record_date=lte.${date}&recovery_weight=gt.0&select=id,store_id,metal_type_id,recovery_weight,record_date&order=record_date.asc`);
 
     const rateRows=await apiFetch(`precious_metal_rates?record_date=eq.${date}&select=metal_type_id,rate`).then(r=>r.json());
     const rateByMetalId={};
     (rateRows||[]).forEach(r=>{rateByMetalId[r.metal_type_id]=r.rate;});
 
-    const byStore={};
+    // 直近（最新の回収日）の未計上分のみを対象にする（店舗×金種ごとに1件、古い未計上の取りこぼしがあっても最新分のみ計上）
+    const latestByStoreMetal={}; // "storeId-metalId" -> {id, recovery_weight}
     pendingRows.forEach(r=>{
+      const key=r.store_id+'-'+r.metal_type_id;
+      latestByStoreMetal[key]=r; // record_date昇順で取得しているので、最後に上書きされたものが最新
+    });
+    const latestRows=Object.values(latestByStoreMetal);
+    pendingRowIds=latestRows.map(r=>r.id);
+
+    const byStore={};
+    latestRows.forEach(r=>{
       if(!byStore[r.store_id])byStore[r.store_id]={};
       byStore[r.store_id][r.metal_type_id]=(byStore[r.store_id][r.metal_type_id]||0)+(r.recovery_weight||0);
     });
+
+    // 店舗・金種ともにマスタのsort_order順を維持（あいうえお順にしない）
+    const storeOrderIndex={}; STORES.forEach((s,i)=>{storeOrderIndex[s.id]=i;});
+    const metalOrderIndex={}; PMT_LIST.forEach((m,i)=>{metalOrderIndex[m.id]=i;});
 
     const storeList=Object.entries(byStore).map(([storeId,metals])=>{
       const storeName=(STORES.find(s=>String(s.id)===String(storeId))||{}).name||`店舗ID${storeId}`;
@@ -160,9 +173,9 @@ async function loadPending(){
         name:PMT_ID_TO_NAME[metalTypeId]||`金種ID${metalTypeId}`,
         qty,
         rate:rateByMetalId[metalTypeId]||0,
-      })).sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+      })).sort((a,b)=>(metalOrderIndex[a.metalTypeId]??999)-(metalOrderIndex[b.metalTypeId]??999));
       return {storeId:Number(storeId), storeName, metals:metalList};
-    }).sort((a,b)=>a.storeName.localeCompare(b.storeName,'ja'));
+    }).sort((a,b)=>(storeOrderIndex[a.storeId]??999)-(storeOrderIndex[b.storeId]??999));
 
     aggregated={date, stores:storeList};
 
