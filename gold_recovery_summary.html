@@ -322,10 +322,16 @@ async function exportChecklist(){
   const hdr=ws.addRow(['店舗名','金種','未計上g数','当日レート','金額']);
   hdr.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2761'}};});
 
-  aggregated.stores.forEach(s=>{
+  const thin={style:'thin',color:{argb:'FFAAAAAA'}};
+  const border={top:thin,bottom:thin,left:thin,right:thin};
+  hdr.eachCell(c=>{c.border=border;});
+
+  aggregated.stores.forEach((s,i)=>{
     s.metals.forEach(m=>{
-      ws.addRow([s.storeName, m.name, m.qty, m.rate, Math.round(m.qty*m.rate)]);
+      const row=ws.addRow([s.storeName, m.name, m.qty, m.rate, Math.round(m.qty*m.rate)]);
+      row.eachCell(c=>{c.border=border;});
     });
+    if(i<aggregated.stores.length-1)ws.addRow([]); // 店舗の区切りとして空白行を挿入
   });
   ws.getColumn(1).width=28; ws.getColumn(2).width=16; ws.getColumn(3).width=12; ws.getColumn(4).width=12; ws.getColumn(5).width=14;
 
