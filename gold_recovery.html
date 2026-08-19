@@ -183,7 +183,7 @@ document.getElementById('save-btn').disabled=true;
 
 async function loadCarryOver(){
 if(!storeId)return;
-const res=await apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=lt.${reportDate}&order=record_date.desc&limit=100&select=*`);
+const res=await apiFetch(`gold_recovery?store_id=eq.${storeId}&record_date=lt.${reportDate}&order=record_date.desc&limit=5000&select=*`);
 const data=await res.json()||[];
 data.forEach(row=>{
 if(carryOverData[row.metal_type_id]===undefined){
