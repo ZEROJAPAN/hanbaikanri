@@ -732,7 +732,7 @@ weightByMetalId[mid]=(weightByMetalId[mid]||0)+w;
 });
 
 // 前日繰越（各金種の直近next_carry_over）を取得
-const coRes=await apiFetch(`gold_recovery?store_id=eq.${currentStoreId}&record_date=lt.${date}&order=record_date.desc&limit=200&select=metal_type_id,record_date,next_carry_over`);
+const coRes=await apiFetch(`gold_recovery?store_id=eq.${currentStoreId}&record_date=lt.${date}&order=record_date.desc&limit=5000&select=metal_type_id,record_date,next_carry_over`);
 const coData=await coRes.json()||[];
 const carryOverData={};
 coData.forEach(row=>{
@@ -809,7 +809,7 @@ if(!cid){unmatchedCards.push(kName);return;}
 countByCardId[cid]=(countByCardId[cid]||0)+q;
 });
 
-const tcoRes=await apiFetch(`telecard_recovery?store_id=eq.${currentStoreId}&record_date=lt.${date}&order=record_date.desc&limit=200&select=gift_card_type_id,record_date,next_carry_over`);
+const tcoRes=await apiFetch(`telecard_recovery?store_id=eq.${currentStoreId}&record_date=lt.${date}&order=record_date.desc&limit=5000&select=gift_card_type_id,record_date,next_carry_over`);
 const tcoData=await tcoRes.json()||[];
 const tCarryOverData={};
 tcoData.forEach(row=>{
